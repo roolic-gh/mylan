@@ -18,16 +18,48 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>local.mylan</groupId>
-  <artifactId>mylan-bom</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
+    <groupId>local.mylan</groupId>
+    <artifactId>mylan-bom</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-  <dependencyManagement>
-    <dependencies>
+    <properties>
+        <junit.version>5.11.2</junit.version>
+        <mokito.version>5.14.1</mokito.version>
+    </properties>
 
-    </dependencies>
-  </dependencyManagement>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Project Dependencies -->
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>utils</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Testing -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mokito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mokito.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
