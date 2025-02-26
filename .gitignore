@@ -11,12 +11,8 @@
 .shelf/
 
 # Build targets
-/target
-*/target
-
-# Report directories
-/reports
-*/reports
+*.class
+**/target
 
 # Mac-specific directory that no other operating system needs.
 .DS_Store

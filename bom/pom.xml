@@ -35,8 +35,20 @@
             <!-- Project Dependencies -->
             <dependency>
                 <groupId>local.mylan</groupId>
+                <artifactId>mylan-codec-mp4</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
                 <artifactId>utils</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- External dependencies -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.2.1-jre</version>
             </dependency>
 
             <!-- Testing -->

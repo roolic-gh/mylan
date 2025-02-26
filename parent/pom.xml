@@ -31,6 +31,8 @@
         <!-- Java Versions -->
         <maven.compiler.release>21</maven.compiler.release>
 
+        <slf4j.version>2.0.16</slf4j.version>
+        <surefire.plugin.version>3.3.1</surefire.plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -45,7 +47,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-bom</artifactId>
-                <version>2.0.16</version>
+                <version>${slf4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -54,9 +56,14 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
@@ -88,7 +95,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>${surefire.plugin.version}</version>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <trimStackTrace>true</trimStackTrace>
@@ -96,5 +103,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
