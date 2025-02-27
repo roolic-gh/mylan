@@ -31,7 +31,8 @@ public class UnhandledBox extends Box {
         return BoxType.Unhandled;
     }
 
-    String originalBoxType() {
-        return originalBoxType;
+    @Override
+    public String toString() {
+        return "?(%s) @%d,%d".formatted(originalBoxType, offset(), length());
     }
 }

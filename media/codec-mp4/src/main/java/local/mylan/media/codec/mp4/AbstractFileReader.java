@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import local.mylan.media.codec.mp4.boxes.BoxReader;
@@ -76,7 +77,13 @@ public abstract class AbstractFileReader implements Closeable {
         return result;
     }
 
-    private void checkCanRead(final int numOfBytes) throws IOException {
+    public void skipBytes(final int numOfBytes) throws IOException {
+        checkCanRead(numOfBytes);
+        buffer.position(buffer.position() + numOfBytes);
+        currentOffset += numOfBytes;
+    }
+
+    private void checkCanRead(final long numOfBytes) throws IOException {
         if (numOfBytes > buffer.remaining()) {
             buffer.compact();
             buffer.flip();
@@ -89,11 +96,11 @@ public abstract class AbstractFileReader implements Closeable {
     }
 
     public int readUint8() throws IOException {
-        return Ints.fromByteArray(readBytes(1,4));
+        return Ints.fromByteArray(readBytes(1, 4));
     }
 
     public int readUint16() throws IOException {
-        return Ints.fromByteArray(readBytes(2,4));
+        return Ints.fromByteArray(readBytes(2, 4));
     }
 
     public long readUint32() throws IOException {
@@ -102,6 +109,30 @@ public abstract class AbstractFileReader implements Closeable {
 
     public long readUint64() throws IOException {
         return Longs.fromByteArray(readBytes(8));
+    }
+
+    public String readNullTerminatedString(final long limit, final Charset charset) throws IOException {
+        final var maxLength = Math.min(limit - currentOffset, buffer.limit());
+        checkCanRead(maxLength);
+        buffer.mark();
+        var terminated = false;
+        var length = 0;
+        while (buffer.hasRemaining() && length++ < maxLength) {
+            if (buffer.get() == 0x00) {
+                terminated = true;
+                break;
+            }
+        }
+        if (!terminated) {
+            throw new IOException(("Null terminated string read failure. No zero byte detected within %d bytes" +
+                                   " following initial offset %d").formatted(maxLength, currentOffset));
+        }
+        buffer.reset();
+        final var bytes = new byte[length - 1];
+        buffer.get(bytes);
+        buffer.position(buffer.position() + 1);
+        currentOffset += length;
+        return new String(bytes, charset);
     }
 
     @Override

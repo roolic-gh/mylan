@@ -19,8 +19,38 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Movie Header Box. Addresses ISO/IEC 14496-12 (8.2.2 Movie Header Box).
+ */
 public class MovieHeaderBox extends FullBox {
     private static final Logger LOG = LoggerFactory.getLogger(MovieHeaderBox.class);
+
+    /*
+        8.2.2.3 Semantics
+        version -- is an integer that specifies the version of this box (0 or 1 in this specification)
+        creation_time -- is an integer that declares the creation time of the presentation (in seconds
+            since midnight, Jan. 1, 1904, in UTC time)
+        modification_time -- is an integer that declares the most recent time the presentation was
+            modified (in seconds since midnight, Jan. 1, 1904, in UTC time)
+        timescale -- is an integer that specifies the time‐scale for the entire presentation; this is the
+            number of time units that pass in one second. For example, a time coordinate system that
+            measures time in sixtieths of a second has a time scale of 60.
+        duration -- is an integer that declares length of the presentation (in the indicated timescale). This
+            property is derived from the presentation’s tracks: the value of this field corresponds to the
+            duration of the longest track in the presentation. If the duration cannot be determined then
+            duration is set to all 1s.
+        rate -- is a fixed point 16.16 number that indicates the preferred rate to play the presentation; 1.0
+            (0x00010000) is normal forward playback
+        volume --  is a fixed point 8.8 number that indicates the preferred playback volume. 1.0 (0x0100) is
+            full volume.
+        matrix -- provides a transformation matrix for the video; (u,v,w) are restricted here to (0,0,1), hex
+            values (0,0,0x40000000).
+        next_track_ID --  is a non‐zero integer that indicates a value to use for the track ID of the next track
+            to be added to this presentation. Zero is not a valid track ID value. The value of
+            next_track_ID shall be larger than the largest track‐ID in use. If this value is equal to all 1s
+            (32‐bit maxint), and a new media track is to be added, then a search must be made in the file for
+            an unused track identifier.
+     */
 
     private long creationTime;
     private long modificationTime;
@@ -28,10 +58,9 @@ public class MovieHeaderBox extends FullBox {
     private long duration;
     private long rate;
     private int volume;
-    private byte[] matrix;
     private long nextTrackId;
 
-    MovieHeaderBox(long offset, long length) {
+    MovieHeaderBox(final long offset, final long length) {
         super(offset, length);
     }
 
@@ -41,7 +70,7 @@ public class MovieHeaderBox extends FullBox {
     }
 
     @Override
-    void readContent(BoxReader reader) throws IOException {
+    void readContent(final BoxReader reader) throws IOException {
         super.readContent(reader);
         if (version == 1) {
             creationTime = reader.readUint64();
@@ -56,10 +85,10 @@ public class MovieHeaderBox extends FullBox {
         }
         rate = reader.readUint32(); // todo decumal 16.16
         volume = reader.readUint16();
-        reader.readBytes(2); // bit(16) reserved
-        reader.readBytes(4 * 2); // int(32)[2] reserved
-        matrix = reader.readBytes(4 * 9); // int(32)[9]
-        reader.readBytes(4 * 6); // bit(32)[6] reserved
+        reader.skipBytes(2); // bit(16) reserved
+        reader.skipBytes(4 * 2); // int(32)[2] reserved
+        reader.skipBytes(4 * 9); // int(32)[9] matrix (not used)
+        reader.skipBytes(4 * 6); // bit(32)[6] reserved
         nextTrackId = reader.readUint32();
 
         LOG.info("parsed -> created={}, timescale={}, duration={}, nextTrackId={}",

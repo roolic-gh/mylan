@@ -20,19 +20,38 @@ import java.nio.file.Path;
 import java.util.List;
 import local.mylan.media.codec.mp4.boxes.Box;
 import local.mylan.media.codec.mp4.boxes.BoxReader;
+import local.mylan.media.codec.mp4.boxes.ContainerBox;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class Mp4FileStructure {
+    private static final Logger LOG = LoggerFactory.getLogger(Mp4FileStructure.class);
 
     final Path filePath;
     final List<Box> rootBoxes;
 
-    public Mp4FileStructure(Path filePath) throws IOException {
+    public Mp4FileStructure(final Path filePath, final int bufferSize) throws IOException {
         this.filePath = filePath;
-        try (var reader = new BoxReader(filePath)) {
+        try (var reader = new BoxReader(filePath, bufferSize)) {
             rootBoxes = reader.readBoxes();
         }
     }
+
     public List<Box> rootBoxes() {
         return List.copyOf(rootBoxes);
     }
+
+    public void trace() {
+        trace("", rootBoxes);
+    }
+
+    private void trace(final String indent, List<Box> boxes) {
+        for (var box: boxes) {
+            LOG.info("{} - {}", indent, box);
+            if (box instanceof ContainerBox containerBox) {
+                trace(indent + "    ", containerBox.subBoxes());
+            }
+        }
+    }
+
 }

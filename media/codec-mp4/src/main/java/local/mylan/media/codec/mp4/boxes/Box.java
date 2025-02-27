@@ -17,6 +17,9 @@ package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
 
+/**
+ * Box Base. Addresses ISO/IEC 14496-12 (4.2 Object Structure).
+ */
 public abstract class Box {
 
     private final long offset;
@@ -43,4 +46,8 @@ public abstract class Box {
         // ignore content by default
     }
 
+    @Override
+    public String toString() {
+        return "%s @%d,%d".formatted(boxType(), offset, length);
+    }
 }

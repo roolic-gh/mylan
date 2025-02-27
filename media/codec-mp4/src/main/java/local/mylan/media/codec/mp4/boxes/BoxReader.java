@@ -16,6 +16,7 @@
 package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,11 +25,14 @@ import local.mylan.media.codec.mp4.AbstractFileReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * MP4 Box (Atom) hierarchy parser. Addresses ISO/IEC 14496-12.
+ */
 public final class BoxReader extends AbstractFileReader {
     private static final Logger LOG = LoggerFactory.getLogger(BoxReader.class);
 
-    public BoxReader(final Path path) throws IOException {
-        super(path, 1024);
+    public BoxReader(final Path path, final int bufferSize) throws IOException {
+        super(path, bufferSize);
     }
 
     public List<Box> readBoxes() throws IOException {
@@ -55,6 +59,10 @@ public final class BoxReader extends AbstractFileReader {
     private Box readBox() throws IOException {
         final var boxOffset = currentOffset();
         final var remaining = remaining();
+
+        // Extracting box size/length (includes size bytes) and type.
+        // According to ISO/IEC 14496-12 (4.2 Object structure).
+        // The UUID extraction (same chapter) is delegated to UserTypeBox.
         var size = readUint32();
         var boxType = new String(readBytes(4), StandardCharsets.ISO_8859_1);
         if (size == 1) {
@@ -75,7 +83,7 @@ public final class BoxReader extends AbstractFileReader {
         if (parsedSize < size) {
             setOffset(expectedOffset);
         } else if (parsedSize > size) {
-            throw new IOException("error parsing box %s at offset %d. Actual length (%d) exceeds expected (%d)"
+            throw new IOException("Error parsing box %s at offset %d. Actual length (%d) exceeds expected (%d)"
                 .formatted(boxType, boxOffset, parsedSize, size));
         }
         return box;

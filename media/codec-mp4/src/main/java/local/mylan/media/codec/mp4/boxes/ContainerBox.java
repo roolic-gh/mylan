@@ -19,19 +19,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Base Box which only contains other boxes.
+ */
 public abstract class ContainerBox extends Box {
     private final List<Box> subBoxes = new ArrayList<>();
 
-    protected ContainerBox(long offset, long length) {
+    ContainerBox(long offset, long length) {
         super(offset, length);
     }
 
-    public final List<Box> subBoxes(){
+    public final List<Box> subBoxes() {
         return List.copyOf(subBoxes);
     }
 
     @Override
     void readContent(final BoxReader reader) throws IOException {
-        final var boxes = reader.readBoxes(limit);
+        subBoxes.addAll(reader.readBoxes(limit));
+    }
+
+    static ContainerBox typed(final BoxType boxType, final long offset, final long length) {
+        return new ContainerBox(offset, length) {
+            @Override
+            public BoxType boxType() {
+                return boxType;
+            }
+        };
     }
 }

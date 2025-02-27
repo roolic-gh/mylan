@@ -21,9 +21,18 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * File Type Box. Addresses ISO/IEC 14496-12 (4.3 File Type Box).
+ */
 public class FileTypeBox extends Box {
     private static final Logger LOG = LoggerFactory.getLogger(FileTypeBox.class);
 
+    /*
+        4.3.3 Semantics
+        major_brand – is a brand identifier
+        minor_version – is an informative integer for the minor version of the major brand
+        compatible_brands – is a list, to the end of the box, of brands
+     */
     private String majorBrand;
     private long minorVersion;
     private final List<String> compatibleBrands = new ArrayList<>();
