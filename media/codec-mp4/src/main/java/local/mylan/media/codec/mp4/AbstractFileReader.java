@@ -103,6 +103,10 @@ public abstract class AbstractFileReader implements Closeable {
         return Ints.fromByteArray(readBytes(2, 4));
     }
 
+    public int readInt32() throws IOException {
+        return Ints.fromByteArray(readBytes(4));
+    }
+
     public long readUint32() throws IOException {
         return Longs.fromByteArray(readBytes(4, 8));
     }

@@ -38,7 +38,7 @@ public abstract class FullBox extends Box {
     void readContent(final BoxReader reader) throws IOException {
         version = reader.readUint8();
         flags = BitSet.valueOf(reader.readBytes(3));
-        LOG.info("parsed -> version={}, flags={}", version, flagsAsString());
+//        LOG.info("parsed -> version={}, flags={}", version, flagsAsString());
     }
 
     private String flagsAsString() {
@@ -51,5 +51,14 @@ public abstract class FullBox extends Box {
         // bits are allocated in a reverse order
         // 0000000000000000111 means bits 0,1,2 are enabled
         return flags.get(flags.length() - 1 - index);
+    }
+
+    static FullBox typed(final BoxType type, final long offset, final long length) {
+        return new FullBox(offset, length) {
+            @Override
+            public BoxType boxType() {
+                return type;
+            }
+        };
     }
 }

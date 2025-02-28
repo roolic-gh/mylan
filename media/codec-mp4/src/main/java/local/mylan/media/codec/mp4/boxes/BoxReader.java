@@ -75,7 +75,7 @@ public final class BoxReader extends AbstractFileReader {
             ? new UnhandledBox(boxType, boxOffset, size)
             : type.newBox(boxOffset, size);
         box.readContent(this);
-        LOG.info("parsed -> {} (offset: {}, size: {})", boxType, boxOffset, size);
+//        LOG.info("parsed -> {} (offset: {}, size: {})", boxType, boxOffset, size);
 
         // validate offset after box being parsed (or content skipped)
         final var parsedSize = currentOffset() - boxOffset;

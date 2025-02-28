@@ -16,6 +16,9 @@
 package local.mylan.media.codec.mp4.boxes;
 
 public enum BoxType {
+    Edit("edts", ContainerBox::typed),
+    EditList("elst", EditListBox::new),
+    ExtendedLanguageTag("elng", ExtendedLanguageTagBox::new),
     FileType("ftyp", FileTypeBox::new),
     HandlerReference("hdlr", HandlerReferenceBox::new),
     Media("mdia", ContainerBox::typed),
@@ -24,6 +27,8 @@ public enum BoxType {
     MediaInformation("minf", ContainerBox::typed),
     Movie("moov", ContainerBox::typed),
     MovieHeader("mvhd", MovieHeaderBox::new),
+    NullMediaHeader("nmhd", FullBox::typed),
+//    SampleTable("stbl", ContainerBox::typed),
     Track("trak", ContainerBox::typed),
     TrackHeader("tkhd", TrackHeaderBox::new),
     UserType("uuid", UserTypeBox::new),
