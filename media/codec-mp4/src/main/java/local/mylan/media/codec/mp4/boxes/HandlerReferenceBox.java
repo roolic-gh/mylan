@@ -17,15 +17,11 @@ package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handler Reference Box. Addresses ISO/IEC 14496-12 (8.4.3 Handler Reference Box).
  */
 public class HandlerReferenceBox extends FullBox {
-    private static final Logger LOG = LoggerFactory.getLogger(HandlerReferenceBox.class);
-
     /*
         8.4.3.3 Semantics
         version -- is an integer that specifies the version of this box
@@ -55,8 +51,12 @@ public class HandlerReferenceBox extends FullBox {
         super.readContent(reader);
         reader.skipBytes(4); // int(32) pre-defined
         handlerType = reader.read4CharCode();
-        reader.skipBytes(4*3); // int(32)[3] reserved
+        reader.skipBytes(4 * 3); // int(32)[3] reserved
         name = reader.readNullTerminatedString(limit, StandardCharsets.UTF_8);
-        LOG.info("parsed -> handlerType={}, name={}", handlerType, name);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " type=%s, name=%s".formatted(handlerType, name);
     }
 }

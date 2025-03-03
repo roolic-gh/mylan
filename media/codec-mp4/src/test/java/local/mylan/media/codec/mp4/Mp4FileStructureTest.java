@@ -24,7 +24,8 @@ public class Mp4FileStructureTest {
     @Test
     void fileStructure() throws IOException {
 //        final var path = Path.of("/home/roolic/test/SampleVideo_1280x720_1mb.mp4");
-        final var path = Path.of("/home/roolic/test/ok-ko1.mp4");
+//        final var path = Path.of("/home/roolic/test/ok-ko1.mp4");
+        final var path = Path.of("/home/roolic/test/mp4_CT-KO-1R-01x01.mp4");
         final var structure = new Mp4FileStructure(path, 1024);
         structure.trace();
     }

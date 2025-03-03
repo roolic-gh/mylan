@@ -86,7 +86,6 @@ public abstract class AbstractFileReader implements Closeable {
     private void checkCanRead(final long numOfBytes) throws IOException {
         if (numOfBytes > buffer.remaining()) {
             buffer.compact();
-            buffer.flip();
             fillBuffer();
         }
         if (numOfBytes > buffer.remaining()) {

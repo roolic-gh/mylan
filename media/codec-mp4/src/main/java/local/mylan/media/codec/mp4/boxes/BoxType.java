@@ -16,6 +16,10 @@
 package local.mylan.media.codec.mp4.boxes;
 
 public enum BoxType {
+    ChunkLargeOffset("co64", ChunkOffsetBox::new),
+    ChunkOffset("stco", ChunkOffsetBox::new),
+    DataInformation("dinf", ContainerBox::typed),
+    DataReference("dref", ContainerFullBox::typed),
     Edit("edts", ContainerBox::typed),
     EditList("elst", EditListBox::new),
     ExtendedLanguageTag("elng", ExtendedLanguageTagBox::new),
@@ -28,7 +32,10 @@ public enum BoxType {
     Movie("moov", ContainerBox::typed),
     MovieHeader("mvhd", MovieHeaderBox::new),
     NullMediaHeader("nmhd", FullBox::typed),
-//    SampleTable("stbl", ContainerBox::typed),
+    SampleDescription("stsd", ContainerFullBox::typed),
+    SampleTable("stbl", ContainerBox::typed),
+    SampleToChunk("stsc", SampleToChunkBox::new),
+    SampleSize("stsz", SampleSizeBox::new),
     Track("trak", ContainerBox::typed),
     TrackHeader("tkhd", TrackHeaderBox::new),
     UserType("uuid", UserTypeBox::new),

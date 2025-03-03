@@ -16,14 +16,11 @@
 package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Movie Header Box. Addresses ISO/IEC 14496-12 (8.2.2 Movie Header Box).
  */
 public class MovieHeaderBox extends FullBox {
-    private static final Logger LOG = LoggerFactory.getLogger(MovieHeaderBox.class);
 
     /*
         8.2.2.3 Semantics
@@ -90,8 +87,11 @@ public class MovieHeaderBox extends FullBox {
         reader.skipBytes(4 * 9); // int(32)[9] matrix (not used)
         reader.skipBytes(4 * 6); // bit(32)[6] reserved
         nextTrackId = reader.readUint32();
+    }
 
-        LOG.info("parsed -> created={}, timescale={}, duration={}, nextTrackId={}",
-            creationTime, timescale, duration, nextTrackId);
+    @Override
+    public String toString() {
+        return super.toString() + " timescale=%s, duration=%s, nextTrackId=%d"
+            .formatted(timescale, duration, nextTrackId);
     }
 }

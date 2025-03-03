@@ -16,7 +16,6 @@
 package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -56,7 +55,7 @@ public final class BoxReader extends AbstractFileReader {
         return new String(readBytes(4), StandardCharsets.ISO_8859_1);
     }
 
-    private Box readBox() throws IOException {
+    public Box readBox() throws IOException {
         final var boxOffset = currentOffset();
         final var remaining = remaining();
 

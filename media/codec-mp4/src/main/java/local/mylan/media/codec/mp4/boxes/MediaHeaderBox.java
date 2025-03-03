@@ -18,14 +18,11 @@ package local.mylan.media.codec.mp4.boxes;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import local.mylan.media.codec.mp4.BcdUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Media Header Box. Addresses ISO/IEC 14496-12 (8.4.2. Media Header Box)
  */
 public class MediaHeaderBox extends FullBox {
-    private static final Logger LOG = LoggerFactory.getLogger(MediaHeaderBox.class);
 
     /*
         8.4.2.3 Semantics
@@ -79,7 +76,10 @@ public class MediaHeaderBox extends FullBox {
         }
         language = new String(langBytes, StandardCharsets.ISO_8859_1);
         reader.skipBytes(2); // int(16) pre-defined
+    }
 
-        LOG.info("parsed -> timescale={}, duration={}, language={}", timescale, duration, language);
+    @Override
+    public String toString() {
+        return super.toString() + " timescale=%s, duration=%s, language=%s".formatted(timescale, duration, language);
     }
 }

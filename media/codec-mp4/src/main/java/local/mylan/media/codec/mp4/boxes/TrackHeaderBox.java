@@ -16,14 +16,11 @@
 package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Track Header Box. Addresses ISO/IEC 14496-12 (8.3.2 Track Header Box)
  */
 public class TrackHeaderBox extends FullBox {
-    private static final Logger LOG = LoggerFactory.getLogger(TrackHeaderBox.class);
 
     /*
         8.3.2.3  Semantics
@@ -120,10 +117,11 @@ public class TrackHeaderBox extends FullBox {
         reader.skipBytes(4 * 9); // int(32)[9] matrix -- omitted
         width = reader.readUint32();
         height = reader.readUint32();
+    }
 
-        LOG.info("parsed -> flags --> enabled={}, in-movie={}, in-preview={}, size-is-ar={}",
-            flag(0), flag(1), flag(2), flag(3));
-        LOG.info("parsed -> trackId={}, duration={}, volume={}, width={}, height={}",
+    @Override
+    public String toString() {
+        return super.toString() + " trackId=%s, duration=%s, volume=%s, width=%s, height=%s".formatted(
             trackId, duration, volume, width, height);
     }
 }

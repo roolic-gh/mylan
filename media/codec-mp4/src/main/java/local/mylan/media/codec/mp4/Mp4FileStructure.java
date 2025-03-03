@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.util.List;
 import local.mylan.media.codec.mp4.boxes.Box;
 import local.mylan.media.codec.mp4.boxes.BoxReader;
-import local.mylan.media.codec.mp4.boxes.ContainerBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +44,13 @@ public final class Mp4FileStructure {
         trace("", rootBoxes);
     }
 
-    private void trace(final String indent, List<Box> boxes) {
-        for (var box: boxes) {
+    private static void trace(final String indent, final List<Box> boxes) {
+        if (boxes.isEmpty()) {
+            return;
+        }
+        for (var box : boxes) {
             LOG.info("{} - {}", indent, box);
-            if (box instanceof ContainerBox containerBox) {
-                trace(indent + "    ", containerBox.subBoxes());
-            }
+            trace(indent + "    ", box.subBoxes());
         }
     }
-
 }

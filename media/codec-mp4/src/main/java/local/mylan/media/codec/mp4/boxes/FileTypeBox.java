@@ -18,14 +18,11 @@ package local.mylan.media.codec.mp4.boxes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * File Type Box. Addresses ISO/IEC 14496-12 (4.3 File Type Box).
  */
 public class FileTypeBox extends Box {
-    private static final Logger LOG = LoggerFactory.getLogger(FileTypeBox.class);
 
     /*
         4.3.3 Semantics
@@ -65,7 +62,11 @@ public class FileTypeBox extends Box {
         while (reader.currentOffset() < limit) {
             compatibleBrands.add(reader.read4CharCode());
         }
-        LOG.info("parsed -> majorBrand={}, minorVersion={}, compatibleBrands={}",
-            majorBrand, minorVersion, compatibleBrands);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " major=%s, minorVer=%s, compatible=%s"
+            .formatted(majorBrand, minorVersion, compatibleBrands);
     }
 }
