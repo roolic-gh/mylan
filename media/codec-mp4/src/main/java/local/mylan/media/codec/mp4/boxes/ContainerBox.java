@@ -22,11 +22,11 @@ import java.util.List;
 /**
  * Base Box which only contains other boxes.
  */
-public abstract class ContainerBox extends Box {
+public class ContainerBox extends Box {
     protected final List<Box> subBoxes = new ArrayList<>();
 
-    ContainerBox(long offset, long length) {
-        super(offset, length);
+    ContainerBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override
@@ -37,14 +37,5 @@ public abstract class ContainerBox extends Box {
     @Override
     void readContent(final BoxReader reader) throws IOException {
         subBoxes.addAll(reader.readBoxes(limit));
-    }
-
-    static ContainerBox typed(final BoxType boxType, final long offset, final long length) {
-        return new ContainerBox(offset, length) {
-            @Override
-            public BoxType boxType() {
-                return boxType;
-            }
-        };
     }
 }

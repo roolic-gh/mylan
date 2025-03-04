@@ -34,13 +34,8 @@ public class FileTypeBox extends Box {
     private long minorVersion;
     private final List<String> compatibleBrands = new ArrayList<>();
 
-    public FileTypeBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.FileType;
+    public FileTypeBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     public String majorBrand() {

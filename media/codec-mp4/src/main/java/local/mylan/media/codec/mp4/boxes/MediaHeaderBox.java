@@ -46,13 +46,8 @@ public class MediaHeaderBox extends FullBox {
     private long duration;
     private String language;
 
-    MediaHeaderBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.MediaHeader;
+    MediaHeaderBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override

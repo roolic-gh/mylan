@@ -15,35 +15,31 @@
  */
 package local.mylan.media.codec.mp4.boxes;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.io.IOException;
 
 /**
- * Chunk Offset Box. Addresses ISO/IEC 14496-12 (8.7.5 Chunk Offset Box)
+ * Sync Sample Box. Addresses ISO/IEC 14496-12 (8.6.2 Sync Sample Box)
  */
-public class ChunkOffsetBox extends FullBox {
+public class SyncSampleBox extends FullBox {
 
-    private long[] chunkOffsets;
+    private long[] sampleNumbers;
 
-    ChunkOffsetBox(final BoxType type, final long offset, final long length) {
+    SyncSampleBox(final BoxType type, final long offset, final long length) {
         super(type, offset, length);
-        checkArgument(type == BoxType.ChunkOffset || type == BoxType.ChunkLargeOffset);
     }
 
     @Override
     void readContent(final BoxReader reader) throws IOException {
         super.readContent(reader);
         final var count = reader.readInt32();
-        chunkOffsets = new long[count];
-        final var isUint32 = boxType() == BoxType.ChunkOffset;
+        sampleNumbers = new long[count];
         for (int i = 0; i < count; i++) {
-            chunkOffsets[i] = isUint32 ? reader.readUint32() : reader.readUint64();
+            sampleNumbers[i] = reader.readUint32();
         }
     }
 
     @Override
     public String toString() {
-        return super.toString() + " count=%d".formatted(chunkOffsets.length);
+        return super.toString() + " count=%d".formatted(sampleNumbers.length);
     }
 }

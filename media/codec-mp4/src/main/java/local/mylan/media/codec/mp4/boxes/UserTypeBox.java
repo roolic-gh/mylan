@@ -22,13 +22,8 @@ public class UserTypeBox extends Box {
 
     private UUID userType;
 
-    public UserTypeBox(long offset, long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.UserType;
+    UserTypeBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     public UUID userType() {
@@ -36,7 +31,7 @@ public class UserTypeBox extends Box {
     }
 
     @Override
-    void readContent(BoxReader reader) throws IOException {
+    void readContent(final BoxReader reader) throws IOException {
         userType = UUID.nameUUIDFromBytes(reader.readBytes(16));
     }
 }

@@ -16,6 +16,7 @@
 package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
+import local.mylan.media.codec.mp4.FixedPoint;
 
 /**
  * Track Header Box. Addresses ISO/IEC 14496-12 (8.3.2 Track Header Box)
@@ -80,17 +81,12 @@ public class TrackHeaderBox extends FullBox {
     private long duration;
     private int layer;
     private int alternateGroup;
-    private int volume; // todo fixed point 8.8
-    private long width; // todo fixed point 16.16
-    private long height; // todo fixed point 16.16
+    private FixedPoint volume;
+    private FixedPoint width;
+    private FixedPoint height;
 
-    TrackHeaderBox(long offset, long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.TrackHeader;
+    TrackHeaderBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override
@@ -112,11 +108,11 @@ public class TrackHeaderBox extends FullBox {
         reader.skipBytes(4 * 2); // int(32)[2] reserved
         layer = reader.readUint16();
         alternateGroup = reader.readUint16();
-        volume = reader.readUint16();
+        volume = reader.readFixedPoint(1, 1); // fixed point 8.8
         reader.skipBytes(2); // int(16) reserved
         reader.skipBytes(4 * 9); // int(32)[9] matrix -- omitted
-        width = reader.readUint32();
-        height = reader.readUint32();
+        width = reader.readFixedPoint(2, 2); // fixed point 16.16
+        height = reader.readFixedPoint(2, 2);  // fixed point 16.16
     }
 
     @Override

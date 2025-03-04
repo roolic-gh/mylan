@@ -16,15 +16,11 @@
 package local.mylan.media.codec.mp4.boxes;
 
 import java.io.IOException;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Edit List Box. Addresses ISO/IEC 14496-12 Addresses (8.6.6  Edit List Box).
  */
 public class EditListBox extends FullBox {
-    private static final Logger LOG = LoggerFactory.getLogger(EditListBox.class);
 
     /*
     8.6.6.3  Semantics
@@ -43,24 +39,18 @@ public class EditListBox extends FullBox {
     public record Entry(long segmentDuration, long mediaTime) {
     }
 
-    private int entryCount;
     private Entry[] entries;
     private int mediaRateInteger;
     private int mediaRateFraction;
 
-    EditListBox(long offset, long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.EditList;
+    EditListBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override
     void readContent(BoxReader reader) throws IOException {
         super.readContent(reader);
-        entryCount = reader.readInt32();
+        final var entryCount = reader.readInt32();
         entries = new Entry[entryCount];
         for (int i = 0; i < entryCount; i++) {
             entries[i] = version == 1
@@ -69,7 +59,11 @@ public class EditListBox extends FullBox {
         }
         mediaRateInteger = reader.readUint16();
         mediaRateFraction = reader.readUint16();
-        LOG.info("parsed -> {} entries, mediaRate={}.{}", entryCount, mediaRateInteger, mediaRateFraction);
     }
 
+    @Override
+    public String toString() {
+        return super.toString() + "count=%s, mediaRate=%d.%d"
+            .formatted(entries.length, mediaRateInteger, mediaRateFraction);
+    }
 }

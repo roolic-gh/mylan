@@ -16,6 +16,7 @@
 package local.mylan.media.codec.mp4;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
 import local.mylan.media.codec.mp4.boxes.Box;
@@ -36,21 +37,17 @@ public final class Mp4FileStructure {
         }
     }
 
-    public List<Box> rootBoxes() {
-        return List.copyOf(rootBoxes);
+    public void trace(final PrintStream writer) {
+        trace(writer, "", rootBoxes);
     }
 
-    public void trace() {
-        trace("", rootBoxes);
-    }
-
-    private static void trace(final String indent, final List<Box> boxes) {
+    private static void trace(final PrintStream writer, final String indent, final List<Box> boxes) {
         if (boxes.isEmpty()) {
             return;
         }
         for (var box : boxes) {
-            LOG.info("{} - {}", indent, box);
-            trace(indent + "    ", box.subBoxes());
+            writer.printf("%s - %s\n", indent, box);
+            trace(writer, indent + "    ", box.subBoxes());
         }
     }
 }

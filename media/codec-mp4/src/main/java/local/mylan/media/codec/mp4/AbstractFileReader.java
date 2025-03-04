@@ -138,6 +138,10 @@ public abstract class AbstractFileReader implements Closeable {
         return new String(bytes, charset);
     }
 
+    public FixedPoint readFixedPoint(final int intBytes, final int fractionBytes) throws IOException {
+        return BcdUtils.decodeFixedPoint(readBytes(intBytes), readBytes(fractionBytes));
+    }
+
     @Override
     public void close() throws IOException {
         channel.close();

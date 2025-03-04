@@ -39,13 +39,8 @@ public class SampleToChunkBox extends FullBox {
 
     private Entry[] entries;
 
-    SampleToChunkBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.SampleToChunk;
+    SampleToChunkBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override

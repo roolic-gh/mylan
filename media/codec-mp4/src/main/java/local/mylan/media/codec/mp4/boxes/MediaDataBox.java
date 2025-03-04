@@ -17,12 +17,7 @@ package local.mylan.media.codec.mp4.boxes;
 
 public class MediaDataBox extends Box {
 
-    MediaDataBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.MediaData;
+    MediaDataBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 }

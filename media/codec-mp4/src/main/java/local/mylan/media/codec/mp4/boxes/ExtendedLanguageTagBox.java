@@ -32,13 +32,8 @@ public class ExtendedLanguageTagBox extends FullBox {
      */
     private Locale extendedLanguage;
 
-    ExtendedLanguageTagBox(long offset, long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.ExtendedLanguageTag;
+    ExtendedLanguageTagBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override

@@ -15,20 +15,13 @@
  */
 package local.mylan.media.codec.mp4.boxes;
 
-import com.google.common.base.MoreObjects;
-
 public class UnhandledBox extends Box {
 
     final String originalBoxType;
 
     UnhandledBox(final String boxType, long offset, long length) {
-        super(offset, length);
+        super(BoxType.Unhandled, offset, length);
         this.originalBoxType = boxType;
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.Unhandled;
     }
 
     @Override

@@ -18,25 +18,28 @@ package local.mylan.media.codec.mp4.boxes;
 public enum BoxType {
     ChunkLargeOffset("co64", ChunkOffsetBox::new),
     ChunkOffset("stco", ChunkOffsetBox::new),
-    DataInformation("dinf", ContainerBox::typed),
-    DataReference("dref", ContainerFullBox::typed),
-    Edit("edts", ContainerBox::typed),
+    CompositionTimeToSample("ctts", CompositionOffsetBox::new),
+    DataInformation("dinf", ContainerBox::new),
+    DataReference("dref", ContainerFullBox::new),
+    DecodingTimeToSample("stts", TimeToSampleBox::new),
+    Edit("edts", ContainerBox::new),
     EditList("elst", EditListBox::new),
     ExtendedLanguageTag("elng", ExtendedLanguageTagBox::new),
     FileType("ftyp", FileTypeBox::new),
     HandlerReference("hdlr", HandlerReferenceBox::new),
-    Media("mdia", ContainerBox::typed),
+    Media("mdia", ContainerBox::new),
     MediaData("mdat", MediaDataBox::new),
     MediaHeader("mdhd", MediaHeaderBox::new),
-    MediaInformation("minf", ContainerBox::typed),
-    Movie("moov", ContainerBox::typed),
+    MediaInformation("minf", ContainerBox::new),
+    Movie("moov", ContainerBox::new),
     MovieHeader("mvhd", MovieHeaderBox::new),
-    NullMediaHeader("nmhd", FullBox::typed),
-    SampleDescription("stsd", ContainerFullBox::typed),
-    SampleTable("stbl", ContainerBox::typed),
+    NullMediaHeader("nmhd", FullBox::new),
+    SampleDescription("stsd", ContainerFullBox::new),
+    SampleTable("stbl", ContainerBox::new),
     SampleToChunk("stsc", SampleToChunkBox::new),
     SampleSize("stsz", SampleSizeBox::new),
-    Track("trak", ContainerBox::typed),
+    SyncSample("stss", SyncSampleBox::new),
+    Track("trak", ContainerBox::new),
     TrackHeader("tkhd", TrackHeaderBox::new),
     UserType("uuid", UserTypeBox::new),
     Unhandled("", (BoxBuilder) null);
@@ -49,13 +52,8 @@ public enum BoxType {
         this.boxBuilder = boxBuilder;
     }
 
-    BoxType(final String boxType, final TypedBoxBuilder typedBoxBuilder) {
-        this.boxType = boxType;
-        boxBuilder = (offset, length) -> typedBoxBuilder.build(this, offset, length);
-    }
-
     Box newBox(final long offset, final long length) {
-        return boxBuilder.build(offset, length);
+        return boxBuilder.build(this, offset, length);
     }
 
     @Override
@@ -74,11 +72,6 @@ public enum BoxType {
 
     @FunctionalInterface
     interface BoxBuilder {
-        Box build(long offset, long length);
-    }
-
-    @FunctionalInterface
-    interface TypedBoxBuilder {
         Box build(BoxType boxType, long offset, long length);
     }
 }

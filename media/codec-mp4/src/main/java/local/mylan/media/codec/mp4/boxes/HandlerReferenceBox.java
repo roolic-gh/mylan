@@ -37,13 +37,8 @@ public class HandlerReferenceBox extends FullBox {
     private String handlerType;
     private String name;
 
-    HandlerReferenceBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.HandlerReference;
+    HandlerReferenceBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override

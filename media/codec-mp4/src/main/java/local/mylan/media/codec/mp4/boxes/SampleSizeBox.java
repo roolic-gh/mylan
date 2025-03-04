@@ -35,13 +35,8 @@ public class SampleSizeBox extends FullBox {
     private int sampleCount;
     private long[] entrySizes;
 
-    SampleSizeBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.SampleSize;
+    SampleSizeBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override

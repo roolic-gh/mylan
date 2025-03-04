@@ -18,6 +18,7 @@ package local.mylan.media.codec.mp4;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,15 +61,8 @@ public final class BcdUtils {
         return target;
     }
 
-    public static FixedPoint decodeFixedPoint(final byte[] encoded, final int intBytes,final int fractionBytes) {
-        requireNonNull(encoded);
-        return null; // todo
-    }
-
-    public record FixedPoint(int integer, int fraction) {
-        @Override
-        public String toString() {
-            return "%d.%d".formatted(integer(), fraction());
-        }
+    public static FixedPoint decodeFixedPoint(final byte[] intBytes, final byte[] fractionBytes) {
+        return new FixedPoint(Ints.fromByteArray(normalize(intBytes, 4)),
+            Ints.fromByteArray(normalize(fractionBytes, 4)));
     }
 }

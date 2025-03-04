@@ -57,13 +57,8 @@ public class MovieHeaderBox extends FullBox {
     private int volume;
     private long nextTrackId;
 
-    MovieHeaderBox(final long offset, final long length) {
-        super(offset, length);
-    }
-
-    @Override
-    public BoxType boxType() {
-        return BoxType.MovieHeader;
+    MovieHeaderBox(final BoxType boxType, final long offset, final long length) {
+        super(boxType, offset, length);
     }
 
     @Override

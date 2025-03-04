@@ -21,19 +21,23 @@ import java.util.List;
 /**
  * Box Base. Addresses ISO/IEC 14496-12 (4.2 Object Structure).
  */
-public abstract class Box {
+public class Box {
 
+    private final BoxType boxType;
     private final long offset;
     private final long length;
     protected final long limit;
 
-    protected Box(long offset, long length) {
+    protected Box(final BoxType boxType, final long offset, final long length) {
+        this.boxType = boxType;
         this.offset = offset;
         this.length = length;
         limit = offset + length;
     }
 
-    public abstract BoxType boxType();
+    public BoxType boxType(){
+        return boxType;
+    }
 
     final long offset() {
         return offset;
