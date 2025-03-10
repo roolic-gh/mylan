@@ -51,6 +51,17 @@ public final class BoxReader extends AbstractFileReader {
         return List.copyOf(boxes);
     }
 
+    public String readFixedLengthString(final int fixedLength) throws IOException {
+        final var bytes = readBytes(fixedLength);
+        final var length = bytes[0];
+        if(length > 0 && length < fixedLength){
+            final var strBytes = new byte[length];
+            System.arraycopy(bytes, 1, strBytes, 0, length);
+            return new String(strBytes, StandardCharsets.ISO_8859_1);
+        }
+        return "";
+    }
+
     public String read4CharCode() throws IOException {
         return new String(readBytes(4), StandardCharsets.ISO_8859_1);
     }

@@ -42,6 +42,8 @@ public enum BoxType {
     Track("trak", ContainerBox::new),
     TrackHeader("tkhd", TrackHeaderBox::new),
     UserType("uuid", UserTypeBox::new),
+    VisualSampleAVC1("avc1", VisualSampleEntry::new),
+
     Unhandled("", (BoxBuilder) null);
 
     private final String boxType;
