@@ -49,6 +49,7 @@ class ConfUtilsTest {
     private static final boolean BOOL_PROP_CUSTOM = true;
 
     private static final String ENUM_PROP_KEY = "test.prop.enum";
+    private static final String CUSTOM_PROP_FILENAME = "custom.properties";
 
     @TempDir
     static Path confDir;
@@ -71,9 +72,10 @@ class ConfUtilsTest {
         return Stream.of(null, noFile, emptyFile);
     }
 
-    @Test
-    void loadConfCustom() throws IOException {
-        final var confPath = createConfFile("custom.properties", """
+    @ParameterizedTest
+    @MethodSource
+    void loadConfCustom(final Path confPath) throws IOException {
+        createConfFile(CUSTOM_PROP_FILENAME, """
             test.prop.str = str-custom
             test.prop.int = 202
             test.prop.float = 2.2
@@ -86,6 +88,10 @@ class ConfUtilsTest {
         assertEquals(FLOAT_PROP_CUSTOM, conf.floatProp());
         assertEquals(BOOL_PROP_CUSTOM, conf.booleanProp());
         assertEquals(TestEnum.CUSTOM, conf.enumProp());
+    }
+
+    private static Stream<Path> loadConfCustom(){
+        return Stream.of(confDir, confDir.resolve(CUSTOM_PROP_FILENAME));
     }
 
     @Test
@@ -135,6 +141,7 @@ class ConfUtilsTest {
         return path;
     }
 
+    @ConfFile(CUSTOM_PROP_FILENAME)
     private @interface TestConfig {
 
         @ConfProperty(STR_PROP_KEY)

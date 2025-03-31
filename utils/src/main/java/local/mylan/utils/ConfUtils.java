@@ -43,8 +43,11 @@ public final class ConfUtils {
 
     public static <T extends Annotation> T loadConfiguration(final Class<T> confClass, final Path confPath) {
         LOG.info("Loading configuration of type {} from {}", confClass, confPath);
-        final var props = loadProperties(confPath);
-        return loadConfiguration(confClass, loadProperties(confPath));
+        final var filename = confClass.getAnnotation(ConfFile.class);
+        final var props = confPath != null && Files.isDirectory(confPath) && filename != null
+            ? loadProperties(confPath.resolve(filename.value()))
+            : loadProperties(confPath);
+        return loadConfiguration(confClass, props);
     }
 
     public static <T extends Annotation> T loadConfiguration(final Class<T> confClass, final Properties props) {

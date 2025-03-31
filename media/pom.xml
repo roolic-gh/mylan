@@ -21,7 +21,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>local.mylan</groupId>
-    <artifactId>mylan-media</artifactId>
+    <artifactId>media</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 

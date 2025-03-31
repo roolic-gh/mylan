@@ -25,57 +25,27 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <properties>
-        <junit.version>5.11.2</junit.version>
-        <mokito.version>5.14.1</mokito.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
-            <!-- Project Dependencies -->
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>mylan-codec-mp4</artifactId>
+                <artifactId>codec-mp4</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>http-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>http-server-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
                 <artifactId>utils</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <!-- External dependencies -->
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>33.2.1-jre</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.17.0</version>
-            </dependency>
-
-            <!-- Testing -->
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>${junit.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mokito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mokito.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -28,19 +28,32 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Java Versions -->
         <maven.compiler.release>21</maven.compiler.release>
 
+        <junit.version>5.11.2</junit.version>
+        <logback.version>1.5.13</logback.version>
+        <mokito.version>5.14.1</mokito.version>
+        <netty.version>4.1.119.Final</netty.version>
         <slf4j.version>2.0.16</slf4j.version>
         <surefire.plugin.version>3.3.1</surefire.plugin.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- project artifacts bom -->
             <dependency>
                 <groupId>local.mylan</groupId>
                 <artifactId>mylan-bom</artifactId>
                 <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- external boms -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -51,6 +64,28 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- external artifacts -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>1.9.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.17.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -58,10 +93,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <version>33.2.1-jre</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -76,21 +108,25 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <version>${mokito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mokito.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

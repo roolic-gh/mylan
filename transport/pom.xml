@@ -21,9 +21,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>local.mylan</groupId>
-    <artifactId>mylan-aggregator</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>transport</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -31,12 +31,7 @@
     </properties>
 
     <modules>
-        <module>bom</module>
-        <module>parent</module>
-        <module>utils</module>
-        <module>media</module>
-        <module>transport</module>
-        <module>app</module>
+        <module>http-server-api</module>
+        <module>http-server</module>
     </modules>
-
 </project>
