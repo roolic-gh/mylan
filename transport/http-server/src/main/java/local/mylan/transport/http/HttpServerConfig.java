@@ -15,8 +15,10 @@
  */
 package local.mylan.transport.http;
 
+import local.mylan.utils.ConfFile;
 import local.mylan.utils.ConfProperty;
 
+@ConfFile("http-server.conf")
 public @interface HttpServerConfig {
 
     @ConfProperty("netty.parent-group.name")
@@ -53,19 +55,16 @@ public @interface HttpServerConfig {
     int tlsPort() default 8443;
 
     @ConfProperty("tls.enabled")
-    boolean tlsEnabled() default true;
+    boolean tlsEnabled() default false;
 
-    @ConfProperty("tls.certificate.autogenerate")
-    boolean tlsCertGenerate() default true;
+    @ConfProperty("tls.certificate.persist-generated")
+    boolean tlsCertPersistGenerated() default true;
 
-    @ConfProperty("tls.certificate.persist")
-    boolean tlsCertPersist() default true;
-
-    @ConfProperty("tls.certificate.file")
-    String tlsCertPath() default "tls/mylan.cert";
+    @ConfProperty("tls.certificate.path")
+    String tlsCertPath() default "tls/cert.pem";
 
     @ConfProperty("tls.certificate.private-key.file")
-    String tlsPrivatePath() default "tls/mylan.key";
+    String tlsPrivateKeyPath() default "tls/key.pem";
 
     @ConfProperty("http.inbound.max-length")
     int maxContentLength() default 16 * 1024;

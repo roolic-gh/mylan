@@ -27,12 +27,12 @@ import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class MyLanMain {
+public final class Main {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MyLanMain.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    private static final String DEFAULT_CONF_DIR = "mylan.conf";
-    private static final String DEFAULT_WORK_DIR = "mylan.work";
+    private static final String DEFAULT_CONF_SUBDIR = "mylan/conf";
+    private static final String DEFAULT_WORK_SUBDIR = "mylan/work";
     private static final String OPT_CONF_DIR = "c";
     private static final String OPT_WORK_DIR = "w";
     private static final String OPT_HELP = "h";
@@ -46,11 +46,14 @@ public final class MyLanMain {
 
         final var server = new HttpServer(confDir, (dir, dispatcher, ctx) -> false);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop()));
+        server.start();
 
-        try {
-            server.start().get();
-        } catch(InterruptedException e) {
-            // ignore
+        synchronized (server) {
+            try {
+                server.wait();
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
     }
 
@@ -68,11 +71,11 @@ public final class MyLanMain {
         final var opts = new Options();
         opts.addOption(OPT_HELP, "help", false, "Print help");
         opts.addOption(OPT_CONF_DIR, "conf-dir", true,
-            "Directory where configuration files are allocated; " +
-            "user home subfolder will be created if not defined");
+            ("Directory where configuration files are allocated; " +
+             "user home subfolder %s will be used if not defined").formatted(DEFAULT_CONF_SUBDIR));
         opts.addOption(OPT_WORK_DIR, "work-dir", true,
-            "Directory where work files will be written;" +
-            " temp dir subfolder will be used if not defined");
+            ("Directory where work files will be written; " +
+             "user home subfolder %s will be used if not defined").formatted(DEFAULT_WORK_SUBDIR));
         return opts;
     }
 
@@ -82,11 +85,10 @@ public final class MyLanMain {
             if (Files.isDirectory(confPath)) {
                 return confPath;
             } else {
-                System.err.printf("conf-dir %s is not a valid directory%n", path);
+                LOG.warn("Configuration directory {} does not exist or isn't a directory -> ignored", path);
             }
         }
-        System.out.println("Home = " + System.getenv("HOME"));
-        return null;
+        return defaultDir(DEFAULT_CONF_SUBDIR);
     }
 
     private static Path getWorkDir(final String path) throws IOException {
@@ -94,8 +96,22 @@ public final class MyLanMain {
             final var workPath = Path.of(path);
             if (Files.isDirectory(workPath)) {
                 return workPath;
+            } else {
+                LOG.warn("Work directory {} does not exist or isn't a directory -> ignored", path);
             }
         }
-        return Files.createTempDirectory("mylan-work").toAbsolutePath();
+        return defaultDir(DEFAULT_WORK_SUBDIR);
     }
+
+    private static Path defaultDir(final String subdir) throws IOException {
+        final var parentDir = Path.of(System.getProperty("user.home"));
+        if (Files.isDirectory(parentDir)) {
+            final var dir = parentDir.resolve(subdir);
+            Files.createDirectories(dir);
+            return dir;
+        }
+        LOG.warn("Home directory {} is invalid -> creating temp directory", parentDir);
+        return Files.createTempDirectory("mylan-");
+    }
+
 }

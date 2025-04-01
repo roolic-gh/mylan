@@ -27,7 +27,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpServerKeepAliveHandler;
@@ -42,7 +41,7 @@ final class HttpServerChannelInitizer extends ChannelInitializer<Channel> {
     final int maxContentLength;
 
     HttpServerChannelInitizer(final SslContext sslContext, final RequestDispatcher dispatcher,
-            final int maxContentLength) {
+        final int maxContentLength) {
         this.sslContext = sslContext;
         this.dispatcher = dispatcher;
         this.maxContentLength = maxContentLength;
@@ -58,18 +57,18 @@ final class HttpServerChannelInitizer extends ChannelInitializer<Channel> {
             new HttpObjectAggregator(maxContentLength),
             new HttpServerKeepAliveHandler(),
 
-            new SimpleChannelInboundHandler<FullHttpRequest>(){
+            new SimpleChannelInboundHandler<FullHttpRequest>() {
                 @Override
                 protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest request) {
                     try {
                         if (!dispatcher.dispatch(ctx, request)) {
                             ctx.writeAndFlush(new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND));
                         }
-                    } catch(Exception e){
+                    } catch (Exception e) {
                         final var error = e.getMessage().getBytes(StandardCharsets.UTF_8);
                         final var response = new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR,
                             Unpooled.wrappedBuffer(error));
-                        response.headers().set(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
+                        response.headers().set(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8");
                         ctx.writeAndFlush(response);
                     }
                 }

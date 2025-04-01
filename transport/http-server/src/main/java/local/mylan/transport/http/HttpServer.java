@@ -15,7 +15,6 @@
  */
 package local.mylan.transport.http;
 
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelOption;
@@ -29,7 +28,6 @@ import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import jdk.net.ExtendedSocketOptions;
 import local.mylan.transport.http.api.RequestDispatcher;
@@ -52,7 +50,7 @@ public final class HttpServer {
         this.dispatcher = dispatcher;
     }
 
-    public Future<Boolean> start() {
+    public void start() {
         final var bootstrap = new ServerBootstrap();
 
         if (Epoll.isAvailable()) {
@@ -89,7 +87,6 @@ public final class HttpServer {
         final int bindPort = sslContext != null ? config.tlsPort() : config.tcpPort();
         bootstrap.bind(bindPort);
         LOG.info("HTTP server started at port {}", bindPort);
-        return SettableFuture.create();
     }
 
     public void stop() {

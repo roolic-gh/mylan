@@ -45,8 +45,7 @@ public final class ConfUtils {
         LOG.info("Loading configuration of type {} from {}", confClass, confPath);
         final var filename = confClass.getAnnotation(ConfFile.class);
         final var props = confPath != null && Files.isDirectory(confPath) && filename != null
-            ? loadProperties(confPath.resolve(filename.value()))
-            : loadProperties(confPath);
+            ? loadProperties(confPath.resolve(filename.value())) : loadProperties(confPath);
         return loadConfiguration(confClass, props);
     }
 
@@ -70,11 +69,11 @@ public final class ConfUtils {
 
     private static Properties loadProperties(final Path filePath) {
         final var properties = new Properties();
-        if (filePath != null && Files.exists(filePath)) {
+        if (filePath != null && Files.isRegularFile(filePath)) {
             try (var in = new FileInputStream(filePath.toFile())) {
                 properties.load(in);
             } catch (IOException e) {
-                LOG.warn("error loading properties from {} -> using default configuration", filePath, e);
+                LOG.warn("Error loading properties from {} -> using default configuration", filePath, e);
             }
         }
         return properties;
@@ -85,7 +84,7 @@ public final class ConfUtils {
         final var defaultValue = method.getDefaultValue();
         final var propKey = method.getAnnotation(ConfProperty.class).value();
         final var loadedValue = loadedProps.getProperty(propKey);
-        LOG.debug("type: {}, loaded: {}, default: {}", type, loadedValue, defaultValue);
+        LOG.trace("type: {}, loaded: {}, default: {}", type, loadedValue, defaultValue);
 
         if (loadedValue != null) {
             if (String.class.equals(type)) {

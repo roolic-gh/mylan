@@ -54,7 +54,6 @@
             <groupId>local.mylan</groupId>
             <artifactId>utils</artifactId>
         </dependency>
-
     </dependencies>
 
 </project>
