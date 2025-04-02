@@ -19,5 +19,4 @@ public interface RequestContext {
 
     String userId();
 
-    String sessionId();
 }

@@ -17,6 +17,9 @@ package local.mylan.transport.http;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
@@ -26,6 +29,9 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.HttpServerKeepAliveHandler;
 import io.netty.handler.ssl.SslContext;
 import java.nio.file.Path;
 import java.util.concurrent.ThreadFactory;
@@ -83,7 +89,7 @@ public final class HttpServer {
         }
         bootstrap.group(parrentGroup, childGroup);
         bootstrap.option(ChannelOption.SO_BACKLOG, config.backlogSize());
-        bootstrap.childHandler(new HttpServerChannelInitizer(sslContext, dispatcher, config.maxContentLength()));
+        bootstrap.childHandler(channelInitializer(sslContext, dispatcher, config.maxContentLength()));
         final int bindPort = sslContext != null ? config.tlsPort() : config.tcpPort();
         bootstrap.bind(bindPort);
         LOG.info("HTTP server started at port {}", bindPort);
@@ -101,5 +107,23 @@ public final class HttpServer {
 
     private static ThreadFactory threadFactory(final String namePrefix) {
         return new ThreadFactoryBuilder().setNameFormat(namePrefix + "-%d").build();
+    }
+
+    private static ChannelHandler channelInitializer(final SslContext sslContext, final RequestDispatcher dispatcher,
+            final int maxContentLength) {
+        return new ChannelInitializer<Channel>() {
+            @Override
+            protected void initChannel(final Channel channel) throws Exception {
+                if (sslContext != null) {
+                    channel.pipeline().addLast(sslContext.newHandler(channel.alloc()));
+                }
+                channel.pipeline().addLast(
+                    new HttpServerCodec(),
+                    new HttpObjectAggregator(maxContentLength),
+                    new HttpServerKeepAliveHandler(),
+                    new DispatcherHandler(dispatcher)
+                );
+            }
+        };
     }
 }

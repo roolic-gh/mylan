@@ -63,7 +63,7 @@ public @interface HttpServerConfig {
     @ConfProperty("tls.certificate.path")
     String tlsCertPath() default "tls/cert.pem";
 
-    @ConfProperty("tls.certificate.private-key.file")
+    @ConfProperty("tls.certificate.private-key.path")
     String tlsPrivateKeyPath() default "tls/key.pem";
 
     @ConfProperty("http.inbound.max-length")

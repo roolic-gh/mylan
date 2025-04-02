@@ -33,11 +33,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import javax.net.ssl.SSLException;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.OperatorException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -108,7 +112,7 @@ final class TlsUtils {
         throws OperatorException, CertificateException {
         final var now = Instant.now();
         final var contentSigner = new JcaContentSignerBuilder(hashAlgorithm).build(keyPair.getPrivate());
-        final var x500Name = new X500Name("CN=MyLanGenerated");
+        final var x500Name = new X500Name("CN=mylan.local");
         final var certificateBuilder = new JcaX509v3CertificateBuilder(x500Name,
             BigInteger.valueOf(now.toEpochMilli()),
             Date.from(now),
@@ -122,17 +126,38 @@ final class TlsUtils {
     private static CertData loadCertData(final Path certPath, final Path keyPath) {
         if (Files.isRegularFile(certPath) && Files.isRegularFile(keyPath)) {
             try {
-                final var cert = readPEM(certPath, X509Certificate.class);
-                final var privateKey = readPEM(keyPath, PrivateKey.class);
+                final var cert = readPemCert(certPath);
+                final var privateKey = readPemKey(keyPath);
                 if (cert != null && privateKey != null) {
                     LOG.info("TLS Key loaded from {}", keyPath);
                     LOG.info("TLS Certificate loaded from {}", certPath);
                     return new CertData(cert, privateKey);
                 }
-            } catch (IOException | ClassCastException e) {
+            } catch (IOException | GeneralSecurityException e) {
                 LOG.warn("Exception on reading PEM file", e);
             }
         }
+        return null;
+    }
+
+    private static X509Certificate readPemCert(final Path path) throws IOException, CertificateException {
+        final var obj = readPEM(path);
+        if (obj instanceof X509CertificateHolder certHolder) {
+            return new JcaX509CertificateConverter().getCertificate(certHolder);
+        }
+        LOG.warn("Unexpected object {} when reading certificate from {}", obj, path);
+        return null;
+    }
+
+    private static PrivateKey readPemKey(final Path path) throws IOException {
+        final var obj = readPEM(path);
+        if (obj instanceof PEMKeyPair keyPair) {
+            return new JcaPEMKeyConverter().getPrivateKey(keyPair.getPrivateKeyInfo());
+        }
+        if (obj instanceof PrivateKeyInfo keyInfo) {
+            return new JcaPEMKeyConverter().getPrivateKey(keyInfo);
+        }
+        LOG.warn("Unexpected object {} when reading private key from {}", obj, path);
         return null;
     }
 
@@ -147,9 +172,9 @@ final class TlsUtils {
         }
     }
 
-    private static <T> T readPEM(final Path path, final Class<T> type) throws IOException {
+    private static Object readPEM(final Path path) throws IOException {
         try (var reader = Files.newBufferedReader(path); var parser = new PEMParser(reader)) {
-            return type.cast(parser.readObject());
+            return parser.readObject();
         }
     }
 
