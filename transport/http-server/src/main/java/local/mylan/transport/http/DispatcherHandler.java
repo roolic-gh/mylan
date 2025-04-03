@@ -17,15 +17,14 @@ package local.mylan.transport.http;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static local.mylan.transport.http.utils.ResponseUtils.contentOf;
+import static local.mylan.transport.http.utils.ResponseUtils.responseWithContent;
+import static local.mylan.transport.http.utils.ResponseUtils.simpleResponse;
 
-import com.google.common.net.HttpHeaders;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
-import java.nio.charset.StandardCharsets;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import local.mylan.transport.http.api.RequestDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,15 +40,15 @@ final class DispatcherHandler extends SimpleChannelInboundHandler<FullHttpReques
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest request) {
         try {
-            if (!dispatcher.dispatch(ctx, request)) {
-                ctx.writeAndFlush(new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND));
+            if (!dispatcher.dispatch(ctx, request.retain())) {
+                ctx.writeAndFlush(simpleResponse(request.protocolVersion(), NOT_FOUND));
             }
         } catch (Exception e) {
-            final var error = e.getMessage().getBytes(StandardCharsets.UTF_8);
-            final var response = new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR,
-                Unpooled.wrappedBuffer(error));
-            response.headers().set(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8");
+            final var response = responseWithContent(request.protocolVersion(), INTERNAL_SERVER_ERROR,
+                contentOf(e.getMessage()), HttpHeaderValues.TEXT_PLAIN);
             ctx.writeAndFlush(response);
+        }finally{
+            request.release();
         }
     }
 

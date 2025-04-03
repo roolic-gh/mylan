@@ -21,9 +21,6 @@ import io.netty.handler.codec.http.FullHttpRequest;
 @FunctionalInterface
 public interface RequestDispatcher {
 
-    default boolean dispatch(ChannelHandlerContext ctx, FullHttpRequest request) {
-        return dispatch(ctx,  request, null);
-    }
+    boolean dispatch(ChannelHandlerContext ctx, FullHttpRequest request);
 
-    boolean dispatch(ChannelHandlerContext ctx, FullHttpRequest request, RequestContext reqCtx);
 }

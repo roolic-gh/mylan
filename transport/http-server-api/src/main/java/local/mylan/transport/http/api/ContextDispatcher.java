@@ -15,28 +15,9 @@
  */
 package local.mylan.transport.http.api;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpVersion;
-import java.util.Map;
-
-public interface RequestContext {
-
-    String userId();
-
-    UserContext userContext();
+public interface ContextDispatcher {
 
     String contextPath();
 
-    Map<String, String> requestParameters();
-
-    HttpVersion protocolVersion();
-
-    HttpMethod method();
-
-    FullHttpRequest fullRequest();
-
-    ChannelHandlerContext channelHandlerContext();
-
+    boolean dispatch(RequestContext ctx);
 }
