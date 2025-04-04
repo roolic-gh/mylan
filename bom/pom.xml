@@ -44,6 +44,16 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
+                <artifactId>http-server-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>http-server-ui</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
                 <artifactId>utils</artifactId>
                 <version>${project.version}</version>
             </dependency>

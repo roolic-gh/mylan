@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.utils;
+package local.mylan.transport.http.common;
 
 import static java.util.Objects.requireNonNull;
 

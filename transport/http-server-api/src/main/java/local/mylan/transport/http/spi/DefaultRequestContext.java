@@ -19,6 +19,8 @@ import static java.util.Objects.requireNonNull;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import java.util.Map;
@@ -48,5 +50,15 @@ public record DefaultRequestContext(ChannelHandlerContext channelHandlerContext,
     @Override
     public HttpMethod method() {
         return fullRequest.method();
+    }
+
+    @Override
+    public HttpHeaders headers() {
+        return fullRequest.headers();
+    }
+
+    @Override
+    public void sendResponse(final FullHttpResponse response) {
+        channelHandlerContext.writeAndFlush(response);
     }
 }

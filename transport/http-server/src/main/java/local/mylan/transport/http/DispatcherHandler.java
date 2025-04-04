@@ -17,9 +17,9 @@ package local.mylan.transport.http;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static local.mylan.transport.http.utils.ResponseUtils.contentOf;
-import static local.mylan.transport.http.utils.ResponseUtils.responseWithContent;
-import static local.mylan.transport.http.utils.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.common.ResponseUtils.contentOf;
+import static local.mylan.transport.http.common.ResponseUtils.responseWithContent;
+import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class DispatcherHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private static final Logger LOG = LoggerFactory. getLogger(DispatcherHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DispatcherHandler.class);
     private final RequestDispatcher dispatcher;
 
     DispatcherHandler(final RequestDispatcher dispatcher) {
@@ -44,10 +44,12 @@ final class DispatcherHandler extends SimpleChannelInboundHandler<FullHttpReques
                 ctx.writeAndFlush(simpleResponse(request.protocolVersion(), NOT_FOUND));
             }
         } catch (Exception e) {
+            LOG.error("Exception processing {} {} request from {}", request.method(), request.uri(),
+                ctx.channel().remoteAddress(), e);
             final var response = responseWithContent(request.protocolVersion(), INTERNAL_SERVER_ERROR,
                 contentOf(e.getMessage()), HttpHeaderValues.TEXT_PLAIN);
             ctx.writeAndFlush(response);
-        }finally{
+        } finally {
             request.release();
         }
     }

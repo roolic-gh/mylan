@@ -15,9 +15,9 @@
  */
 package local.mylan.transport.http;
 
-import static local.mylan.transport.http.utils.RequestUtils.buildRequestContext;
-import static local.mylan.transport.http.utils.ResponseUtils.fullUrl;
-import static local.mylan.transport.http.utils.ResponseUtils.redirectResponse;
+import static local.mylan.transport.http.common.RequestUtils.buildRequestContext;
+import static local.mylan.transport.http.common.ResponseUtils.fullUrl;
+import static local.mylan.transport.http.common.ResponseUtils.redirectResponse;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -29,7 +29,7 @@ import java.util.Set;
 import local.mylan.transport.http.api.ContextDispatcher;
 import local.mylan.transport.http.api.RequestAuthenticator;
 import local.mylan.transport.http.api.RequestDispatcher;
-import local.mylan.transport.http.utils.RequestUtils;
+import local.mylan.transport.http.common.RequestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,6 @@ public class CompositeDispatcher implements RequestDispatcher {
     public boolean dispatch(final ChannelHandlerContext ctx, final FullHttpRequest request) {
         final var uri = request.uri();
         if (rootRedirectUri != null && RequestUtils.isRootUri(uri)) {
-
            final var redirectUrl = fullUrl(ctx, request, rootRedirectUri);
             LOG.debug("redirect to: {}", redirectUrl);
             final var response = redirectResponse(request.protocolVersion(), redirectUrl);
@@ -96,8 +95,15 @@ public class CompositeDispatcher implements RequestDispatcher {
             this.dispatchers.addAll(Arrays.asList(dispatchers));
             return this;
         }
+
         public Builder dispatcher(final ContextDispatcher dispatcher) {
             dispatchers.add(dispatcher);
+            return this;
+        }
+
+        public Builder defaultDispatcher(final ContextDispatcher dispatcher) {
+            dispatchers.add(dispatcher);
+            rootRedirectUri = dispatcher.contextPath();
             return this;
         }
 

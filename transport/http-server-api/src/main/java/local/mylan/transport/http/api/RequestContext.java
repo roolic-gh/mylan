@@ -17,6 +17,8 @@ package local.mylan.transport.http.api;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import java.util.Map;
@@ -35,8 +37,11 @@ public interface RequestContext {
 
     HttpMethod method();
 
+    HttpHeaders headers();
+
     FullHttpRequest fullRequest();
 
     ChannelHandlerContext channelHandlerContext();
 
+    void sendResponse(FullHttpResponse response);
 }

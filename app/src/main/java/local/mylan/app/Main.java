@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
+import local.mylan.transport.http.ui.SimpleUiDispatcher;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -46,7 +47,7 @@ public final class Main {
         LOG.info("Work Dir: {}", workDir);
 
         final var dispatcher = CompositeDispatcher.builder()
-            .rootRedirectUri("/home")
+            .defaultDispatcher(new SimpleUiDispatcher("/ui", "/rest"))
             .build();
 
         final var server = new HttpServer(confDir, dispatcher);

@@ -49,10 +49,13 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-http</artifactId>
         </dependency>
-
         <dependency>
             <groupId>local.mylan</groupId>
             <artifactId>http-server-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>http-server-common</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>

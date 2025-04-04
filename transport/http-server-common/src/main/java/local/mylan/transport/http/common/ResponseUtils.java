@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.utils;
+package local.mylan.transport.http.common;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
+import static io.netty.handler.codec.http.HttpHeaderNames.ALLOW;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.LOCATION;
+import static io.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_ALLOWED;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.PERMANENT_REDIRECT;
 
@@ -45,21 +48,14 @@ public final class ResponseUtils {
     }
 
     public static FullHttpResponse simpleResponse(final HttpVersion version, final HttpResponseStatus status,
-            final CharSequence headerName, final String headerValue) {
+        final CharSequence headerName, final String headerValue) {
         final var response = simpleResponse(version, status);
         response.headers().set(headerName, headerValue);
         return response;
     }
 
     public static FullHttpResponse responseWithContent(final HttpVersion version, final HttpResponseStatus status,
-            final ByteBuf content, final CharSequence mediaType, final String etagHeader) {
-        final var response = responseWithContent(version, content, mediaType);
-        response.headers().set(HttpHeaderNames.ETAG, etagHeader);
-        return response;
-    }
-
-    public static FullHttpResponse responseWithContent(final HttpVersion version, final HttpResponseStatus status,
-            final ByteBuf content, final CharSequence mediaType) {
+        final ByteBuf content, final CharSequence mediaType) {
         final var response = new DefaultFullHttpResponse(version, status, content);
         response.headers()
             .set(CONTENT_TYPE, mediaType)
@@ -68,12 +64,24 @@ public final class ResponseUtils {
     }
 
     public static FullHttpResponse responseWithContent(final HttpVersion version, final ByteBuf content,
-            final CharSequence mediaType) {
+        final CharSequence mediaType) {
         return responseWithContent(version, OK, content, mediaType);
     }
 
     public static FullHttpResponse redirectResponse(final HttpVersion version, final String redirectUrl) {
         return simpleResponse(version, PERMANENT_REDIRECT, LOCATION, redirectUrl);
+    }
+
+    public static FullHttpResponse notFoundResponse(final HttpVersion version) {
+        return simpleResponse(version, NOT_FOUND);
+    }
+
+    public static FullHttpResponse unsupportedMethodResponse(final HttpVersion version) {
+        return simpleResponse(version, METHOD_NOT_ALLOWED);
+    }
+
+    static FullHttpResponse allowResponse(final HttpVersion version, final String allowHeader) {
+        return simpleResponse(version, OK, ALLOW, allowHeader);
     }
 
     public static ByteBuf contentOf(final String content) {
