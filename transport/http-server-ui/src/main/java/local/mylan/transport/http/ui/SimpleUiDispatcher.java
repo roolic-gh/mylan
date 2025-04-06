@@ -17,21 +17,26 @@ package local.mylan.transport.http.ui;
 
 import static local.mylan.transport.http.common.RequestUtils.isRootUri;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import local.mylan.transport.http.common.StaticContentDispatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SimpleUiDispatcher extends StaticContentDispatcher {
-    private static final Logger LOG = LoggerFactory.getLogger(SimpleUiDispatcher.class);
-    private static final String INDEX_PATH = "/index.html";
+    @VisibleForTesting
+    static final String RESOURCE_PATH = "/mylan/ui-simple";
+    @VisibleForTesting
+    static final String INDEX_PATH = "/index.html";
+    @VisibleForTesting
+    static final String SELF_CONTEXT_REPLACE = "${SELF_CONTEXT}";
+    @VisibleForTesting
+    static final String REST_CONTEXT_REPLACE = "${REST_CONTEXT}";
 
     private final ContentSource indexCached;
 
     public SimpleUiDispatcher(final String uiContextPath, final String restContextPath) {
-        super(uiContextPath, "/mylan/ui-simple", SourceType.CLASSPATH);
+        super(uiContextPath, RESOURCE_PATH, SourceType.CLASSPATH);
         indexCached = cacheIndex(restContextPath);
     }
 
@@ -40,8 +45,8 @@ public class SimpleUiDispatcher extends StaticContentDispatcher {
         try (var in = getClass().getResourceAsStream(resourceBase + INDEX_PATH)){
            final var content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
            final var bytes = content
-               .replace("${SELF_CONTEXT}", contextPath)
-               .replace("${REST_CONTEXT}", restContextPath)
+               .replace(SELF_CONTEXT_REPLACE, contextPath)
+               .replace(REST_CONTEXT_REPLACE, restContextPath)
                .getBytes(StandardCharsets.UTF_8);
            final var modified = System.currentTimeMillis();
            final var etag = Long.toHexString(modified);
