@@ -31,9 +31,10 @@
     </properties>
 
     <modules>
-        <module>http-server-api</module>
         <module>http-server</module>
+        <module>http-server-api</module>
         <module>http-server-common</module>
+        <module>http-server-rest</module>
         <module>http-server-ui</module>
     </modules>
 </project>

@@ -55,6 +55,11 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
+                <artifactId>http-server-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
                 <artifactId>http-server-ui</artifactId>
                 <version>${project.version}</version>
             </dependency>
