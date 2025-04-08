@@ -33,11 +33,11 @@
     <modules>
         <module>app</module>
         <module>bom</module>
+        <module>common</module>
         <module>coverage</module>
         <module>media</module>
         <module>parent</module>
         <module>services</module>
         <module>transport</module>
-        <module>utils</module>
     </modules>
 </project>

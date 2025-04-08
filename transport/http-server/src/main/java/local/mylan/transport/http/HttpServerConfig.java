@@ -15,8 +15,8 @@
  */
 package local.mylan.transport.http;
 
-import local.mylan.utils.ConfFile;
-import local.mylan.utils.ConfProperty;
+import local.mylan.common.annotations.conf.ConfFile;
+import local.mylan.common.annotations.conf.ConfProperty;
 
 @ConfFile("http-server.conf")
 public @interface HttpServerConfig {

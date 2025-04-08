@@ -26,6 +26,6 @@
         <relativePath>../parent</relativePath>
     </parent>
 
-    <artifactId>utils</artifactId>
+    <artifactId>common</artifactId>
 
 </project>

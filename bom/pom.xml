@@ -65,7 +65,7 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>utils</artifactId>
+                <artifactId>common</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.utils;
+package local.mylan.common.annotations.conf;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

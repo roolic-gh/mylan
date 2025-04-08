@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.utils;
+package local.mylan.common.utils;
 
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
@@ -27,6 +27,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
+import local.mylan.common.annotations.conf.ConfFile;
+import local.mylan.common.annotations.conf.ConfProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
