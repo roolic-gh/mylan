@@ -1,0 +1,211 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "MyLAN REST Services - OpenAPI 3.0",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "/root"
+    }
+  ],
+  "paths": {
+    "/file/{path}": {
+      "get": {
+        "tags": [
+          "test"
+        ],
+        "summary": "List items",
+        "operationId": "getFile",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": ".+",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/data/by-user": {
+      "get": {
+        "tags": [
+          "test"
+        ],
+        "summary": "Get data item by id",
+        "operationId": "getData",
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/data/{id}": {
+      "get": {
+        "tags": [
+          "test"
+        ],
+        "summary": "Get item by id",
+        "operationId": "getData",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "test"
+        ],
+        "summary": "Add data item",
+        "operationId": "insertData",
+        "parameters": [
+          {
+            "name": "arg0",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Data"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "test"
+        ],
+        "summary": "Delete item",
+        "operationId": "deleteData",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "test"
+        ],
+        "summary": "Update item",
+        "operationId": "updateData",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "arg1",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Data"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          }
+        }
+      }
+    },
+    "/data": {
+      "get": {
+        "tags": [
+          "test"
+        ],
+        "summary": "List items",
+        "operationId": "getData",
+        "parameters": [
+          {
+            "name": "arg0",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "arg1",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Data": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    }
+  }
+}

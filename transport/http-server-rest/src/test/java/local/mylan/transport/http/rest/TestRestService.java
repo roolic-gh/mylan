@@ -16,55 +16,37 @@
 package local.mylan.transport.http.rest;
 
 import com.google.common.base.Objects;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PATCH;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
 import java.util.List;
+import local.mylan.common.annotations.rest.PathParameter;
+import local.mylan.common.annotations.rest.QueryParameter;
+import local.mylan.common.annotations.rest.RequestBody;
+import local.mylan.common.annotations.rest.RequestMapping;
+import local.mylan.common.annotations.rest.ServiceDescriptor;
 import local.mylan.transport.http.api.UserContext;
 
-@Tag(name = "test", description = "test")
-@Path("/test")
+@ServiceDescriptor(id = "test", description = "test description")
 public interface TestRestService {
 
-    @Operation(description = "List items", responses = {@ApiResponse(responseCode = "200")})
-    @GET
-    @Path("/data")
-    List<Data> getData(
-        @Parameter(in = ParameterIn.QUERY, name = "limit") int limit,
-        @Parameter(in = ParameterIn.QUERY, name = "offset") int offset);
+    @RequestMapping(method = "GET", path = "/file/{path:.+}", description = "List items")
+    List<Data> getFile(@PathParameter("path") String filePath);
 
-    @Operation(description = "Get item by id", responses = {@ApiResponse(responseCode = "200")})
-    @GET
-    @Path("/data/{id}")
-    Data getData(@Parameter(in = ParameterIn.PATH, name = "id") String id);
+    @RequestMapping(method = "GET", path = "/data", description = "List items")
+    List<Data> getData(@QueryParameter int limit, @QueryParameter int offset);
 
-    @Operation(description = "Get data item by id", responses = {@ApiResponse(responseCode = "200")})
-    @GET
-    @Path("/data/by-user")
-    Data getData(@Parameter(hidden = true) UserContext userContext);
+    @RequestMapping(method = "GET", path = "/data/{id}", description = "Get item by id")
+    Data getData(@PathParameter("id") String id);
 
-    @Operation(description = "Add data item", responses = {@ApiResponse(responseCode = "201")})
-    @POST
-    @Path("/data/{id}")
+    @RequestMapping(method = "GET", path = "/data/by-user", description = "Get data item by id")
+    Data getData(UserContext userContext);
+
+    @RequestMapping(method = "POST", path = "/data/{id}", description = "Add data item")
     Data insertData(@RequestBody Data data);
 
-    @Operation(description = "Update item", responses = {@ApiResponse(responseCode = "200")})
-    @PATCH
-    @Path("/data/{id}")
-    Data updateData(@Parameter(in = ParameterIn.PATH, name = "id") String id, @RequestBody Data data);
+    @RequestMapping(method = "PATCH", path = "/data/{id}", description = "Update item")
+    Data updateData(@PathParameter("id") String id, @RequestBody Data data);
 
-    @Operation(description = "add item", responses = {@ApiResponse(responseCode = "201")})
-    @DELETE
-    @Path("/data/{id}")
-    void deleteData(@RequestBody Data data);
+    @RequestMapping(method = "DELETE", path = "/data/{id}", description = "Delete item")
+    void deleteData(@PathParameter("id") String id);
 
     final class Data {
 

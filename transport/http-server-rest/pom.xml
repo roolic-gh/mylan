@@ -29,10 +29,10 @@
     <artifactId>http-server-rest</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-annotations</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.swagger.core.v3</groupId>-->
+<!--            <artifactId>swagger-annotations</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-core</artifactId>
@@ -41,9 +41,13 @@
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-integration</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>jakarta.ws.rs</groupId>-->
+<!--            <artifactId>jakarta.ws.rs-api</artifactId>-->
+<!--        </dependency>-->
         <dependency>
-            <groupId>jakarta.ws.rs</groupId>
-            <artifactId>jakarta.ws.rs-api</artifactId>
+            <groupId>local.mylan</groupId>
+            <artifactId>common</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>

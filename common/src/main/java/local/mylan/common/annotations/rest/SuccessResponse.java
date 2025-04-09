@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.rest.openapi;
+package local.mylan.common.annotations.rest;
 
-import local.mylan.transport.http.api.ContextDispatcher;
-import local.mylan.transport.http.rest.TestRestService;
-import org.junit.jupiter.api.BeforeAll;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class SwaggerUiDispatcherTest {
-    private static final String CONTEXT_PATH = "/test-swagger-ui";
-    private static final String REST_PATH = "/test-rest";
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@Inherited
+public @interface SuccessResponse {
 
-    static ContextDispatcher dispatcher;
+    String code() default "200";
 
-    @BeforeAll
-    static void beforeAll() {
-        dispatcher = new SwaggerUiDispatcher(CONTEXT_PATH, REST_PATH, TestRestService.class);
-    }
+    String description() default "Success";
 }
