@@ -36,8 +36,8 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import local.mylan.service.api.UserContext;
 import local.mylan.transport.http.api.ContextDispatcher;
-import local.mylan.transport.http.api.UserContext;
 import org.junit.jupiter.api.Assertions;
 
 public final class HttpTestUtils {

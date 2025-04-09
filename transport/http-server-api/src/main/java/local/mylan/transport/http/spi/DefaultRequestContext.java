@@ -24,8 +24,8 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import java.util.Map;
+import local.mylan.service.api.UserContext;
 import local.mylan.transport.http.api.RequestContext;
-import local.mylan.transport.http.api.UserContext;
 
 public record DefaultRequestContext(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullRequest,
     Map<String, String> requestParameters, String contextPath, UserContext userContext) implements RequestContext {

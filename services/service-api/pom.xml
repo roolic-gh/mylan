@@ -26,20 +26,6 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>http-server-api</artifactId>
+    <artifactId>service-api</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-http</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>service-api</artifactId>
-        </dependency>
-    </dependencies>
 </project>

@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.api;
+package local.mylan.service.api;
 
-import local.mylan.service.api.UserContext;
+public interface UserContext {
 
-@FunctionalInterface
-public interface RequestAuthenticator {
+    String userId();
 
-    UserContext authenticateUser(String authorizeHeader);
+    String sessionId();
+
+    long sessionExpires();
 }

@@ -34,6 +34,11 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
                 <artifactId>http-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -65,7 +70,7 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>common</artifactId>
+                <artifactId>service-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

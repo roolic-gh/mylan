@@ -30,4 +30,8 @@
         <maven.install.skip>true</maven.install.skip>
     </properties>
 
+    <modules>
+        <module>service-api</module>
+    </modules>
+
 </project>

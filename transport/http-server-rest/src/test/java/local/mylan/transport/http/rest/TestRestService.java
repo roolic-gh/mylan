@@ -22,7 +22,7 @@ import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
-import local.mylan.transport.http.api.UserContext;
+import local.mylan.service.api.UserContext;
 
 @ServiceDescriptor(id = "test", description = "test description")
 public interface TestRestService {

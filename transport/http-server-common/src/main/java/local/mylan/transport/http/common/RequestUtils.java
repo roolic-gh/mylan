@@ -24,8 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import local.mylan.service.api.UserContext;
 import local.mylan.transport.http.api.RequestContext;
-import local.mylan.transport.http.api.UserContext;
 import local.mylan.transport.http.spi.DefaultRequestContext;
 
 public final class RequestUtils {
