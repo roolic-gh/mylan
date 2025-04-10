@@ -31,7 +31,11 @@ import static local.mylan.transport.http.common.ResponseUtils.unsupportedMethodR
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.stream.ChunkedStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -52,6 +56,7 @@ public class StaticContentDispatcher implements ContextDispatcher {
     private static final int CACHE_ITEM_MAX_LENGTH = 2048;
     private static final Duration CACHE_EXPIRES = Duration.ofMinutes(10);
     private static final ContentSource NO_CONTENT = new ContentSource(0, 0, "", "", null, null);
+    private static final int CHUNK_SIZE = 8192;
 
     protected final String contextPath;
     protected final String resourceBase;
@@ -112,11 +117,56 @@ public class StaticContentDispatcher implements ContextDispatcher {
         } else if (source.content() != null) {
             ctx.sendResponse(response.replace(Unpooled.wrappedBuffer(source.content)));
         } else if (source.streamProvider() != null) {
-            response.headers().set(TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-            // FIXME
-            throw new IllegalStateException("CHUNKED delivery is not implemented YET");
+            final var channelCtx = ctx.channelHandlerContext();
+            if (source.length() <= CHUNK_SIZE) {
+                // send as single piece
+                final var length = (int) source.length();
+                try (var in = source.streamProvider().getInputStream()) {
+                    final var buf = channelCtx.alloc().buffer((int) source.length());
+                    buf.writeBytes(in, length);
+                    ctx.sendResponse(response.replace(buf));
+                } catch (IOException e) {
+                    throw new IllegalStateException("Error reading resouece {}", e);
+                }
+            } else {
+                // send as separate chunks
+                try {
+                    final var responseHeaders = new DefaultHttpResponse(ctx.protocolVersion(), OK, response.headers());
+                    responseHeaders.headers().set(TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+                    final var chunkedInput = new HttpChunkedInput(
+                        new ChunkedStream(source.streamProvider.getInputStream(), CHUNK_SIZE));
+                    channelCtx.write(responseHeaders);
+                    sendNextChunk(channelCtx, chunkedInput, path, 0);
+                } catch (Exception e) {
+                    throw new IllegalStateException("Error building stream for resource" + path, e);
+                }
+            }
         } else {
             throw new IllegalStateException("No content found for resource " + path);
+        }
+    }
+
+    private static void sendNextChunk(final ChannelHandlerContext channelCtx, final HttpChunkedInput chunkedInput,
+        final String resourcePath, int chunkCount) {
+        try {
+            final var nextChunk = chunkedInput.readChunk(channelCtx.alloc());
+            if (nextChunk == null) {
+                LOG.debug("Chunked file transfer completed for resource {}.", resourcePath);
+                chunkedInput.close();
+            }   else {
+                LOG.trace("Sending chunk {} for resource {}", chunkCount, resourcePath);
+                channelCtx.writeAndFlush(nextChunk).addListener(future -> {
+                        if (future.isSuccess()) {
+                            sendNextChunk(channelCtx, chunkedInput, resourcePath, chunkCount +1);
+                        } else {
+                            LOG.error("Sending chunk failed for resource {}", resourcePath, future.cause());
+                            chunkedInput.close();
+                        }
+                    });
+            }
+        } catch (Exception e) {
+            LOG.error("Exception processing chunk for resource {}", resourcePath, e);
+
         }
     }
 
@@ -134,13 +184,15 @@ public class StaticContentDispatcher implements ContextDispatcher {
         if (type == SourceType.FILE_SYSTEM) {
             final var file = new File(fullPath);
             if (file.exists() && file.isFile()) {
-                return buildContentSource(fullPath, file.length(), file.lastModified(), () -> new FileInputStream(file));
+                return buildContentSource(fullPath, file.length(), file.lastModified(),
+                    () -> new FileInputStream(file));
             }
         } else if (type == SourceType.CLASSPATH) {
             final var url = getClass().getResource(fullPath);
             if (url != null) {
                 final var conn = url.openConnection();
-                return buildContentSource(fullPath, conn.getContentLength(), conn.getLastModified(), url::openStream);
+                return buildContentSource(fullPath, conn.getContentLength(), conn.getLastModified(),
+                    url::openStream);
             }
         }
         LOG.debug("requested resource {} not found", fullPath);
@@ -148,16 +200,16 @@ public class StaticContentDispatcher implements ContextDispatcher {
     }
 
     private ContentSource buildContentSource(final String path, final long length, final long modified,
-            final StreamProvider streamProvider) {
+        final StreamProvider streamProvider) {
         final var etag = "%s-%s".formatted(Long.toHexString(modified), Long.toHexString(length));
         final var guessMediaType = URLConnection.guessContentTypeFromName(path);
         final var mediaType = guessMediaType == null ? APPLICATION_OCTET_STREAM : guessMediaType;
         if (length > CACHE_ITEM_MAX_LENGTH) {
             return new ContentSource(length, modified, mediaType, etag, null, streamProvider);
         }
-        try(var in = streamProvider.getInputStream()){
+        try (var in = streamProvider.getInputStream()) {
             return new ContentSource(length, modified, mediaType, etag, in.readAllBytes(), null);
-        } catch(IOException e){
+        } catch (IOException e) {
             LOG.warn("Error reading resource {} ({})", path, type, e);
             return NO_CONTENT;
         }
