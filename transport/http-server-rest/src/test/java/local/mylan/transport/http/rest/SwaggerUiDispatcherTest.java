@@ -13,29 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.rest.service;
+package local.mylan.transport.http.rest;
 
-import java.util.List;
 import local.mylan.transport.http.api.ContextDispatcher;
-import local.mylan.transport.http.api.RequestContext;
+import org.junit.jupiter.api.BeforeAll;
 
-public class RestServiceDispatcher implements ContextDispatcher {
+public class SwaggerUiDispatcherTest {
+    private static final String CONTEXT_PATH = "/test-swagger-ui";
+    private static final String REST_PATH = "/test-rest";
 
-    private final String contextPath;
-    private final List<Object> serviceInstances;
+    static ContextDispatcher dispatcher;
 
-    public RestServiceDispatcher(final String contextPath, final Object ... serviceInstances) {
-        this.contextPath = contextPath;
-        this.serviceInstances = List.of(serviceInstances);
-    }
-
-    @Override
-    public String contextPath() {
-        return contextPath;
-    }
-
-    @Override
-    public boolean dispatch(final RequestContext ctx) {
-        return false;
+    @BeforeAll
+    static void beforeAll() {
+        dispatcher = new SwaggerUiDispatcher(CONTEXT_PATH, REST_PATH, TestRestService.class);
     }
 }

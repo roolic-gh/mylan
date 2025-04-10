@@ -28,4 +28,11 @@
 
     <artifactId>service-api</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>

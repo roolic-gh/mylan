@@ -13,7 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.rest.common;
+package local.mylan.transport.http.rest;
 
-public class AnnotationHelper {
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.core.util.Json;
+import org.junit.jupiter.api.Test;
+
+public class OpenApiBuilderTest {
+
+    private static final String rootPath = "/root";
+
+    @Test
+    void parse(){
+        final var result = new OpenApiBuilder(rootPath).process(TestRestService.class).build();
+        System.out.println(Json.mapper().convertValue(result, ObjectNode.class));
+    }
 }

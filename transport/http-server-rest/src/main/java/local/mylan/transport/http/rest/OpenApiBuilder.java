@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.rest.openapi;
+package local.mylan.transport.http.rest;
 
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.swagger.v3.core.converter.AnnotatedType;
@@ -74,7 +74,9 @@ class OpenApiBuilder {
     }
 
     OpenAPI build() {
+        // TODO validate sorted
         openApi.setInfo(defaultInfo());
+        openApi.setTags(List.copyOf(tags));
         openApi.setPaths(paths);
         openApi.setComponents(components);
         return openApi;

@@ -18,8 +18,10 @@ package local.mylan.app;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import local.mylan.service.api.UserService;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
+import local.mylan.transport.http.rest.SwaggerUiDispatcher;
 import local.mylan.transport.http.ui.SimpleUiDispatcher;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -48,6 +50,7 @@ public final class Main {
 
         final var dispatcher = CompositeDispatcher.builder()
             .defaultDispatcher(new SimpleUiDispatcher("/ui", "/rest"))
+            .dispatcher(new SwaggerUiDispatcher("/swagger-ui", "/rest", UserService.class))
             .build();
 
         final var server = new HttpServer(confDir, dispatcher);
