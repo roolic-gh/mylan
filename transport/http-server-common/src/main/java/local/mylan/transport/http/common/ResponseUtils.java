@@ -20,10 +20,10 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ALLOW;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.LOCATION;
+import static io.netty.handler.codec.http.HttpResponseStatus.FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpResponseStatus.PERMANENT_REDIRECT;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -69,7 +69,7 @@ public final class ResponseUtils {
     }
 
     public static FullHttpResponse redirectResponse(final HttpVersion version, final String redirectUrl) {
-        return simpleResponse(version, PERMANENT_REDIRECT, LOCATION, redirectUrl);
+        return simpleResponse(version, FOUND, LOCATION, redirectUrl);
     }
 
     public static FullHttpResponse notFoundResponse(final HttpVersion version) {

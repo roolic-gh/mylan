@@ -26,6 +26,7 @@ import static local.mylan.transport.http.common.HttpTestUtils.httpRequest;
 import static local.mylan.transport.http.common.HttpTestUtils.setupChannel;
 import static local.mylan.transport.http.common.StaticContentDispatcher.SourceType.FILE_SYSTEM;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +49,9 @@ class StaticContentDispatcherTest {
     private static final byte[] TEXT_FILE_CONTENT = "text content".getBytes(StandardCharsets.UTF_8);
     private static final String BIN_FILE_NAME = "test-file.bin";
     private static final byte[] BIN_FILE_CONTENT = "bin content".getBytes(StandardCharsets.UTF_8);
+    private static final String[] EMPTY_PATHS = {CONTEXT_PATH, CONTEXT_PATH + '/'};
+    private static final String REDIRECT = "http://" + HttpTestUtils.DEFAUT_HOST + CONTEXT_PATH + "/index.html" ;
+
 
     @TempDir
     static Path contentDir;
@@ -98,5 +102,16 @@ class StaticContentDispatcherTest {
         final var channel = setupChannel(dispatcher);
         final var response = executeRequest(channel, httpRequest(GET, CONTEXT_PATH + " /unknown-file.txt"));
         assertResponse(response, HttpResponseStatus.NOT_FOUND);
+    }
+
+    @ParameterizedTest
+    @MethodSource("dispatchers")
+    void emptyRedirect(final ContextDispatcher dispatcher) {
+        for(var emptyPath: EMPTY_PATHS) {
+            final var channel = setupChannel(dispatcher);
+            final var response = executeRequest(channel, httpRequest(GET, emptyPath));
+            assertResponse(response, HttpResponseStatus.FOUND);
+            Assertions.assertEquals(REDIRECT, response.headers().get(HttpHeaderNames.LOCATION));
+        }
     }
 }

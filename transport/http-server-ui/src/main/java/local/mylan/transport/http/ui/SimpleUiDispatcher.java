@@ -15,8 +15,6 @@
  */
 package local.mylan.transport.http.ui;
 
-import static local.mylan.transport.http.common.RequestUtils.isRootUri;
-
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import java.io.IOException;
@@ -57,7 +55,12 @@ public class SimpleUiDispatcher extends StaticContentDispatcher {
     }
 
     @Override
+    protected String emptyRedirectPath() {
+        return INDEX_PATH;
+    }
+
+    @Override
     protected ContentSource getContentSource(final String path) {
-        return isRootUri(path) || INDEX_PATH.equals(path) ? indexCached : super.getContentSource(path);
+        return INDEX_PATH.equals(path) ? indexCached : super.getContentSource(path);
     }
 }

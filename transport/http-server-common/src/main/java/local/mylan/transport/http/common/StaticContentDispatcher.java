@@ -23,8 +23,11 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_OCTET_STREAM;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static local.mylan.transport.http.common.RequestUtils.isRootUri;
 import static local.mylan.transport.http.common.ResponseUtils.allowResponse;
+import static local.mylan.transport.http.common.ResponseUtils.fullUrl;
 import static local.mylan.transport.http.common.ResponseUtils.notFoundResponse;
+import static local.mylan.transport.http.common.ResponseUtils.redirectResponse;
 import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
 import static local.mylan.transport.http.common.ResponseUtils.unsupportedMethodResponse;
 
@@ -97,6 +100,12 @@ public class StaticContentDispatcher implements ContextDispatcher {
 
     private void handleContent(final RequestContext ctx, final boolean headOnly) {
         final var path = ctx.contextPath();
+        if (isRootUri(path)) {
+            final var redirectTo =
+                fullUrl(ctx.channelHandlerContext(), ctx.fullRequest(), contextPath + emptyRedirectPath());
+            ctx.sendResponse(redirectResponse(ctx.protocolVersion(), redirectTo));
+            return;
+        }
         final var source = getContentSource(path);
         if (source.length() == 0) {
             ctx.sendResponse(notFoundResponse(ctx.protocolVersion()));
@@ -146,28 +155,8 @@ public class StaticContentDispatcher implements ContextDispatcher {
         }
     }
 
-    private static void sendNextChunk(final ChannelHandlerContext channelCtx, final HttpChunkedInput chunkedInput,
-        final String resourcePath, int chunkCount) {
-        try {
-            final var nextChunk = chunkedInput.readChunk(channelCtx.alloc());
-            if (nextChunk == null) {
-                LOG.debug("Chunked file transfer completed for resource {}.", resourcePath);
-                chunkedInput.close();
-            }   else {
-                LOG.trace("Sending chunk {} for resource {}", chunkCount, resourcePath);
-                channelCtx.writeAndFlush(nextChunk).addListener(future -> {
-                        if (future.isSuccess()) {
-                            sendNextChunk(channelCtx, chunkedInput, resourcePath, chunkCount +1);
-                        } else {
-                            LOG.error("Sending chunk failed for resource {}", resourcePath, future.cause());
-                            chunkedInput.close();
-                        }
-                    });
-            }
-        } catch (Exception e) {
-            LOG.error("Exception processing chunk for resource {}", resourcePath, e);
-
-        }
+    protected String emptyRedirectPath() {
+        return "/index.html";
     }
 
     protected ContentSource getContentSource(final String path) {
@@ -212,6 +201,30 @@ public class StaticContentDispatcher implements ContextDispatcher {
         } catch (IOException e) {
             LOG.warn("Error reading resource {} ({})", path, type, e);
             return NO_CONTENT;
+        }
+    }
+
+    private static void sendNextChunk(final ChannelHandlerContext channelCtx, final HttpChunkedInput chunkedInput,
+        final String resourcePath, int chunkCount) {
+        try {
+            final var nextChunk = chunkedInput.readChunk(channelCtx.alloc());
+            if (nextChunk == null) {
+                LOG.debug("Chunked file transfer completed for resource {}.", resourcePath);
+                chunkedInput.close();
+            } else {
+                LOG.trace("Sending chunk {} for resource {}", chunkCount, resourcePath);
+                channelCtx.writeAndFlush(nextChunk).addListener(future -> {
+                    if (future.isSuccess()) {
+                        sendNextChunk(channelCtx, chunkedInput, resourcePath, chunkCount + 1);
+                    } else {
+                        LOG.error("Sending chunk failed for resource {}", resourcePath, future.cause());
+                        chunkedInput.close();
+                    }
+                });
+            }
+        } catch (Exception e) {
+            LOG.error("Exception processing chunk for resource {}", resourcePath, e);
+
         }
     }
 

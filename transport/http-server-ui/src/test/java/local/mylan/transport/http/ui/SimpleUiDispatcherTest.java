@@ -30,8 +30,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 
 class SimpleUiDispatcherTest {
     private static final String CONTEXT_PATH = "/test-ui";
@@ -53,11 +52,10 @@ class SimpleUiDispatcherTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", "/", INDEX_PATH})
-    void valdateIndexContent(final String indexPath) {
+    @Test
+    void valdateIndexContent() {
         final var channel = setupChannel(dispatcher);
-        final var response = executeRequest(channel, httpRequest(GET, CONTEXT_PATH + indexPath));
+        final var response = executeRequest(channel, httpRequest(GET, CONTEXT_PATH + INDEX_PATH));
         assertResponse(response, HttpResponseStatus.OK, TEXT_HTML.toString(), indexContent );
     }
 }
