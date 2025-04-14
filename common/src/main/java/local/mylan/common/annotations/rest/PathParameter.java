@@ -25,5 +25,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 @Inherited
 public @interface PathParameter {
-    String value() default "";
+    String value();
 }

@@ -102,11 +102,8 @@ class OpenApiBuilder {
         final var classDeprecated = cls.getAnnotation(Deprecated.class) != null;
         final var tag = extractTag(cls);
         int parsedCount = 0;
-        for (var method : cls.getMethods()) {
+        for (var method : AnnotationUtils.getAnnotatedMethods(cls, RequestMapping.class)) {
             final var mapping = method.getAnnotation(RequestMapping.class);
-            if (mapping == null) {
-                continue;
-            }
             final var regexMap = new HashMap<String, String>();
             final var path = PathUtils.parsePath(mapping.path(), regexMap);
             final PathItem.HttpMethod httpMethod;

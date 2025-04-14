@@ -25,7 +25,7 @@ public class OpenApiBuilderTest {
 
     @Test
     void parse(){
-        final var result = new OpenApiBuilder(rootPath).process(TestRestService.class).build();
+        final var result = new OpenApiBuilder(rootPath).process(TestService.class).build();
         System.out.println(Json.mapper().convertValue(result, ObjectNode.class));
     }
 }

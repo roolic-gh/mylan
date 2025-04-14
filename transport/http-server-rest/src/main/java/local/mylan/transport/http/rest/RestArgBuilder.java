@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.common.annotations.rest;
+package local.mylan.transport.http.rest;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Map;
+import local.mylan.transport.http.api.RequestContext;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.PARAMETER)
-@Inherited
-public @interface QueryParameter {
-    String name();
-
-    boolean required() default false;
+@FunctionalInterface
+interface RestArgBuilder {
+    Object buildArgObject(RequestContext ctx, Map<String, String> pathParameters);
 }

@@ -26,6 +26,6 @@ public class SwaggerUiDispatcherTest {
 
     @BeforeAll
     static void beforeAll() {
-        dispatcher = new SwaggerUiDispatcher(CONTEXT_PATH, REST_PATH, TestRestService.class);
+        dispatcher = new SwaggerUiDispatcher(CONTEXT_PATH, REST_PATH, TestService.class);
     }
 }

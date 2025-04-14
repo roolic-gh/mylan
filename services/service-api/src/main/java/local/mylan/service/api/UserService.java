@@ -30,7 +30,7 @@ public interface UserService {
     List<Data> getFile(@PathParameter("path") String filePath);
 
     @RequestMapping(method = "GET", path = "/data", description = "List items")
-    List<Data> getData(@QueryParameter int limit, @QueryParameter int offset);
+    List<Data> getData(@QueryParameter(name = "limit") int limit, @QueryParameter(name = "offset") int offset);
 
     @RequestMapping(method = "GET", path = "/data/{id}", description = "Get item by id")
     Data getData(@PathParameter("id") String id);
