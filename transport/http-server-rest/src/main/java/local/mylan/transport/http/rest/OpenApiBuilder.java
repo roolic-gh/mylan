@@ -201,7 +201,7 @@ class OpenApiBuilder {
 
     private static Tag extractTag(final Class<?> cls) {
         final var tag = new Tag();
-        final var serviceDesc = cls.getAnnotation(ServiceDescriptor.class);
+        final var serviceDesc = AnnotationUtils.getClassAnnotation(cls, ServiceDescriptor.class);
         if (serviceDesc != null) {
             tag.setName(serviceDesc.id());
             tag.setDescription(serviceDesc.description());
