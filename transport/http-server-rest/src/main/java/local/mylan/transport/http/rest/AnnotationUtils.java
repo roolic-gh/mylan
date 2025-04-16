@@ -41,10 +41,10 @@ final class AnnotationUtils {
         final Class<? extends Annotation> annotationClass, final Set<String> exclude) {
         final var result = new ArrayList<Method>();
         for (var method : cls.getMethods()) {
-            final var methodName = method.getName();
-            if (!exclude.contains(methodName) && method.getAnnotation(annotationClass) != null) {
+            final var methodId = method.getName() + Stream.of(method.getParameterTypes()).map(Class::getName).toList();
+            if (!exclude.contains(methodId) && method.getAnnotation(annotationClass) != null) {
                 result.add(method);
-                exclude.add(methodName);
+                exclude.add(methodId);
             }
         }
         final var parent = cls.getSuperclass();

@@ -75,6 +75,11 @@ final class RestPathUtils {
         public Map<String, String> pathParameters() {
             return Map.of();
         }
+
+        @Override
+        public String toString() {
+            return matchingPath;
+        }
     }
 
     static final class RegexMatcher implements RestPathMatcher {
@@ -109,6 +114,11 @@ final class RestPathUtils {
         @Override
         public Map<String, String> pathParameters() {
             return paramsRef.get();
+        }
+
+        @Override
+        public String toString() {
+            return pattern + "-> " + paramNames;
         }
     }
 }

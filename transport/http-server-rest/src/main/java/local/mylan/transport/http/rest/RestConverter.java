@@ -16,14 +16,12 @@
 package local.mylan.transport.http.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.databind.JavaType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -37,40 +35,29 @@ import java.util.function.Function;
 
 final class RestConverter {
     static final RestConverter INSTANCE = new RestConverter();
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private static final XmlMapper XML_MAPPER = new XmlMapper();
+
     private final Map<Type, Function<String, ?>> convertersByType = new HashMap<>();
 
     private RestConverter() {
         // singleton
     }
 
-    static CharSequence mediaTypeFrom(final String headerValue) {
-        return isXml(headerValue) ? HttpHeaderValues.APPLICATION_XML : HttpHeaderValues.APPLICATION_JSON;
-    }
-
-    static boolean isXml(final CharSequence headerValue) {
-        final var mediaType = headerValue == null ? "" : headerValue.toString();
-        return mediaType.contains("xml");
-    }
-
-    static <T> T fromRequestBody(final Class<T> type, final FullHttpRequest request) {
-        final var isXml = isXml(request.headers().get(HttpHeaderNames.CONTENT_TYPE));
+    static <T> T fromRequestBody(final JavaType type, final FullHttpRequest request) {
+        final var encoding = Encoding.fromMediaType(request.headers().get(HttpHeaderNames.CONTENT_TYPE));
         try (InputStream in = new ByteBufInputStream(request.content())) {
-            return isXml ? XML_MAPPER.readValue(in, type) : JSON_MAPPER.readValue(in, type);
+            return encoding.objectMapper().readValue(in, type);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Request body is not a valid %s".formatted(isXml ? "XML" : "JSON"), e);
+            throw new IllegalArgumentException("Request body is not a valid %s".formatted(encoding.name()), e);
         }
     }
 
-    static ByteBuf toResponseBody(final Object obj, final CharSequence mediaType) {
-        final var isXml = isXml(mediaType);
+    static ByteBuf toResponseBody(final Object obj, final Encoding encoding) {
         try {
-            final var bytes = isXml ? XML_MAPPER.writeValueAsBytes(obj) : JSON_MAPPER.writeValueAsBytes(obj);
+            final var bytes = encoding.objectMapper().writeValueAsBytes(obj);
             return Unpooled.wrappedBuffer(bytes);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(
-                "Error on converting of %s to %s".formatted(obj, isXml ? "XML" : "JSON"), e);
+                "Error on converting of %s to %s".formatted(obj, encoding.name()), e);
         }
     }
 
@@ -138,6 +125,5 @@ final class RestConverter {
             }
             return null;
         }
-
     }
 }

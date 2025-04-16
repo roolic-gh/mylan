@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.core.util.Json;
 import org.junit.jupiter.api.Test;
 
-public class OpenApiBuilderTest {
+class OpenApiBuilderTest {
 
     private static final String rootPath = "/root";
 

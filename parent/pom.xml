@@ -33,7 +33,7 @@
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <junit.version>5.11.2</junit.version>
         <logback.version>1.5.13</logback.version>
-        <mokito.version>5.14.1</mokito.version>
+        <mokito.version>5.14.2</mokito.version>
         <netty.version>4.1.119.Final</netty.version>
         <slf4j.version>2.0.16</slf4j.version>
         <swagger.version>2.2.24</swagger.version>

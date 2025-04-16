@@ -33,10 +33,13 @@ interface TestService {
     TestPojo getData(@PathParameter("id") String id);
 
     @RequestMapping(method = "GET", path = "/data/by-user", description = "Get data item by id")
-    TestPojo getData(UserContext userContext);
+    List<TestPojo> getData(UserContext userContext);
 
-    @RequestMapping(method = "POST", path = "/data/{id}", description = "Add data item")
+    @RequestMapping(method = "POST", path = "/data/insert", description = "Add data item")
     TestPojo insertData(@RequestBody TestPojo data);
+
+    @RequestMapping(method = "POST", path = "/data/insert-all", description = "Add multiple data item")
+    void insertData(@RequestBody List<TestPojo> dataList);
 
     @RequestMapping(method = "PATCH", path = "/data/{id}", description = "Update item")
     TestPojo updateData(@PathParameter("id") String id, @RequestBody TestPojo data);

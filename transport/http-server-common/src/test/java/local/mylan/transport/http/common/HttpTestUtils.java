@@ -15,6 +15,8 @@
  */
 package local.mylan.transport.http.common;
 
+import static io.netty.buffer.Unpooled.wrappedBuffer;
+import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static local.mylan.transport.http.common.RequestUtils.buildRequestContext;
@@ -63,6 +65,16 @@ public final class HttpTestUtils {
         final Map<CharSequence, CharSequence> headers) {
         final var request = httpRequest(method, uri);
         headers.forEach(request.headers()::set);
+        return request;
+    }
+
+    public static FullHttpRequest httpRequest(final HttpMethod method, final String uri,
+           final CharSequence contentMediaType, final CharSequence acceptMediaType, final byte[] content) {
+        final var request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri, wrappedBuffer(content)) ;
+        request.headers().set(HttpHeaderNames.HOST, DEFAUT_HOST)
+            .set(CONTENT_TYPE, contentMediaType)
+            .setInt(CONTENT_LENGTH, content.length)
+            .set(ACCEPT, acceptMediaType);
         return request;
     }
 

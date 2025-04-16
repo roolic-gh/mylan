@@ -15,6 +15,9 @@
  */
 package local.mylan.transport.http.rest;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.function.Function;
 import local.mylan.common.annotations.rest.PathParameter;
@@ -30,10 +33,10 @@ final class RestArgUtils {
     }
 
     static RestArgBuilder getArgBuilder(final java.lang.reflect.Parameter methodParam) {
-        final Class<?> targetType = methodParam.getType();
         if (methodParam.getAnnotation(RequestBody.class) != null) {
-            return new RequestBodyArgBuilder(targetType);
+            return new RequestBodyArgBuilder(methodParam.getParameterizedType());
         }
+        final Class<?> targetType = methodParam.getType();
         final var queryParam = methodParam.getAnnotation(QueryParameter.class);
         if (queryParam != null) {
             final var paramName = queryParam.name();
@@ -78,10 +81,10 @@ final class RestArgUtils {
     }
 
     private static class RequestBodyArgBuilder implements RestArgBuilder {
-        final Class<?> argType;
+        final JavaType argType;
 
-        private RequestBodyArgBuilder(final Class<?> argType) {
-            this.argType = argType;
+        private RequestBodyArgBuilder(final Type argType) {
+            this.argType = TypeFactory.defaultInstance().constructType(argType);
         }
 
         @Override

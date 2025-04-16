@@ -46,13 +46,18 @@ class TestServiceProxy implements TestService {
     }
 
     @Override
-    public TestPojo getData(final UserContext userContext) {
+    public List<TestPojo> getData(final UserContext userContext) {
         return delegate().getData(userContext);
     }
 
     @Override
     public TestPojo insertData(final TestPojo data) {
         return delegate().insertData(data);
+    }
+
+    @Override
+    public void insertData(final List<TestPojo> dataList) {
+        delegate().insertData(dataList);
     }
 
     @Override

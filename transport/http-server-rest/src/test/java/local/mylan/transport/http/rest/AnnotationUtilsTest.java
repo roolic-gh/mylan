@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.reflect.Method;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.common.annotations.rest.RequestMapping;
@@ -48,6 +49,16 @@ class AnnotationUtilsTest {
         assertMethodAnnotation(byName.get("method4"), PATH_PARENT);
         assertMethodAnnotation(byName.get("method5"), PATH_PARENT);
         assertMethodAnnotation(byName.get("method6"), PATH_FINAL);
+    }
+
+    @Test
+    void methodsSignatures() {
+        final var methods = AnnotationUtils.getAnnotatedMethods(TestMethodsFinal.class, RequestMapping.class);
+        assertNotNull(methods);
+        assertEquals(3, methods.size());
+        final var paths = methods.stream().map(method -> method.getAnnotation(RequestMapping.class).path())
+            .collect(Collectors.toSet());
+        assertEquals(Set.of("/path1", "/path2", "/path3"), paths);
     }
 
     @Test
@@ -113,6 +124,34 @@ class AnnotationUtilsTest {
 
         @RequestMapping(path = PATH_FINAL, method = METHOD)
         public void method6(final String param) {
+        }
+    }
+
+    interface TestMethodsInterface {
+        @RequestMapping(path = "/path1", method = METHOD)
+        void method(String str);
+
+        void method(String str, Integer integer);
+
+        void method(String str, Integer integer, Boolean bool);
+    }
+
+    abstract static class TestMethodsAbstract implements TestMethodsInterface {
+
+        @RequestMapping(path = "/path2", method = METHOD)
+        @Override
+        public void method(final String str, final Integer integer) {
+        }
+    }
+
+    static final class TestMethodsFinal extends TestMethodsAbstract {
+        @Override
+        public void method(final String str) {
+        }
+
+        @RequestMapping(path = "/path3", method = METHOD)
+        @Override
+        public void method(final String str, final Integer integer, final Boolean bool) {
         }
     }
 }

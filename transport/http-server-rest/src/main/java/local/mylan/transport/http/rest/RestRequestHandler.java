@@ -43,15 +43,14 @@ class RestRequestHandler {
     private final List<RestArgBuilder> argBuilders;
 
     RestRequestHandler(final HttpMethod httpMethod, final RestPathMatcher pathMatcher, final Method method,
-        final Object serviceInstance) {
+            final Object serviceInstance) {
         this.httpMethod = httpMethod;
         this.pathMatcher = pathMatcher;
         this.method = method;
         this.serviceInstance = serviceInstance;
-        id = "%s.%s".formatted(serviceInstance.getClass().getSimpleName(), method.getName());
+        id = "%s::%s".formatted(serviceInstance.getClass().getSimpleName(), method.getName());
         argBuilders = Arrays.stream(method.getParameters()).map(RestArgUtils::getArgBuilder).toList();
-        LOG.debug("{} handler initialized", id);
-        System.out.println("+" + id);
+        LOG.debug("{} {} request mapped to service method {}", httpMethod, pathMatcher, id);
     }
 
     boolean httpMethodMatches(final HttpMethod httpMethod) {
@@ -63,7 +62,7 @@ class RestRequestHandler {
     }
 
     void processRequest(final RequestContext ctx, final Map<String, String> pathParameters) {
-        final var responseMediaType = RestConverter.mediaTypeFrom(ctx.headers().get(HttpHeaderNames.ACCEPT));
+        final var encoding = Encoding.fromMediaType(ctx.headers().get(HttpHeaderNames.ACCEPT));
         try {
             final var args = argBuilders.stream()
                 .map(builder -> builder.buildArgObject(ctx, pathParameters))
@@ -72,15 +71,15 @@ class RestRequestHandler {
             if (result == null) {
                 ctx.sendResponse(simpleResponse(ctx.protocolVersion(), NO_CONTENT));
             } else {
-                final var content = RestConverter.toResponseBody(result, responseMediaType);
-                ctx.sendResponse(responseWithContent(ctx.protocolVersion(), OK, content, responseMediaType));
+                final var content = RestConverter.toResponseBody(result, encoding);
+                ctx.sendResponse(responseWithContent(ctx.protocolVersion(), OK, content, encoding.mediaType()));
             }
         } catch (Exception e) {
             LOG.error("Exception processing request {}", ctx.contextPath(), e);
-            final var content = RestConverter.toResponseBody(new ErrorMessage(e.getMessage()), responseMediaType);
+            final var content = RestConverter.toResponseBody(new ErrorMessage(e.getMessage()), encoding);
             // todo response code by exception type
             ctx.sendResponse(responseWithContent(ctx.protocolVersion(), INTERNAL_SERVER_ERROR,
-                content, responseMediaType));
+                content, encoding.mediaType()));
         }
     }
 

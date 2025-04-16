@@ -57,7 +57,6 @@ public final class RestServiceDispatcher implements ContextDispatcher {
         final var result = new ArrayList<RestRequestHandler>();
         for (var serviceInstance : serviceInstances) {
             final var cls = serviceInstance.getClass();
-            System.out.println(cls);
             for (var classMethod : AnnotationUtils.getAnnotatedMethods(cls, RequestMapping.class)) {
                 final var mapping = classMethod.getAnnotation(RequestMapping.class);
                 try {
