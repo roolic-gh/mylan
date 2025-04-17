@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api;
+package local.mylan.service.api.rest.user;
 
-public interface Service {
+import local.mylan.service.api.model.User;
+
+public class UserAuthResponse {
+    private User currentUser;
+    private boolean needsPasswordChange;
+    private String token;
 }
