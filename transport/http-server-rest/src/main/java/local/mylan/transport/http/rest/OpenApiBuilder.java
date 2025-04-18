@@ -33,6 +33,8 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import java.lang.reflect.Type;
@@ -74,8 +76,9 @@ class OpenApiBuilder {
     }
 
     OpenAPI build() {
-        // TODO validate sorted
+        // TODO ensure sorted
         openApi.setInfo(defaultInfo());
+        openApi.setSecurity(defaultSecurity());
         openApi.setTags(List.copyOf(tags));
         openApi.setPaths(paths);
         openApi.setComponents(components);
@@ -91,6 +94,21 @@ class OpenApiBuilder {
         license.setUrl("http://www.apache.org/licenses/LICENSE-2.0.html");
         info.setLicense(license);
         return info;
+    }
+
+    private List<SecurityRequirement> defaultSecurity() {
+        components.setSecuritySchemes(
+            Map.of("BasicAuth", new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("basic")
+                    .in(SecurityScheme.In.HEADER),
+                "BearerAuth", new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .in(SecurityScheme.In.HEADER)));
+        return List.of(
+            new SecurityRequirement().addList("BasicAuth").addList("BearerAuth"));
+
     }
 
     OpenApiBuilder process(final Collection<Class<?>> classes) {
@@ -176,7 +194,7 @@ class OpenApiBuilder {
     private static Parameter buildParameter(java.lang.reflect.Parameter methodParam) {
         if (methodParam.getAnnotation(RequestBody.class) != null) {
             final var result = new Parameter();
-            result.setName(methodParam.getName());
+            result.setName("request");
             result.setIn("body");
             result.setRequired(true);
             return result;
@@ -187,13 +205,13 @@ class OpenApiBuilder {
             if (queryParam.required()) {
                 result.setRequired(true);
             }
-            result.setName(nonEmptyOrDefault(queryParam.name(), methodParam.getName()));
+            result.setName(queryParam.name());
             return result;
         }
         final var pathParam = methodParam.getAnnotation(PathParameter.class);
         if (pathParam != null) {
             final var result = new io.swagger.v3.oas.models.parameters.PathParameter();
-            result.setName(nonEmptyOrDefault(pathParam.value(), methodParam.getName()));
+            result.setName(pathParam.value());
             return result;
         }
         return null;
@@ -231,9 +249,5 @@ class OpenApiBuilder {
 
     private static String nonEmptyOrNull(final String value) {
         return value == null || value.isEmpty() ? null : value;
-    }
-
-    private static String nonEmptyOrDefault(final String value, final String defaultValue) {
-        return value == null || value.isEmpty() ? defaultValue : value;
     }
 }
