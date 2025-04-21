@@ -32,6 +32,7 @@
 
     <modules>
         <module>service-api</module>
+        <module>service-data</module>
     </modules>
 
 </project>

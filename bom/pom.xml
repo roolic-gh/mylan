@@ -73,6 +73,11 @@
                 <artifactId>service-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>service-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
