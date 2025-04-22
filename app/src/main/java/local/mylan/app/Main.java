@@ -18,23 +18,13 @@ package local.mylan.app;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import local.mylan.service.api.rest.RestUserService;
-import local.mylan.transport.http.CompositeDispatcher;
-import local.mylan.transport.http.HttpServer;
-import local.mylan.transport.http.rest.SwaggerUiDispatcher;
-import local.mylan.transport.http.ui.SimpleUiDispatcher;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class Main {
-
-    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-
     private static final String DEFAULT_CONF_SUBDIR = "mylan/conf";
     private static final String DEFAULT_WORK_SUBDIR = "mylan/work";
     private static final String OPT_CONF_DIR = "c";
@@ -44,22 +34,16 @@ public final class Main {
     public static void main(final String[] args) throws Exception {
         final var cmd = parseArgs(args);
         final var confDir = getConfDir(cmd.getOptionValue(OPT_CONF_DIR));
-        LOG.info("Conf Dir: {}", confDir);
         final var workDir = getWorkDir(cmd.getOptionValue(OPT_WORK_DIR));
-        LOG.info("Work Dir: {}", workDir);
 
-        final var dispatcher = CompositeDispatcher.builder()
-            .defaultDispatcher(new SimpleUiDispatcher("/ui", "/rest"))
-            .dispatcher(new SwaggerUiDispatcher("/swagger-ui", "/rest", RestUserService.class))
-            .build();
+        // todo configure logger working dir in case file output to be used
 
-        final var server = new HttpServer(confDir, dispatcher);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop()));
-        server.start();
-
-        synchronized (server) {
+        final var application = new Application(confDir, workDir);
+        application.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> application.stop()));
+        synchronized (application) {
             try {
-                server.wait();
+                application.wait();
             } catch (InterruptedException e) {
                 // ignore
             }
@@ -94,7 +78,7 @@ public final class Main {
             if (Files.isDirectory(confPath)) {
                 return confPath;
             } else {
-                LOG.warn("Configuration directory {} does not exist or isn't a directory -> ignored", path);
+                System.err.printf("Configuration directory %s does not exist or isn't a directory -> ignored%n", path);
             }
         }
         return defaultDir(DEFAULT_CONF_SUBDIR);
@@ -106,7 +90,7 @@ public final class Main {
             if (Files.isDirectory(workPath)) {
                 return workPath;
             } else {
-                LOG.warn("Work directory {} does not exist or isn't a directory -> ignored", path);
+                System.err.printf("Work directory %s does not exist or isn't a directory -> ignored%n", path);
             }
         }
         return defaultDir(DEFAULT_WORK_SUBDIR);
@@ -119,8 +103,7 @@ public final class Main {
             Files.createDirectories(dir);
             return dir;
         }
-        LOG.warn("Home directory {} is invalid -> creating temp directory", parentDir);
+        System.err.printf("Home directory %s is invalid -> creating temp directory%n", parentDir);
         return Files.createTempDirectory("mylan-");
     }
-
 }

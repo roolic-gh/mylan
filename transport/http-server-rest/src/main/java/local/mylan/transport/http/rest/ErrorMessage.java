@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api.rest;
+package local.mylan.transport.http.rest;
 
 import com.google.common.base.Objects;
 

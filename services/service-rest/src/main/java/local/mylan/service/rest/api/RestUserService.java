@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api.rest;
+package local.mylan.service.rest.api;
 
 import java.util.List;
 import local.mylan.common.annotations.rest.PathParameter;
@@ -22,9 +22,9 @@ import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
 import local.mylan.service.api.UserContext;
 import local.mylan.service.api.model.User;
-import local.mylan.service.api.rest.user.ChangePasswordRequest;
-import local.mylan.service.api.rest.user.UserAuthRequest;
-import local.mylan.service.api.rest.user.UserAuthResponse;
+import local.mylan.service.rest.api.user.ChangePasswordRequest;
+import local.mylan.service.rest.api.user.UserAuthRequest;
+import local.mylan.service.rest.api.user.UserAuthResponse;
 
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
 public interface RestUserService {

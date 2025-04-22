@@ -27,7 +27,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import local.mylan.service.api.rest.ErrorMessage;
 import local.mylan.transport.http.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
