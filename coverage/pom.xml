@@ -50,6 +50,10 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
             <artifactId>http-server</artifactId>
         </dependency>
         <dependency>
@@ -62,7 +66,11 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>service-data</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>service-rest</artifactId>
         </dependency>
     </dependencies>
 
