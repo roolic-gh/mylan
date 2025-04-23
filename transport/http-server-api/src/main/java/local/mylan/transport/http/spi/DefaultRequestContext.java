@@ -38,11 +38,6 @@ public record DefaultRequestContext(ChannelHandlerContext channelHandlerContext,
     }
 
     @Override
-    public String userId() {
-        return userContext == null ? null : userContext.userId();
-    }
-
-    @Override
     public HttpVersion protocolVersion() {
         return fullRequest.protocolVersion();
     }

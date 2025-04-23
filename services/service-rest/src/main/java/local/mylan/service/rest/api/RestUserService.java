@@ -21,32 +21,41 @@ import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
 import local.mylan.service.api.UserContext;
+import local.mylan.service.api.UserService;
 import local.mylan.service.api.model.User;
-import local.mylan.service.rest.api.user.ChangePasswordRequest;
-import local.mylan.service.rest.api.user.UserAuthRequest;
-import local.mylan.service.rest.api.user.UserAuthResponse;
+import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.rest.spi.DefaultRestUserService;
 
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
 public interface RestUserService {
 
-    @RequestMapping(method = "POST", path = "/authenticate", description = "Authenticate user")
-    UserAuthResponse authenticate(@RequestBody UserAuthRequest auth);
+    static RestUserService defaultInstance(final UserService service){
+        return new DefaultRestUserService(service);
+    }
 
-    @RequestMapping(method = "POST", path = "/user/change-password", description = "Change user password")
-    void changePassword(@RequestBody ChangePasswordRequest passwordChange, UserContext userCtx);
+    UserContext authenticate(String authHeader);
+
+    @RequestMapping(method = "POST", path = "/authenticate", description = "Authenticate user")
+    UserAuthResult authenticate(@RequestBody UserCredentials credentials);
+
+    @RequestMapping(method = "POST", path = "/user/change-password", description = "Change own password")
+    void changePassword(@RequestBody ChangePassword passwordChange, UserContext userCtx);
+
+    @RequestMapping(method = "POST", path = "/user/{id}/reset-password", description = "Reset user password")
+    void resetPassword(@PathParameter("id") Integer userId, UserContext userCtx);
 
     @RequestMapping(method = "POST", path = "/user/create", description = "Create user")
     User createUser(@RequestBody User newUser, UserContext userCtx);
 
     @RequestMapping(method = "PATCH", path = "/user/{id}", description = "Update user")
-    User updateUser(@RequestBody User user, @PathParameter("id") String userId, UserContext userCtx);
+    User updateUser(@RequestBody User user, @PathParameter("id") Integer userId, UserContext userCtx);
 
     @RequestMapping(method = "DELETE", path = "/user/{id}", description = "Delete user")
-    void deleteUser(@PathParameter("id") String userId, UserContext userCtx);
+    void deleteUser(@PathParameter("id") Integer userId, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/user/{id}", description = "Get user by ID")
-    User getUser(@PathParameter("id") String userId, UserContext userCtx);
+    User getUser(@PathParameter("id") Integer userId, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/user/list", description = "Get user list")
-    List<User> getUserList(@PathParameter("id") String userId, UserContext userCtx);
+    List<User> getUserList(UserContext userCtx);
 }

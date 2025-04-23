@@ -26,8 +26,6 @@ import local.mylan.service.api.UserContext;
 
 public interface RequestContext {
 
-    String userId();
-
     UserContext userContext();
 
     String contextPath();

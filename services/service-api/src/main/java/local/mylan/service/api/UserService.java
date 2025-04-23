@@ -15,7 +15,11 @@
  */
 package local.mylan.service.api;
 
+import java.util.Optional;
 import local.mylan.service.api.model.User;
+import local.mylan.service.api.model.UserCredentials;
 
-public record UserContext(User currentUser, String currentSessionId) {
+public interface UserService {
+
+    Optional<User> getUserByCredentials(UserCredentials credentials);
 }

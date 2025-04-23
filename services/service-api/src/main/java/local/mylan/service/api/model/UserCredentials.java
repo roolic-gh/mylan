@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.rest.api.user;
+package local.mylan.service.api.model;
 
 import com.google.common.base.Objects;
 
-public class ChangePasswordRequest {
+public class UserCredentials {
     private String username;
-    private String oldPassword;
-    private String newPassword;
+    private String password;
 
-    public ChangePasswordRequest() {
-        // default;
+    public UserCredentials() {
+        // default
     }
 
-    public ChangePasswordRequest(final String username, final String oldPassword, final String newPassword) {
+    public UserCredentials(final String username, final String password) {
         this.username = username;
-        this.oldPassword = oldPassword;
-        this.newPassword = newPassword;
+        this.password = password;
     }
 
     public String getUsername() {
@@ -40,20 +38,12 @@ public class ChangePasswordRequest {
         this.username = username;
     }
 
-    public String getOldPassword() {
-        return oldPassword;
+    public String getPassword() {
+        return password;
     }
 
-    public void setOldPassword(final String oldPassword) {
-        this.oldPassword = oldPassword;
-    }
-
-    public String getNewPassword() {
-        return newPassword;
-    }
-
-    public void setNewPassword(final String newPassword) {
-        this.newPassword = newPassword;
+    public void setPassword(final String password) {
+        this.password = password;
     }
 
     @Override
@@ -61,15 +51,15 @@ public class ChangePasswordRequest {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof final ChangePasswordRequest that)) {
+        if (!(o instanceof UserCredentials that)) {
             return false;
         }
         return Objects.equal(username, that.username) && Objects.equal(
-            oldPassword, that.oldPassword) && Objects.equal(newPassword, that.newPassword);
+            password, that.password);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(username, oldPassword, newPassword);
+        return Objects.hashCode(username, password);
     }
 }

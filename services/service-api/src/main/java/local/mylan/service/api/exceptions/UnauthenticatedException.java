@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api;
+package local.mylan.service.api.exceptions;
 
-import local.mylan.service.api.model.User;
+import java.io.Serial;
 
-public record UserContext(User currentUser, String currentSessionId) {
+public class UnauthenticatedException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 1L;
 }

@@ -16,13 +16,18 @@
 package local.mylan.service.api.model;
 
 public class User {
-    private int userId;
+    private Integer userId;
     private String username;
     private String displayName;
     private boolean isAdmin;
 
     public User() {
         // default
+    }
+
+    public User(final Integer userId, final String username, final String displayName, final boolean isAdmin) {
+        this(username, displayName, isAdmin);
+        this.userId = userId;
     }
 
     public User(final String username, final String displayName, final boolean isAdmin) {
@@ -62,5 +67,6 @@ public class User {
     public void setAdmin(final boolean admin) {
         isAdmin = admin;
     }
+
 
 }

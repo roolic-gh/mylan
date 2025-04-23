@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.rest.api.user;
+package local.mylan.service.api.exceptions;
 
-import local.mylan.service.api.model.User;
+import java.io.Serial;
 
-public class UserAuthResponse {
-    private User currentUser;
-    private boolean needsPasswordChange;
-    private String token;
+public class UnauthorizedException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 1L;
 }
