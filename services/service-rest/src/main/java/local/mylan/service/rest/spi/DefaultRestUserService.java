@@ -23,26 +23,26 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import local.mylan.service.api.UserContext;
 import local.mylan.service.api.UserService;
+import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
+import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.rest.api.ChangePassword;
 import local.mylan.service.rest.api.RestUserService;
 import local.mylan.service.rest.api.UserAuthResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class DefaultRestUserService implements RestUserService {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultRestUserService.class);
 
     private static final Duration SESSION_EXPIRES = Duration.ofHours(24);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     @VisibleForTesting
-    static final UserContext ANONIMOUS_CONTEXT = new UserContext( new User("anonimous", "Guest", false), "");
+    static final UserContext ANONIMOUS_CONTEXT = new UserContext(new User("anonimous", "Guest", false), "");
     @VisibleForTesting
     static final String AUTH_BASIC = "Basic ";
     @VisibleForTesting
@@ -103,37 +103,68 @@ public final class DefaultRestUserService implements RestUserService {
     }
 
     @Override
-    public void changePassword(final ChangePassword passwordChange, final UserContext userCtx) {
-
+    public void resetPassword(final Integer userId, final UserContext userCtx) {
+        if (!userCtx.currentUser().isAdmin()) {
+            throw new UnauthorizedException("Password reset action is only allowed to administrator.");
+        }
+        service.resetUserPassword(userId);
     }
 
     @Override
-    public void resetPassword(final Integer userId, final UserContext userCtx) {
-
+    public void changePassword(final ChangePassword passwordChange, final UserContext userCtx) {
+        if (!Objects.equals(userCtx.currentUser().getUserId(), passwordChange.getUserId())) {
+            throw new UnauthorizedException("Password change is only allowed to owner.");
+        }
+        service.changeUserPassword(passwordChange.getUserId(), passwordChange.getOldPassword(),
+            passwordChange.getNewPassword());
     }
 
     @Override
     public User createUser(final User newUser, final UserContext userCtx) {
-        return null;
+        if (!userCtx.currentUser().isAdmin()) {
+            throw new UnauthorizedException("User creation is only allowed to administrator.");
+        }
+        if (newUser.getUsername() == null) {
+            throw new IllegalArgumentException("Username is required");
+        }
+        return service.createUser(newUser);
     }
 
     @Override
-    public User updateUser(final User user, final Integer userId, final UserContext userCtx) {
-        return null;
+    public User updateUser(final User user, final UserContext userCtx) {
+        if (user.getUserId() == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+        final var currentUser = userCtx.currentUser();
+        if (!currentUser.isAdmin() && !Objects.equals(user.getUserId(), currentUser.getUserId())) {
+            throw new UnauthorizedException("User update is only allowed to owner or adminiastrator.");
+        }
+        return service.updateUser(user);
     }
 
     @Override
     public void deleteUser(final Integer userId, final UserContext userCtx) {
-
+        if (!userCtx.currentUser().isAdmin()) {
+            throw new UnauthorizedException("User deletion is only allowed to administrator.");
+        }
+        if (Objects.equals(userCtx.currentUser().getUserId(), userId)) {
+            throw new IllegalArgumentException("Administrator cannot delete self.");
+        }
+        service.deleteUser(userId);
     }
 
     @Override
     public User getUser(final Integer userId, final UserContext userCtx) {
-        return null;
+        final var currentUser = userCtx.currentUser();
+        if (currentUser.getUserId() == null) {
+            throw new UnauthorizedException("User info is not eligible for guests");
+        }
+        return service.getUserById(userId, currentUser.isAdmin()).orElseThrow(NoDataException::new);
     }
 
     @Override
     public List<User> getUserList(final UserContext userCtx) {
-        return List.of();
+        final var currentUser = userCtx.currentUser();
+        return currentUser.getUserId() == null ? List.of() : service.getUserList(currentUser.isAdmin());
     }
 }

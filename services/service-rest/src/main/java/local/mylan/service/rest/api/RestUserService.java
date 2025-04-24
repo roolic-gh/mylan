@@ -47,8 +47,8 @@ public interface RestUserService {
     @RequestMapping(method = "POST", path = "/user/create", description = "Create user")
     User createUser(@RequestBody User newUser, UserContext userCtx);
 
-    @RequestMapping(method = "PATCH", path = "/user/{id}", description = "Update user")
-    User updateUser(@RequestBody User user, @PathParameter("id") Integer userId, UserContext userCtx);
+    @RequestMapping(method = "PATCH", path = "/user/update", description = "Update user")
+    User updateUser(@RequestBody User user, UserContext userCtx);
 
     @RequestMapping(method = "DELETE", path = "/user/{id}", description = "Delete user")
     void deleteUser(@PathParameter("id") Integer userId, UserContext userCtx);

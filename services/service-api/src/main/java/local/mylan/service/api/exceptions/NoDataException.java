@@ -17,11 +17,7 @@ package local.mylan.service.api.exceptions;
 
 import java.io.Serial;
 
-public class UnauthorizedException extends RuntimeException {
+public class NoDataException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
-
-    public UnauthorizedException(final String message) {
-        super(message);
-    }
 }

@@ -36,11 +36,11 @@ public class User {
         this.isAdmin = isAdmin;
     }
 
-    public int getUserId() {
+    public Integer getUserId() {
         return userId;
     }
 
-    public void setUserId(final int userId) {
+    public void setUserId(final Integer userId) {
         this.userId = userId;
     }
 

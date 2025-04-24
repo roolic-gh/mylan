@@ -22,13 +22,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
+import local.mylan.service.api.UserContext;
 import local.mylan.service.api.UserService;
+import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
+import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.rest.api.RestUserService;
@@ -40,14 +47,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class DefaultRestUserServiceTest {
-
     private static final String USERNAME = "username";
     private static final String PASSWORD = "pa$$w0Rd";
     private static final String PASSWORD2 = "pa55w0Rd";
     private static final UserCredentials CREDENTIALS = new UserCredentials(USERNAME, PASSWORD);
     private static final UserCredentials CREDENTIALS2 = new UserCredentials(USERNAME, PASSWORD2);
-    private static final User ADMIN = new User(1, "Admin", "Name", true);
-    private static final User USER = new User(2, "user", "Name", false);
+
+    private static final Integer ADMIN_ID = 1;
+    private static final Integer USER_ID = 2;
+    private static final Integer USER2_ID = 3;
+    private static final User ADMIN = new User(ADMIN_ID, "Admin", "Name", true);
+    private static final User USER = new User(USER_ID, "user", "Name", false);
+    private static final User USER2 = new User(USER2_ID, "user2", "Name", false);
+    private static final User USER_NO_ID = new User("userx", "", false);
+    private static final UserContext ADMIN_CTX = new UserContext(ADMIN, "a");
+    private static final UserContext USER_CTX = new UserContext(USER, "u");
+    private static final UserContext USER2_CTX = new UserContext(USER2, "u2");
+    private static final List<User> USER_LIST = List.of(USER, USER2);
+    private static final List<User> USER_LIST_ADM = List.of(ADMIN, USER, USER2);
 
     @Mock
     UserService userService;
@@ -103,4 +120,47 @@ public class DefaultRestUserServiceTest {
         assertEquals(ANONIMOUS_CONTEXT, restService.authenticate((String) null));
     }
 
+    @Test
+    void createUser() {
+        doReturn(USER).when(userService).createUser(USER_NO_ID);
+        assertEquals(USER, restService.createUser(USER_NO_ID, ADMIN_CTX));
+        assertThrows(UnauthorizedException.class, () -> restService.createUser(USER_NO_ID, USER2_CTX));
+        assertThrows(IllegalArgumentException.class, () -> restService.createUser(new User(), ADMIN_CTX));
+    }
+
+    @Test
+    void updateUser() {
+        doReturn(USER).when(userService).updateUser(USER);
+        assertEquals(USER, restService.updateUser(USER, USER_CTX));
+        assertEquals(USER, restService.updateUser(USER, ADMIN_CTX));
+        verify(userService, times(2)).updateUser(USER);
+        assertThrows(UnauthorizedException.class, () -> restService.updateUser(USER, USER2_CTX));
+    }
+
+    @Test
+    void deleteUser() {
+        doNothing().when(userService).deleteUser(USER_ID);
+        restService.deleteUser(USER_ID, ADMIN_CTX);
+        verify(userService, times(1)).deleteUser(USER_ID);
+        assertThrows(IllegalArgumentException.class, () -> restService.deleteUser(ADMIN_ID, ADMIN_CTX));
+        assertThrows(UnauthorizedException.class, () -> restService.deleteUser(USER_ID, USER2_CTX));
+    }
+
+    @Test
+    void userById() {
+        doReturn(Optional.empty()).when(userService).getUserById(USER_ID, false);
+        doReturn(Optional.of(USER)).when(userService).getUserById(USER_ID, true);
+        assertEquals(USER, restService.getUser(USER_ID, ADMIN_CTX));
+        assertThrows(NoDataException.class, () -> restService.getUser(USER_ID, USER_CTX));
+        assertThrows(UnauthorizedException.class, () -> restService.getUser(USER_ID, ANONIMOUS_CONTEXT));
+    }
+
+    @Test
+    void userList() {
+        doReturn(USER_LIST).when(userService).getUserList(false);
+        doReturn(USER_LIST_ADM).when(userService).getUserList(true);
+        assertEquals(List.of(), restService.getUserList(ANONIMOUS_CONTEXT));
+        assertEquals(USER_LIST, restService.getUserList(USER_CTX));
+        assertEquals(USER_LIST_ADM, restService.getUserList(ADMIN_CTX));
+    }
 }

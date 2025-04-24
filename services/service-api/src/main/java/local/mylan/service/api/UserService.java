@@ -15,6 +15,7 @@
  */
 package local.mylan.service.api;
 
+import java.util.List;
 import java.util.Optional;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
@@ -22,4 +23,18 @@ import local.mylan.service.api.model.UserCredentials;
 public interface UserService {
 
     Optional<User> getUserByCredentials(UserCredentials credentials);
+
+    void resetUserPassword(Integer userId);
+
+    void changeUserPassword(Integer userId, String oldPassword, String newPassword);
+
+    List<User> getUserList(boolean forAdminPurposes);
+
+    Optional<User> getUserById(Integer userId, boolean forAdminPurposes);
+
+    User createUser(User newUser);
+
+    User updateUser(User user);
+
+    void deleteUser(Integer userId);
 }
