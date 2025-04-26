@@ -27,7 +27,7 @@ import jakarta.persistence.Table;
 public class UserEntity {
     @Id
     @Column(name = "user_id")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
 
     @Column(name = "username", unique = true, length = 32)

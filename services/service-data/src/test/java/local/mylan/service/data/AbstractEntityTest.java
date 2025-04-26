@@ -29,7 +29,7 @@ class AbstractEntityTest {
     protected static void setupDatabase(final Class<?>... entityClasses) {
         final var builder = new Configuration()
             .setProperty(JdbcSettings.JAKARTA_JDBC_URL, "jdbc:h2:mem:test")
-            .setProperty(JdbcSettings.JAKARTA_JDBC_USER, "test")
+            .setProperty(JdbcSettings.JAKARTA_JDBC_USER, "sa")
             .setProperty(JdbcSettings.JAKARTA_JDBC_PASSWORD, "")
             .setProperty(JdbcSettings.SHOW_SQL, true);
         Stream.of(entityClasses).forEach(builder::addAnnotatedClass);
