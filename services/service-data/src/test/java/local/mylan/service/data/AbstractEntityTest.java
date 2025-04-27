@@ -20,7 +20,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.JdbcSettings;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
 
 class AbstractEntityTest {
 
@@ -43,10 +42,4 @@ class AbstractEntityTest {
             sessionFactory.close();
         }
     }
-
-    @BeforeEach
-    void beforeEach() {
-        sessionFactory.getSchemaManager().truncateMappedObjects();
-    }
-
 }

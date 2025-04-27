@@ -94,12 +94,6 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>artifacts-to--props</id>
-                        <goals>
-                            <goal>properties</goal>
-                        </goals>
-                    </execution>
-                    <execution>
                         <id>extract-swagger-ui</id>
                         <phase>generate-resources</phase>
                         <goals>

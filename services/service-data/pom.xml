@@ -42,6 +42,10 @@
         <artifactId>hibernate-core</artifactId>
     </dependency>
     <dependency>
+        <groupId>org.mapstruct</groupId>
+        <artifactId>mapstruct</artifactId>
+    </dependency>
+    <dependency>
         <groupId>local.mylan</groupId>
         <artifactId>common</artifactId>
     </dependency>
@@ -56,4 +60,22 @@
         <scope>test</scope>
     </dependency>
 </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

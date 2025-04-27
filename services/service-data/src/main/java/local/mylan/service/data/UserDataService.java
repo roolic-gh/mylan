@@ -15,24 +15,55 @@
  */
 package local.mylan.service.data;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
 import java.util.Optional;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.data.entities.Queries;
+import local.mylan.service.data.entities.UserCredEntity;
+import local.mylan.service.data.entities.UserEntity;
+import local.mylan.service.data.mappers.UserModelMapper;
 import org.hibernate.SessionFactory;
+import org.mapstruct.factory.Mappers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserDataService implements UserService {
+    private static final Logger LOG = LoggerFactory.getLogger(UserDataService.class);
+    private static final UserModelMapper MAPPER = Mappers.getMapper(UserModelMapper.class);
+
+    @VisibleForTesting
+    static final String ADMIN_USERNAME = "admin";
+    @VisibleForTesting
+    static final String ADMIN_DISPLAYNAME = "Administrator";
 
     private final SessionFactory sessionFactory;
 
     public UserDataService(final SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
+        checkAdminUserExists();
+    }
+
+    void checkAdminUserExists() {
+        final var found = sessionFactory.fromSession(session ->
+            session.createNamedQuery(Queries.GET_ACTIVE_ADMINS, UserEntity.class).getSingleResultOrNull());
+        if (found == null) {
+            LOG.warn("No Admin user found in database, creating default...");
+            createUser(new User(ADMIN_USERNAME, ADMIN_DISPLAYNAME, true));
+            LOG.warn("Default Admin user created. Password change is required.");
+        }
     }
 
     @Override
     public Optional<User> getUserByCredentials(final UserCredentials credentials) {
-        return Optional.empty();
+        return sessionFactory.fromSession(session ->
+            session.createNamedQuery(Queries.GET_USER_BY_CREDENTIALS, UserEntity.class)
+                .setParameter("username", credentials.getUsername())
+                .setParameter("password", encryptPassword(credentials.getPassword()))
+                .uniqueResultOptional()
+        ).map(MAPPER::fromEntity);
     }
 
     @Override
@@ -47,7 +78,10 @@ public class UserDataService implements UserService {
 
     @Override
     public List<User> getUserList(final boolean forAdminPurposes) {
-        return List.of();
+        final var query = forAdminPurposes ? Queries.GET_ALL_USERS : Queries.GET_ACTIVE_USERS;
+        return sessionFactory.fromSession(
+            session -> session.createNamedQuery(query, UserEntity.class).list()
+        ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
@@ -57,7 +91,13 @@ public class UserDataService implements UserService {
 
     @Override
     public User createUser(final User newUser) {
-        return null;
+        final var entity = MAPPER.toEntity(newUser);
+        final var cred = new UserCredEntity(encryptPassword(newUser.getUsername()), entity, true);
+        sessionFactory.inTransaction(session -> {
+            session.persist(entity);
+            session.persist(cred);
+        });
+        return MAPPER.fromEntity(entity);
     }
 
     @Override
@@ -68,5 +108,10 @@ public class UserDataService implements UserService {
     @Override
     public void deleteUser(final Integer userId) {
 
+    }
+
+    private static String encryptPassword(final String password) {
+        // TODO encrypt password
+        return password;
     }
 }

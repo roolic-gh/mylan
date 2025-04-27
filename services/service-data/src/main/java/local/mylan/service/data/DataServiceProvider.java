@@ -50,7 +50,7 @@ public final class DataServiceProvider implements AutoCloseable {
         final var conf = new Configuration().setProperties(loadProperties(confDir, workDir));
         ENTITYCLASSES.forEach(conf::addAnnotatedClass);
         sessionFactory = conf.buildSessionFactory();
-        sessionFactory.getSchemaManager().exportMappedObjects(true);
+        sessionFactory.getSchemaManager().validateMappedObjects();
         userService = new UserDataService(sessionFactory);
         LOG.info("Initialized.");
     }

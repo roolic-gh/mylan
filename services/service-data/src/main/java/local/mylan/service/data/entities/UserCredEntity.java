@@ -16,41 +16,46 @@
 package local.mylan.service.data.entities;
 
 import com.google.common.base.Objects;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
+@NamedQuery(name = Queries.GET_USER_BY_CREDENTIALS,
+    query = "SELECT uc.user FROM UserCredEntity uc WHERE uc.user.username = :username " +
+            "AND uc.password = :password AND uc.user.deleted = false",
+    resultClass = UserEntity.class)
 
 @Entity
 @Table(name = "user_cred")
 public class UserCredEntity {
 
     @Id
-    @Column(name = "user_id")
-    private int user_id;
-
-    @OneToOne(fetch = FetchType.EAGER)
     @MapsId
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    @Column(name="password")
+    @Column(name = "password")
     private String password;
 
-    @Column(name="must_change")
+    @Column(name = "must_change")
     private boolean mustChange;
 
-    public UserCredEntity(){
+    public UserCredEntity() {
         // default
     }
 
-    public UserCredEntity(final String password, final UserEntity user) {
+    public UserCredEntity(final String password, final UserEntity user, boolean mustChange) {
         this.password = password;
         this.user = user;
+        this.mustChange = mustChange;
     }
 
     public UserEntity getUser() {
@@ -77,14 +82,6 @@ public class UserCredEntity {
         this.mustChange = mustChange;
     }
 
-    public int getUser_id() {
-        return user_id;
-    }
-
-    public void setUser_id(final int user_id) {
-        this.user_id = user_id;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -93,12 +90,12 @@ public class UserCredEntity {
         if (!(o instanceof final UserCredEntity that)) {
             return false;
         }
-        return user_id == that.user_id && mustChange == that.mustChange && Objects.equal(password,
-            that.password);
+        return mustChange == that.mustChange && Objects.equal(user,
+            that.user) && Objects.equal(password, that.password);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(user_id, password, mustChange);
+        return Objects.hashCode(user, password, mustChange);
     }
 }

@@ -15,20 +15,29 @@
  */
 package local.mylan.service.data.entities;
 
+import com.google.common.base.Objects;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
+
+@NamedQuery(name = Queries.GET_ALL_USERS, resultClass = UserEntity.class,
+    query = "SELECT u from UserEntity u")
+@NamedQuery(name = Queries.GET_ACTIVE_USERS,resultClass = UserEntity.class,
+    query = "SELECT u from UserEntity u WHERE u.deleted=false")
+@NamedQuery(name = Queries.GET_ACTIVE_ADMINS, resultClass = UserEntity.class,
+    query = "SELECT u from UserEntity u WHERE u.deleted=false AND u.isAdmin = true")
 
 @Entity
 @Table(name = "user_main")
 public class UserEntity {
     @Id
     @Column(name = "user_id")
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private Integer userId;
 
     @Column(name = "username", unique = true, length = 32)
     private String username;
@@ -52,6 +61,61 @@ public class UserEntity {
         this.isAdmin = isAdmin;
     }
 
+    public Integer getUserId() {
+        return userId;
+    }
 
+    public void setUserId(final Integer userId) {
+        this.userId = userId;
+    }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(final String username) {
+        this.username = username;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(final String displayName) {
+        this.displayName = displayName;
+    }
+
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(final boolean admin) {
+        isAdmin = admin;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(final boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof final UserEntity that)) {
+            return false;
+        }
+        return isAdmin == that.isAdmin && deleted == that.deleted && Objects.equal(userId,
+            that.userId) && Objects.equal(username,
+            that.username) && Objects.equal(displayName, that.displayName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(userId, username, displayName, isAdmin, deleted);
+    }
 }
