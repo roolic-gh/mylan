@@ -235,10 +235,25 @@
                     <version>3.8.0</version>
                     <executions>
                         <execution>
+                            <id>properties</id>
                             <goals>
                                 <goal>properties</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>analyze</id>
+                            <goals>
                                 <goal>analyze-only</goal>
                             </goals>
+                            <configuration>
+                                <ignoreNonCompile>true</ignoreNonCompile>
+                                <ignoredNonTestScopedDependencies>
+                                    local.mylan.*, io.netty.*
+                                </ignoredNonTestScopedDependencies>
+                                <ignoredDependencies>
+                                    org.webjars.*
+                                </ignoredDependencies>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
