@@ -95,8 +95,13 @@ public final class DataServiceProvider implements AutoCloseable {
         return properties;
     }
 
+    public UserService getUserService(){
+        return userService;
+    }
+
     @Override
     public void close() throws Exception {
         sessionFactory.close();
+        LOG.info("Stopped.");
     }
 }

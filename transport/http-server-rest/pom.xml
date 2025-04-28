@@ -54,10 +54,8 @@
             <artifactId>swagger-models</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-            <!-- swagger model resolver depends on this -->
-            <version>${jakarta-jaxb.legacy.version}</version>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>

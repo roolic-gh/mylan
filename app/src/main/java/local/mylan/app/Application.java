@@ -16,9 +16,11 @@
 package local.mylan.app;
 
 import java.nio.file.Path;
+import local.mylan.service.data.DataServiceProvider;
 import local.mylan.service.rest.api.RestUserService;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
+import local.mylan.transport.http.rest.RestServiceDispatcher;
 import local.mylan.transport.http.rest.SwaggerUiDispatcher;
 import local.mylan.transport.http.ui.SimpleUiDispatcher;
 import org.slf4j.Logger;
@@ -30,6 +32,7 @@ final class Application {
     private final Path confDir;
     private final Path workDir;
 
+    private DataServiceProvider dataServiceProvider;
     private HttpServer server;
 
     Application(final Path confDir, final Path workDir) {
@@ -40,11 +43,22 @@ final class Application {
     void start() {
         LOG.info("Starting application with conf dir: {} and work dir: {}", confDir, workDir);
 
-        final var dispatcher = CompositeDispatcher.builder()
-            .defaultDispatcher(new SimpleUiDispatcher("/ui", "/rest"))
-            .dispatcher(new SwaggerUiDispatcher("/swagger-ui", "/rest", RestUserService.class))
-            .build();
+        // persistence layer
+        dataServiceProvider = new DataServiceProvider(confDir, workDir);
+        final var userService = dataServiceProvider.getUserService();
 
+        // rest
+        final var restUserService = RestUserService.defaultInstance(userService);
+        final var restDispatcher = new RestServiceDispatcher("/rest", restUserService);
+        final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest",
+            RestUserService.class);
+
+        // http server
+        final var dispatcher = CompositeDispatcher.builder()
+            .authenticator(restUserService::authenticate)
+            .defaultDispatcher(new SimpleUiDispatcher("/ui", "/rest"))
+            .dispatchers(swaggerDispatcher, restDispatcher)
+            .build();
         server = new HttpServer(confDir, dispatcher);
         server.start();
     }
@@ -52,6 +66,13 @@ final class Application {
     void stop() {
         if (server != null) {
             server.stop();
+        }
+        if (dataServiceProvider != null) {
+            try {
+                dataServiceProvider.close();
+            } catch (Exception e) {
+                // ignore;
+            }
         }
     }
 }

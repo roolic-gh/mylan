@@ -63,16 +63,16 @@ class OpenApiBuilder {
     private Paths paths = new Paths();
     private Set<Tag> tags = new HashSet<>();
 
-    private OpenApiBuilder(final String rootPath) {
-        this(rootPath, HttpHeaderValues.APPLICATION_JSON.toString());
+    OpenApiBuilder(final String rootPath) {
+        this(rootPath, List.of(HttpHeaderValues.APPLICATION_JSON.toString()));
     }
 
-    OpenApiBuilder(final String rootPath, final String... supportedEncodings) {
-        this.supportedEncodings = List.of(supportedEncodings);
+    OpenApiBuilder(final String rootPath, final List<String> supportedEncodings) {
+        this.supportedEncodings = supportedEncodings;
         final var server = new Server();
         server.setUrl(rootPath);
         openApi.setServers(List.of(server));
-        // TODO security
+
     }
 
     OpenAPI build() {
@@ -143,6 +143,13 @@ class OpenApiBuilder {
 
             final var params = new ArrayList<Parameter>();
             for (var methodParam : method.getParameters()) {
+                if (methodParam.getAnnotation(RequestBody.class) != null) {
+                    final var requestBody = new io.swagger.v3.oas.models.parameters.RequestBody();
+                    final var schema = resolveSchema(methodParam.getType());
+                    requestBody.setContent(buildContent(schema));
+                    operation.setRequestBody(requestBody);
+                    continue;
+                }
                 final var param = buildParameter(methodParam);
                 if (param == null) {
                     continue;
@@ -161,19 +168,11 @@ class OpenApiBuilder {
             final var responses = new ApiResponses();
             final var returnType = method.getGenericReturnType();
             final var responseSchema = Void.TYPE.equals(returnType) ? null : resolveSchema(returnType);
-            final var successCode = responseSchema == null ? "200" : "204";
+            final var successCode = responseSchema == null ? "204" : "200";
             final var response = new ApiResponse();
             response.setDescription("Success");
             if (responseSchema != null) {
-                final var content = new Content();
-                supportedEncodings.forEach(
-                    encoding -> {
-                        final var mediaType = new MediaType();
-                        mediaType.setSchema(responseSchema);
-                        content.addMediaType(encoding, mediaType);
-                    }
-                );
-                response.setContent(content);
+                response.setContent(buildContent(responseSchema));
             }
             responses.addApiResponse(successCode, response);
             operation.setResponses(responses);
@@ -191,14 +190,19 @@ class OpenApiBuilder {
         return this;
     }
 
+    private Content buildContent(final Schema schema) {
+        final var content = new Content();
+        supportedEncodings.forEach(
+            encoding -> {
+                final var mediaType = new MediaType();
+                mediaType.setSchema(schema);
+                content.addMediaType(encoding, mediaType);
+            }
+        );
+        return content;
+    }
+
     private static Parameter buildParameter(java.lang.reflect.Parameter methodParam) {
-        if (methodParam.getAnnotation(RequestBody.class) != null) {
-            final var result = new Parameter();
-            result.setName("request");
-            result.setIn("body");
-            result.setRequired(true);
-            return result;
-        }
         final var queryParam = methodParam.getAnnotation(QueryParameter.class);
         if (queryParam != null) {
             final var result = new io.swagger.v3.oas.models.parameters.QueryParameter();
