@@ -18,12 +18,10 @@ package local.mylan.service.data.mappers;
 import local.mylan.service.api.model.User;
 import local.mylan.service.data.entities.UserEntity;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper
 public interface UserModelMapper {
 
-    @Mapping(target = "deleted", ignore = true)
     UserEntity toEntity(User model);
 
     User fromEntity(UserEntity entity);

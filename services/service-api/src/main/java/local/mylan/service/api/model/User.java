@@ -20,6 +20,7 @@ public class User {
     private String username;
     private String displayName;
     private boolean isAdmin;
+    private boolean deleted;
 
     public User() {
         // default
@@ -68,5 +69,11 @@ public class User {
         isAdmin = admin;
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
 
+    public void setDeleted(final boolean deleted) {
+        this.deleted = deleted;
+    }
 }

@@ -96,8 +96,8 @@ public final class DefaultRestUserService implements RestUserService {
                 StandardCharsets.UTF_8).toString();
             final var newContext = new UserContext(user, key);
             contextCache.put(key, newContext);
-            // todo password change required flag fetch
-            return new UserAuthResult(user, key, false);
+            final var passwordChangeRequired = service.userMustChangePassword(user.getUserId());
+            return new UserAuthResult(user, key, passwordChangeRequired);
         }
         throw new UnauthenticatedException();
     }

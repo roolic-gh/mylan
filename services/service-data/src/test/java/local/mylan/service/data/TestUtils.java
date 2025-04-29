@@ -19,25 +19,26 @@ import java.util.stream.Stream;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.JdbcSettings;
-import org.junit.jupiter.api.AfterAll;
 
-class AbstractEntityTest {
+final class TestUtils {
 
-    protected static SessionFactory sessionFactory;
+    private TestUtils(){
+        // utility class
+    }
 
-    protected static void setupDatabase(final Class<?>... entityClasses) {
+    protected static SessionFactory setupSessionFactory(final Class<?>... entityClasses) {
         final var builder = new Configuration()
             .setProperty(JdbcSettings.JAKARTA_JDBC_URL, "jdbc:h2:mem:test")
             .setProperty(JdbcSettings.JAKARTA_JDBC_USER, "sa")
             .setProperty(JdbcSettings.JAKARTA_JDBC_PASSWORD, "")
             .setProperty(JdbcSettings.SHOW_SQL, true);
         Stream.of(entityClasses).forEach(builder::addAnnotatedClass);
-        sessionFactory = builder.buildSessionFactory();
+        final var sessionFactory = builder.buildSessionFactory();
         sessionFactory.getSchemaManager().exportMappedObjects(true);
+        return sessionFactory;
     }
 
-    @AfterAll
-    static void afterAll() {
+    static void tearDownSessionFactory(SessionFactory sessionFactory) {
         if (sessionFactory != null && sessionFactory.isOpen()) {
             sessionFactory.close();
         }

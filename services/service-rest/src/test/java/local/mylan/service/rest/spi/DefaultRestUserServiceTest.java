@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -99,11 +100,13 @@ public class DefaultRestUserServiceTest {
     @Test
     void authBearer() {
         doReturn(Optional.of(USER)).when(userService).getUserByCredentials(CREDENTIALS);
+        doReturn(true).when(userService).userMustChangePassword(USER_ID);
         doReturn(Optional.empty()).when(userService).getUserByCredentials(CREDENTIALS2);
 
         final var authResult = restService.authenticate(new UserCredentials(USERNAME, PASSWORD));
         assertNotNull(authResult);
         assertEquals(USER, authResult.getUser());
+        assertTrue(authResult.isMustChangePassword());
         final var authToken = authResult.getAuthToken();
         assertNotNull(authToken);
 

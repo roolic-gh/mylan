@@ -15,6 +15,9 @@
  */
 package local.mylan.service.data;
 
+import static local.mylan.service.data.TestUtils.setupSessionFactory;
+import static local.mylan.service.data.TestUtils.tearDownSessionFactory;
+import static local.mylan.service.data.UserDataService.ADMIN_USERNAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +28,8 @@ import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.data.entities.UserCredEntity;
 import local.mylan.service.data.entities.UserEntity;
+import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -32,43 +37,85 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class UserDataServiceTest extends AbstractEntityTest {
+public class UserDataServiceTest {
+    private static final String USERNAME1 = "user1";
+    private static final String USERNAME2 = "user2";
+    private static final String USERNAME3 = "user3";
+    private static final String PASSWORD = "pa$$W0rd";
+    private static final String NAME1 = "name-1";
+    private static final String NAME2 = "name-2";
+    private static final String NAME3 = "name-3";
 
+    static SessionFactory sessionFactory;
     static UserService userService;
 
-    private User activeUser;
-    private User deletedUser;
+    static User activeUser;
+    static User deletedUser;
 
     @BeforeAll
     static void beforeAll() {
-        setupDatabase(UserEntity.class, UserCredEntity.class);
-        userService  = new UserDataService(sessionFactory);
+        sessionFactory = setupSessionFactory(UserEntity.class, UserCredEntity.class);
+        userService = new UserDataService(sessionFactory);
+    }
+
+    @AfterAll
+    static void afterAll() {
+        tearDownSessionFactory(sessionFactory);
     }
 
     @Test
     @Order(1)
-    void veriyAdminUser(){
-        final var admin = userService.getUserByCredentials(new UserCredentials("admin", "admin")).orElseThrow();
-        assertEquals(UserDataService.ADMIN_USERNAME, admin.getUsername());
+    void veriyAdminUser() {
+        final var admin =
+            userService.getUserByCredentials(new UserCredentials(ADMIN_USERNAME, ADMIN_USERNAME)).orElseThrow();
+        assertEquals(ADMIN_USERNAME, admin.getUsername());
         assertEquals(UserDataService.ADMIN_DISPLAYNAME, admin.getDisplayName());
         assertTrue(admin.isAdmin());
+        assertTrue(userService.userMustChangePassword(admin.getUserId()));
     }
 
     @Test
     @Order(2)
-    void createUser(){
-        final var newUser = new User("user", "User", false);
+    void createUser() {
+        final var newUser = new User(USERNAME1, NAME1, false);
         final var created = userService.createUser(newUser);
         assertNotNull(created);
         assertNotNull(created.getUserId());
         assertEquals(newUser.getUsername(), created.getUsername());
         assertEquals(newUser.getDisplayName(), created.getDisplayName());
         assertFalse(created.isAdmin());
+        final var checkLogin =
+            userService.getUserByCredentials(new UserCredentials(USERNAME1, USERNAME1)).orElseThrow();
+        assertEquals(created.getUserId(), checkLogin.getUserId());
         activeUser = created;
     }
 
     @Test
     @Order(3)
+    void changeUserPassword() {
+        final var userId = activeUser.getUserId();
+        assertTrue(userService.userMustChangePassword(userId));
+        userService.changeUserPassword(userId, USERNAME1, PASSWORD);
+        final var checkLogin =
+            userService.getUserByCredentials(new UserCredentials(USERNAME1, PASSWORD)).orElseThrow();
+        assertEquals(userId, checkLogin.getUserId());
+        assertFalse(userService.userMustChangePassword(userId));
+    }
+
+    @Test
+    @Order(4)
+    void resetUserPassword() {
+        final var userId = activeUser.getUserId();
+        assertFalse(userService.userMustChangePassword(userId));
+        userService.resetUserPassword(userId);
+        final var checkLogin =
+            userService.getUserByCredentials(new UserCredentials(USERNAME1, USERNAME1)).orElseThrow();
+        assertEquals(userId, checkLogin.getUserId());
+        assertTrue(userService.userMustChangePassword(userId));
+    }
+
+    @Test
+    @Order(5)
     void updateUser() {
         // TODO
     }

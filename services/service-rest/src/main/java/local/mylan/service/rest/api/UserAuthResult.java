@@ -21,16 +21,16 @@ import local.mylan.service.api.model.User;
 public final class UserAuthResult {
     private User user;
     private String authToken;
-    private boolean passwordUpdateRequired;
+    private boolean mustChangePassword;
 
     public UserAuthResult() {
         // default
     }
 
-    public UserAuthResult(final User user, final String authToken, final boolean passwordUpdateRequired) {
+    public UserAuthResult(final User user, final String authToken, final boolean mustChangePassword) {
         this.user = user;
         this.authToken = authToken;
-        this.passwordUpdateRequired = passwordUpdateRequired;
+        this.mustChangePassword = mustChangePassword;
     }
 
     public User getUser() {
@@ -49,12 +49,12 @@ public final class UserAuthResult {
         this.authToken = authToken;
     }
 
-    public boolean isPasswordUpdateRequired() {
-        return passwordUpdateRequired;
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
     }
 
-    public void setPasswordUpdateRequired(final boolean passwordUpdateRequired) {
-        this.passwordUpdateRequired = passwordUpdateRequired;
+    public void setMustChangePassword(final boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 
     @Override
@@ -65,12 +65,12 @@ public final class UserAuthResult {
         if (!(o instanceof final UserAuthResult that)) {
             return false;
         }
-        return passwordUpdateRequired == that.passwordUpdateRequired && Objects.equal(user,
+        return mustChangePassword == that.mustChangePassword && Objects.equal(user,
             that.user) && Objects.equal(authToken, that.authToken);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(user, authToken, passwordUpdateRequired);
+        return Objects.hashCode(user, authToken, mustChangePassword);
     }
 }

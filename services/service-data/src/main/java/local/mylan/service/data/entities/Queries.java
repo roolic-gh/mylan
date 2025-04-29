@@ -17,7 +17,10 @@ package local.mylan.service.data.entities;
 
 public interface Queries {
     String GET_USER_BY_CREDENTIALS = "get-user-by-credentials";
+    String GET_USER_MUST_CHANGE_PASSWORD = "get-user-must-change-password";
     String GET_ALL_USERS = "get-all-users";
     String GET_ACTIVE_USERS = "get-active-users";
     String GET_ACTIVE_ADMINS = "get-active-admins";
+    String RESET_USER_PASSWORD = "reset-user-password";
+    String UPDATE_USER_PASSWORD = "update-user-password";
 }

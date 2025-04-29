@@ -28,6 +28,8 @@ public interface UserService {
 
     void changeUserPassword(Integer userId, String oldPassword, String newPassword);
 
+    boolean userMustChangePassword(Integer userId);
+
     List<User> getUserList(boolean forAdminPurposes);
 
     Optional<User> getUserById(Integer userId, boolean forAdminPurposes);
@@ -37,4 +39,6 @@ public interface UserService {
     User updateUser(User user);
 
     void deleteUser(Integer userId);
+
+    void restoreUser(Integer userId);
 }

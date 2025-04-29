@@ -30,7 +30,7 @@ import org.mapstruct.factory.Mappers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserDataService implements UserService {
+public class UserDataService extends AbstractDataService implements UserService {
     private static final Logger LOG = LoggerFactory.getLogger(UserDataService.class);
     private static final UserModelMapper MAPPER = Mappers.getMapper(UserModelMapper.class);
 
@@ -39,15 +39,13 @@ public class UserDataService implements UserService {
     @VisibleForTesting
     static final String ADMIN_DISPLAYNAME = "Administrator";
 
-    private final SessionFactory sessionFactory;
-
     public UserDataService(final SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
+        super(sessionFactory);
         checkAdminUserExists();
     }
 
     void checkAdminUserExists() {
-        final var found = sessionFactory.fromSession(session ->
+        final var found = fromSession(session ->
             session.createNamedQuery(Queries.GET_ACTIVE_ADMINS, UserEntity.class).getSingleResultOrNull());
         if (found == null) {
             LOG.warn("No Admin user found in database, creating default...");
@@ -58,7 +56,7 @@ public class UserDataService implements UserService {
 
     @Override
     public Optional<User> getUserByCredentials(final UserCredentials credentials) {
-        return sessionFactory.fromSession(session ->
+        return fromSession(session ->
             session.createNamedQuery(Queries.GET_USER_BY_CREDENTIALS, UserEntity.class)
                 .setParameter("username", credentials.getUsername())
                 .setParameter("password", encryptPassword(credentials.getPassword()))
@@ -68,32 +66,57 @@ public class UserDataService implements UserService {
 
     @Override
     public void resetUserPassword(final Integer userId) {
-
+        final var userEntity = fromSession(session -> session.get(UserEntity.class, userId));
+        final int updated = fromTransaction(session ->
+            session.createNamedMutationQuery(Queries.RESET_USER_PASSWORD)
+                .setParameter("userId", userId)
+                .setParameter("password", encryptPassword(userEntity.getUsername()))
+                .executeUpdate());
+        if (updated < 1) {
+            // TODO throw dedicated exception if no entries updated
+        }
     }
 
     @Override
     public void changeUserPassword(final Integer userId, final String oldPassword, final String newPassword) {
+        final int updated = fromTransaction(session ->
+            session.createNamedMutationQuery(Queries.UPDATE_USER_PASSWORD)
+                .setParameter("userId", userId)
+                .setParameter("oldPassword", encryptPassword(oldPassword))
+                .setParameter("newPassword", encryptPassword(newPassword))
+                .executeUpdate());
+        if (updated < 1) {
+            // TODO throw dedicated exception if no entries updated
+        }
+    }
 
+    @Override
+    public boolean userMustChangePassword(final Integer userId) {
+        return fromSession(session ->
+            session.createNamedQuery(Queries.GET_USER_MUST_CHANGE_PASSWORD, Boolean.class)
+                .setParameter("userId", userId).getSingleResult());
     }
 
     @Override
     public List<User> getUserList(final boolean forAdminPurposes) {
         final var query = forAdminPurposes ? Queries.GET_ALL_USERS : Queries.GET_ACTIVE_USERS;
-        return sessionFactory.fromSession(
+        return fromSession(
             session -> session.createNamedQuery(query, UserEntity.class).list()
         ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
     public Optional<User> getUserById(final Integer userId, final boolean forAdminPurposes) {
-        return Optional.empty();
+        final var userEntity = fromSession(session -> session.get(UserEntity.class, userId));
+        return !userEntity.isDeleted() || forAdminPurposes
+            ? Optional.of(MAPPER.fromEntity(userEntity)) : Optional.empty();
     }
 
     @Override
     public User createUser(final User newUser) {
         final var entity = MAPPER.toEntity(newUser);
         final var cred = new UserCredEntity(encryptPassword(newUser.getUsername()), entity, true);
-        sessionFactory.inTransaction(session -> {
+        inTransaction(session -> {
             session.persist(entity);
             session.persist(cred);
         });
@@ -107,6 +130,11 @@ public class UserDataService implements UserService {
 
     @Override
     public void deleteUser(final Integer userId) {
+
+    }
+
+    @Override
+    public void restoreUser(final Integer userId) {
 
     }
 

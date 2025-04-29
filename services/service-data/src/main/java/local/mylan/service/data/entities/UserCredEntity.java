@@ -31,6 +31,14 @@ import jakarta.persistence.Table;
     query = "SELECT uc.user FROM UserCredEntity uc WHERE uc.user.username = :username " +
             "AND uc.password = :password AND uc.user.deleted = false",
     resultClass = UserEntity.class)
+@NamedQuery(name = Queries.GET_USER_MUST_CHANGE_PASSWORD,
+    query = "SELECT uc.mustChange FROM UserCredEntity uc WHERE uc.user.userId = :userId")
+@NamedQuery(name = Queries.RESET_USER_PASSWORD,
+    query = "UPDATE UserCredEntity uc SET uc.password = :password, uc.mustChange = true " +
+            "WHERE uc.user.userId = :userId")
+@NamedQuery(name = Queries.UPDATE_USER_PASSWORD,
+    query = "UPDATE UserCredEntity uc SET uc.password = :newPassword, uc.mustChange = false " +
+            "WHERE uc.user.userId = :userId AND uc.password = :oldPassword")
 
 @Entity
 @Table(name = "user_cred")
