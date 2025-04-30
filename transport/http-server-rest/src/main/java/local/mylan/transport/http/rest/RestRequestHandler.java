@@ -15,12 +15,15 @@
  */
 package local.mylan.transport.http.rest;
 
+import static io.netty.handler.codec.http.HttpHeaderNames.CACHE_CONTROL;
+import static io.netty.handler.codec.http.HttpHeaderValues.NO_CACHE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static local.mylan.transport.http.common.ResponseUtils.responseWithContent;
 import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
 
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
 import java.lang.reflect.Method;
@@ -68,18 +71,22 @@ class RestRequestHandler {
                 .toArray(Object[]::new);
             final var result = method.invoke(serviceInstance, args);
             if (result == null) {
-                ctx.sendResponse(simpleResponse(ctx.protocolVersion(), NO_CONTENT));
+                sendResponse(ctx, simpleResponse(ctx.protocolVersion(), NO_CONTENT));
             } else {
                 final var content = RestConverter.toResponseBody(result, encoding);
-                ctx.sendResponse(responseWithContent(ctx.protocolVersion(), OK, content, encoding.mediaType()));
+                sendResponse(ctx, responseWithContent(ctx.protocolVersion(), OK, content, encoding.mediaType()));
             }
         } catch (Exception e) {
             LOG.error("Exception processing request {}", ctx.contextPath(), e);
             final var content = RestConverter.toResponseBody(new ErrorMessage(e.getMessage()), encoding);
             // todo response code by exception type
-            ctx.sendResponse(responseWithContent(ctx.protocolVersion(), INTERNAL_SERVER_ERROR,
+            sendResponse(ctx, responseWithContent(ctx.protocolVersion(), INTERNAL_SERVER_ERROR,
                 content, encoding.mediaType()));
         }
     }
 
+    private static void sendResponse(final RequestContext ctx, FullHttpResponse response) {
+        response.headers().set(CACHE_CONTROL, NO_CACHE);
+        ctx.sendResponse(response);
+    }
 }
