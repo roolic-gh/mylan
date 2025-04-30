@@ -60,8 +60,94 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>extract-ui-resources</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>materializecss</artifactId>
+                                    <version>${materializecss.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars</groupId>
+                                    <artifactId>material-icons</artifactId>
+                                    <version>${material-icons.version}</version>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/temp</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-ui-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>
+                                        ${project.build.directory}/temp/META-INF/resources/webjars/materializecss/${materializecss.version}/css
+                                    </directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*.min.css</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <directory>
+                                        ${project.build.directory}/temp/META-INF/resources/webjars/materializecss/${materializecss.version}/js
+                                    </directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*.min.js</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <directory>
+                                        ${project.build.directory}/temp/META-INF/resources/webjars/material-icons/${material-icons.version}/iconfont
+                                    </directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*.js</include>
+                                        <include>**/*.css</include>
+                                        <include>**/*.woff</include>
+                                        <include>**/*.woff2</include>
+                                    </includes>
+                                </resource>
+                             </resources>
+                            <outputDirectory>${project.build.outputDirectory}/mylan/ui-simple/mat</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>yuicompressor-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compress</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <nosuffix>true</nosuffix>
+                </configuration>
             </plugin>
         </plugins>
     </build>
