@@ -18,6 +18,7 @@ package local.mylan.app;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import local.mylan.common.utils.ConfRegistry;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -36,6 +37,7 @@ public final class Main {
         final var confDir = getConfDir(cmd.getOptionValue(OPT_CONF_DIR));
         final var workDir = getWorkDir(cmd.getOptionValue(OPT_WORK_DIR));
 
+        ConfRegistry.INSTANCE.setConfDir(confDir);
         // todo configure logger working dir in case file output to be used
 
         final var application = new Application(confDir, workDir);
