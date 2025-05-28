@@ -154,6 +154,11 @@ public final class DefaultRestUserService implements RestUserService {
     }
 
     @Override
+    public User getCurrentUser(final UserContext userCtx) {
+        return userCtx.currentUser();
+    }
+
+    @Override
     public User getUser(final Integer userId, final UserContext userCtx) {
         final var currentUser = userCtx.currentUser();
         if (currentUser.getUserId() == null) {

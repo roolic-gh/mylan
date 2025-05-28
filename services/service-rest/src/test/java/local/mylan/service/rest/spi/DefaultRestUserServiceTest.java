@@ -166,4 +166,11 @@ public class DefaultRestUserServiceTest {
         assertEquals(USER_LIST, restService.getUserList(USER_CTX));
         assertEquals(USER_LIST_ADM, restService.getUserList(ADMIN_CTX));
     }
+
+    @Test
+    void currentUser() {
+        assertEquals(ANONIMOUS_CONTEXT.currentUser(), restService.getCurrentUser(ANONIMOUS_CONTEXT));
+        assertEquals(USER, restService.getCurrentUser(USER_CTX));
+        assertEquals(ADMIN, restService.getCurrentUser(ADMIN_CTX));
+    }
 }

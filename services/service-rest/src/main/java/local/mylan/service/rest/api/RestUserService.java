@@ -58,4 +58,7 @@ public interface RestUserService {
 
     @RequestMapping(method = "GET", path = "/user/list", description = "Get user list")
     List<User> getUserList(UserContext userCtx);
+
+    @RequestMapping(method = "GET", path = "/user", description = "Get current user by auth token")
+    User getCurrentUser(UserContext userCtx);
 }
