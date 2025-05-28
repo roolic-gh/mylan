@@ -18,14 +18,17 @@ package local.mylan.transport.http;
 import static local.mylan.transport.http.common.RequestUtils.buildRequestContext;
 import static local.mylan.transport.http.common.ResponseUtils.fullUrl;
 import static local.mylan.transport.http.common.ResponseUtils.redirectResponse;
+import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import local.mylan.service.api.UserContext;
 import local.mylan.transport.http.api.ContextDispatcher;
 import local.mylan.transport.http.api.RequestAuthenticator;
 import local.mylan.transport.http.api.RequestDispatcher;
@@ -41,7 +44,7 @@ public class CompositeDispatcher implements RequestDispatcher {
     private final String rootRedirectUri;
 
     private CompositeDispatcher(final List<ContextDispatcher> contextDispatchers,
-            final RequestAuthenticator authenticator, final String rootRedirectUri) {
+        final RequestAuthenticator authenticator, final String rootRedirectUri) {
         this.contextDispatchers = contextDispatchers;
         this.authenticator = authenticator;
         this.rootRedirectUri = rootRedirectUri;
@@ -51,16 +54,22 @@ public class CompositeDispatcher implements RequestDispatcher {
     public boolean dispatch(final ChannelHandlerContext ctx, final FullHttpRequest request) {
         final var uri = request.uri();
         if (rootRedirectUri != null && RequestUtils.isRootUri(uri)) {
-           final var redirectUrl = fullUrl(ctx, request, rootRedirectUri);
+            final var redirectUrl = fullUrl(ctx, request, rootRedirectUri);
             LOG.debug("redirect to: {}", redirectUrl);
             final var response = redirectResponse(request.protocolVersion(), redirectUrl);
             ctx.writeAndFlush(response);
             return true;
         }
+        final UserContext userContext;
+        try {
+            userContext = authenticator == null
+                ? null : authenticator.authenticateUser(request.headers().get(HttpHeaderNames.AUTHORIZATION));
+        } catch (Exception e) {
+            ctx.writeAndFlush(simpleResponse(request.protocolVersion(), HttpResponseStatus.UNAUTHORIZED));
+            return true;
+        }
         for (var dispatcher : contextDispatchers) {
             if (uri.startsWith(dispatcher.contextPath())) {
-                final var userContext = authenticator == null
-                    ? null : authenticator.authenticateUser(request.headers().get(HttpHeaderNames.AUTHORIZATION));
                 final var requestContext = buildRequestContext(ctx, request, dispatcher.contextPath(), userContext);
                 return dispatcher.dispatch(requestContext);
             }
@@ -77,11 +86,11 @@ public class CompositeDispatcher implements RequestDispatcher {
         private RequestAuthenticator authenticator;
         private String rootRedirectUri;
 
-        private Builder(){
+        private Builder() {
             // instantiate through static method above
         }
 
-        public Builder authenticator(RequestAuthenticator authenticator){
+        public Builder authenticator(RequestAuthenticator authenticator) {
             this.authenticator = authenticator;
             return this;
         }
@@ -91,7 +100,7 @@ public class CompositeDispatcher implements RequestDispatcher {
             return this;
         }
 
-        public Builder dispatchers(final ContextDispatcher ... dispatchers) {
+        public Builder dispatchers(final ContextDispatcher... dispatchers) {
             this.dispatchers.addAll(Arrays.asList(dispatchers));
             return this;
         }
@@ -108,7 +117,7 @@ public class CompositeDispatcher implements RequestDispatcher {
         }
 
         public RequestDispatcher build() {
-            return new CompositeDispatcher(List.copyOf(dispatchers),authenticator, rootRedirectUri);
+            return new CompositeDispatcher(List.copyOf(dispatchers), authenticator, rootRedirectUri);
         }
     }
 }

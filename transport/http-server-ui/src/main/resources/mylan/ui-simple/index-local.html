@@ -16,17 +16,18 @@
   -->
 
 <html>
-<head><title>MyLAN</title>
-    <link rel="stylesheet" href="${SELF_CONTEXT}/mat/material-icons.css"/>
-    <link rel="stylesheet" href="${SELF_CONTEXT}/mat/materialize.min.css" media="screen,projection"/>
-    <link rel="stylesheet" href="${SELF_CONTEXT}/styles.css"/>
+<head>
+    <title>MyLAN</title>
+    <link rel="stylesheet" href="./mat/material-icons.css"/>
+    <link rel="stylesheet" href="./mat/materialize.min.css" media="screen,projection"/>
+    <link rel="stylesheet" href="./styles.css"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <script src="${SELF_CONTEXT}/mat/materialize.min.js"></script>
-    <script src="${SELF_CONTEXT}/script.js"></script>
+    <script src="./mat/materialize.min.js"></script>
+    <script src="./script.js"></script>
     <script language="JavaScript">
         var app = null;
         document.addEventListener("DOMContentLoaded", (event) => {
-            app = new App("${SELF_CONTEXT}", "${REST_CONTEXT}");
+            app = new App(".", "/rest");
             app.init();
         });
     </script>
