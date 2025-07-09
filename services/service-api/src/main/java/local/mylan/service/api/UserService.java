@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.api.model.UserStatus;
 
 public interface UserService {
 
@@ -40,5 +41,5 @@ public interface UserService {
 
     void deleteUser(Integer userId);
 
-    void restoreUser(Integer userId);
+    void updateUserStatus(UserStatus status);
 }

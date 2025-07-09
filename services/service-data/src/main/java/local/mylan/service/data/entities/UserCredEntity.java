@@ -16,7 +16,6 @@
 package local.mylan.service.data.entities;
 
 import com.google.common.base.Objects;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -26,10 +25,12 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @NamedQuery(name = Queries.GET_USER_BY_CREDENTIALS,
     query = "SELECT uc.user FROM UserCredEntity uc WHERE uc.user.username = :username " +
-            "AND uc.password = :password AND uc.user.deleted = false",
+            "AND uc.password = :password AND uc.user.disabled = false",
     resultClass = UserEntity.class)
 @NamedQuery(name = Queries.GET_USER_MUST_CHANGE_PASSWORD,
     query = "SELECT uc.mustChange FROM UserCredEntity uc WHERE uc.user.userId = :userId")
@@ -46,8 +47,9 @@ public class UserCredEntity {
 
     @Id
     @MapsId
-    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @Column(name = "password")

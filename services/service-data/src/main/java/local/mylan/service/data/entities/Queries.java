@@ -23,4 +23,5 @@ public interface Queries {
     String GET_ACTIVE_ADMINS = "get-active-admins";
     String RESET_USER_PASSWORD = "reset-user-password";
     String UPDATE_USER_PASSWORD = "update-user-password";
+    String UPDATE_USER_STATUS = "update-user-status";
 }

@@ -32,6 +32,7 @@ import local.mylan.service.api.exceptions.UnauthenticatedException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.api.ChangePassword;
 import local.mylan.service.rest.api.RestUserService;
 import local.mylan.service.rest.api.UserAuthResult;
@@ -140,6 +141,21 @@ public final class DefaultRestUserService implements RestUserService {
             throw new UnauthorizedException("User update is only allowed to owner or adminiastrator.");
         }
         return service.updateUser(user);
+    }
+
+    @Override
+    public void updateUserStatus(final UserStatus status, final UserContext userCtx) {
+        if (status.getUserId() == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+        final var currentUser = userCtx.currentUser();
+        if (!currentUser.isAdmin()) {
+            throw new UnauthorizedException("User status cabe only updated by administrator.");
+        }
+        if (Objects.equals(currentUser.getUserId(), status.getUserId())) {
+            throw new IllegalArgumentException("Administrator cannot update own status.");
+        }
+        service.updateUserStatus(status);
     }
 
     @Override

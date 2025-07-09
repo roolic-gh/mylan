@@ -25,11 +25,13 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 @NamedQuery(name = Queries.GET_ALL_USERS, resultClass = UserEntity.class,
-    query = "SELECT u from UserEntity u")
+    query = "SELECT u FROM UserEntity u")
 @NamedQuery(name = Queries.GET_ACTIVE_USERS,resultClass = UserEntity.class,
-    query = "SELECT u from UserEntity u WHERE u.deleted=false")
+    query = "SELECT u FROM UserEntity u WHERE u.disabled=false")
 @NamedQuery(name = Queries.GET_ACTIVE_ADMINS, resultClass = UserEntity.class,
-    query = "SELECT u from UserEntity u WHERE u.deleted=false AND u.isAdmin = true")
+    query = "SELECT u FROM UserEntity u WHERE u.disabled = false AND u.isAdmin = true")
+@NamedQuery(name = Queries.UPDATE_USER_STATUS,
+    query = "UPDATE UserEntity u SET u.disabled = :disabled WHERE u.userId = :userId")
 
 @Entity
 @Table(name = "user_main")
@@ -48,8 +50,8 @@ public class UserEntity {
     @Column(name = "admin")
     private boolean isAdmin;
 
-    @Column(name = "deleted")
-    private boolean deleted;
+    @Column(name = "disabled")
+    private boolean disabled;
 
     public UserEntity() {
         // default
@@ -93,12 +95,12 @@ public class UserEntity {
         isAdmin = admin;
     }
 
-    public boolean isDeleted() {
-        return deleted;
+    public boolean isDisabled() {
+        return disabled;
     }
 
-    public void setDeleted(final boolean deleted) {
-        this.deleted = deleted;
+    public void setDisabled(final boolean disabled) {
+        this.disabled = disabled;
     }
 
     @Override
@@ -106,16 +108,16 @@ public class UserEntity {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof final UserEntity that)) {
+        if (!(o instanceof UserEntity that)) {
             return false;
         }
-        return isAdmin == that.isAdmin && deleted == that.deleted && Objects.equal(userId,
+        return isAdmin == that.isAdmin && disabled == that.disabled && Objects.equal(userId,
             that.userId) && Objects.equal(username,
             that.username) && Objects.equal(displayName, that.displayName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(userId, username, displayName, isAdmin, deleted);
+        return Objects.hashCode(userId, username, displayName, isAdmin, disabled);
     }
 }

@@ -24,6 +24,7 @@ import local.mylan.service.api.UserContext;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.spi.DefaultRestUserService;
 
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
@@ -47,8 +48,11 @@ public interface RestUserService {
     @RequestMapping(method = "POST", path = "/user/create", description = "Create user")
     User createUser(@RequestBody User newUser, UserContext userCtx);
 
-    @RequestMapping(method = "PATCH", path = "/user/update", description = "Update user")
+    @RequestMapping(method = "PATCH", path = "/user/details", description = "Update user details")
     User updateUser(@RequestBody User user, UserContext userCtx);
+
+    @RequestMapping(method = "PATCH", path = "/user/status", description = "Update user status")
+    void updateUserStatus(@RequestBody UserStatus status, UserContext userCtx);
 
     @RequestMapping(method = "DELETE", path = "/user/{id}", description = "Delete user")
     void deleteUser(@PathParameter("id") Integer userId, UserContext userCtx);

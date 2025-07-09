@@ -21,6 +21,7 @@ import java.util.Optional;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.data.entities.Queries;
 import local.mylan.service.data.entities.UserCredEntity;
 import local.mylan.service.data.entities.UserEntity;
@@ -108,7 +109,7 @@ public class UserDataService extends AbstractDataService implements UserService 
     @Override
     public Optional<User> getUserById(final Integer userId, final boolean forAdminPurposes) {
         final var userEntity = fromSession(session -> session.get(UserEntity.class, userId));
-        return !userEntity.isDeleted() || forAdminPurposes
+        return userEntity != null && (!userEntity.isDisabled() || forAdminPurposes)
             ? Optional.of(MAPPER.fromEntity(userEntity)) : Optional.empty();
     }
 
@@ -125,17 +126,42 @@ public class UserDataService extends AbstractDataService implements UserService 
 
     @Override
     public User updateUser(final User user) {
-        return null;
+        final var entity = fromTransaction(session -> {
+            final var existing = session.get(UserEntity.class, user.getUserId());
+            if (existing != null && !existing.isDisabled()) {
+                existing.setDisplayName(user.getDisplayName());
+                session.persist(existing);
+            };
+            return existing;
+        });
+        return MAPPER.fromEntity(entity);
+    }
+
+    @Override
+    public void updateUserStatus(final UserStatus status) {
+        final int updated = fromTransaction(session ->
+            session.createNamedMutationQuery(Queries.UPDATE_USER_STATUS)
+                .setParameter("userId", status.getUserId())
+                .setParameter("disabled", status.isDisabled())
+                .executeUpdate());
+        if (updated < 1) {
+            // TODO throw dedicated exception if no entries updated
+        }
     }
 
     @Override
     public void deleteUser(final Integer userId) {
-
-    }
-
-    @Override
-    public void restoreUser(final Integer userId) {
-
+        final boolean deleted = fromTransaction(session -> {
+                final var existing = session.get(UserEntity.class, userId);
+                if (existing != null && existing.isDisabled()) {
+                    session.remove(existing);
+                    return true;
+                }
+                return false;
+            });
+        if (!deleted) {
+            // TODO throw dedicated exception if no entries deeted
+        }
     }
 
     private static String encryptPassword(final String password) {

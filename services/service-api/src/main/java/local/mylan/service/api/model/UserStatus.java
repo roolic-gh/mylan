@@ -15,26 +15,17 @@
  */
 package local.mylan.service.api.model;
 
-public class User {
+public final class UserStatus {
     private Integer userId;
-    private String username;
-    private String displayName;
-    private boolean isAdmin;
     private boolean disabled;
 
-    public User() {
+    public UserStatus() {
         // default
     }
 
-    public User(final Integer userId, final String username, final String displayName, final boolean isAdmin) {
-        this(username, displayName, isAdmin);
+    public UserStatus(final Integer userId, final boolean disabled) {
         this.userId = userId;
-    }
-
-    public User(final String username, final String displayName, final boolean isAdmin) {
-        this.username = username;
-        this.displayName = displayName;
-        this.isAdmin = isAdmin;
+        this.disabled = disabled;
     }
 
     public Integer getUserId() {
@@ -43,30 +34,6 @@ public class User {
 
     public void setUserId(final Integer userId) {
         this.userId = userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(final String username) {
-        this.username = username;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(final String displayName) {
-        this.displayName = displayName;
-    }
-
-    public boolean isAdmin() {
-        return isAdmin;
-    }
-
-    public void setAdmin(final boolean admin) {
-        isAdmin = admin;
     }
 
     public boolean isDisabled() {

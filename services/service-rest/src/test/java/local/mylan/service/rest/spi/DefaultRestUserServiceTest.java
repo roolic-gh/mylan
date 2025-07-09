@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
@@ -39,6 +40,7 @@ import local.mylan.service.api.exceptions.UnauthenticatedException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
+import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.api.RestUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,6 +140,19 @@ public class DefaultRestUserServiceTest {
         assertEquals(USER, restService.updateUser(USER, ADMIN_CTX));
         verify(userService, times(2)).updateUser(USER);
         assertThrows(UnauthorizedException.class, () -> restService.updateUser(USER, USER2_CTX));
+    }
+
+    @Test
+    void updateUserStatus() {
+        doNothing().when(userService).updateUserStatus(any(UserStatus.class));
+        final var userStatus = new UserStatus(USER_ID, true);
+        restService.updateUserStatus(userStatus, ADMIN_CTX);
+        verify(userService, times(1)).updateUserStatus(userStatus);
+        assertThrows(UnauthorizedException.class, () -> restService.updateUserStatus(userStatus, USER_CTX));
+        assertThrows(IllegalArgumentException.class,
+            () -> restService.updateUserStatus(new UserStatus(null, false), ADMIN_CTX));
+        assertThrows(IllegalArgumentException.class,
+            () -> restService.updateUserStatus(new UserStatus(ADMIN_ID, false), ADMIN_CTX));
     }
 
     @Test
