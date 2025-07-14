@@ -20,7 +20,7 @@ public interface Queries {
     String GET_USER_MUST_CHANGE_PASSWORD = "get-user-must-change-password";
     String GET_ALL_USERS = "get-all-users";
     String GET_ACTIVE_USERS = "get-active-users";
-    String GET_ACTIVE_ADMINS = "get-active-admins";
+    String GET_ACTIVE_ADMINS_COUNT = "get-active-admins-count";
     String RESET_USER_PASSWORD = "reset-user-password";
     String UPDATE_USER_PASSWORD = "update-user-password";
     String UPDATE_USER_STATUS = "update-user-status";

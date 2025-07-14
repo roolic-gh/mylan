@@ -28,8 +28,8 @@ import jakarta.persistence.Table;
     query = "SELECT u FROM UserEntity u")
 @NamedQuery(name = Queries.GET_ACTIVE_USERS,resultClass = UserEntity.class,
     query = "SELECT u FROM UserEntity u WHERE u.disabled=false")
-@NamedQuery(name = Queries.GET_ACTIVE_ADMINS, resultClass = UserEntity.class,
-    query = "SELECT u FROM UserEntity u WHERE u.disabled = false AND u.isAdmin = true")
+@NamedQuery(name = Queries.GET_ACTIVE_ADMINS_COUNT, resultClass = UserEntity.class,
+    query = "SELECT COUNT(*) FROM UserEntity u WHERE u.disabled = false AND u.isAdmin = true")
 @NamedQuery(name = Queries.UPDATE_USER_STATUS,
     query = "UPDATE UserEntity u SET u.disabled = :disabled WHERE u.userId = :userId")
 

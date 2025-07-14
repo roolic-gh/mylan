@@ -47,8 +47,9 @@ public class UserDataService extends AbstractDataService implements UserService 
 
     void checkAdminUserExists() {
         final var found = fromSession(session ->
-            session.createNamedQuery(Queries.GET_ACTIVE_ADMINS, UserEntity.class).getSingleResultOrNull());
-        if (found == null) {
+            session.createNamedQuery(Queries.GET_ACTIVE_ADMINS_COUNT, Long.class).uniqueResult());
+        if (found <1) {
+            // TODO handle default admin is disabled case
             LOG.warn("No Admin user found in database, creating default...");
             createUser(new User(ADMIN_USERNAME, ADMIN_DISPLAYNAME, true));
             LOG.warn("Default Admin user created. Password change is required.");
