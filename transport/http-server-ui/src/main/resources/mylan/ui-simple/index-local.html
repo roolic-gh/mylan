@@ -15,14 +15,14 @@
   limitations under the License.
   -->
 
-<html>
+<html xmlns="http://www.w3.org/1999/html">
 <head>
     <title>MyLAN</title>
-    <link rel="stylesheet" href="./mat/material-icons.css"/>
-    <link rel="stylesheet" href="./mat/materialize.min.css" media="screen,projection"/>
+    <link rel="stylesheet" href="mat-local/material-icons.css"/>
+    <link rel="stylesheet" href="mat-local/materialize.min.css" media="screen,projection"/>
     <link rel="stylesheet" href="./styles.css"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <script src="./mat/materialize.min.js"></script>
+    <script src="mat-local/materialize.min.js"></script>
     <script src="./script.js"></script>
     <script language="JavaScript">
         var app = null;
@@ -33,13 +33,14 @@
     </script>
 </head>
 <body>
+<!-- navbar -->
 <nav>
-    <div class="nav-wrapper blue-grey darken-4">
+    <div class="nav-wrapper blue-grey darken-3">
         <a href="#" class="left brand-logo">MyLAN</a>
         <ul class="right">
-            <li id="bookmarks-menu-item"><a href="#" id="bookmarks-link">Bookmarks</a></li>
-            <li id="volumes-menu-item"><a href="#" id="volumes-link">Volumes</a></li>
-            <li id="users-menu-item"><a href="#" id="user-list-link">Users</a></li>
+            <li id="bookmarks-menu-item"><a href="#" onclick="app.listBookmarks()">Bookmarks</a></li>
+            <li id="volumes-menu-item"><a href="#" onclick="app.listVolumes()">Volumes</a></li>
+            <li id="users-menu-item"><a href="#" onclick="app.listUsers()">Users</a></li>
             <li id="registered-menu-item">
                 <a href="#" class="dropdown-trigger column s1" data-target="user-dropdown" id="user-link">
                     <i class="left large material-icons">account_circle</i>
@@ -51,8 +52,8 @@
     </div>
 </nav>
 <ul id="user-dropdown" class="dropdown-content">
-    <li><a href="#" id="change-password-link">Change password</a></li>
-    <li><a href="#" id="edit-profile-link">Edit profile</a></li>
+    <li><a href="#change-password-modal" class="modal-trigger">Change password</a></li>
+    <li><a href="#edit-profile-modal" class="modal-trigger">Edit profile</a></li>
     <li><a href="#" onclick="app.logout()">Logout</a></li>
 </ul>
 <div id="login-modal" class="modal">
@@ -68,7 +69,7 @@
             </div>
             <div class="input-field col m4 s12">
                 <label>
-                    <input id="rememberme-input" type="checkbox" />
+                    <input id="rememberme-input" type="checkbox"/>
                     <span>Remember me</span>
                 </label>
             </div>
@@ -79,5 +80,92 @@
         <a href="#" class="modal-close btn-flat">Close</a>
     </div>
 </div>
+<div id="change-password-modal" class="modal">
+    <div class="modal-content">
+        <h4>Change Password</h4>
+        <div class="row">
+            <div class="input-field col m4 s12">
+                <input id="old-password-input" type="password" class="validate">
+                <label for="old-password-input">Old Password</label>
+            </div>
+            <div class="input-field col m4 s12">
+                <input id="new-password-input" type="password" class="validate">
+                <label for="new-password-input">New Password</label>
+            </div>
+            <div class="input-field col m4 s12">
+                <input id="repeat-new-password-input" type="password" class="validate">
+                <label for="repeat-new-password-input">Repeat new password</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" onclick="app.updatePassword()">Update</a>
+        <a href="#" class="modal-close btn-flat">Close</a>
+    </div>
+</div>
+<div id="edit-profile-modal" class="modal">
+    <div class="modal-content">
+        <h4>Edit Profile</h4>
+        <div class="row">
+            <div class="input-field col m4 s12">
+                <input id="edit-displayname-input" type="text" class="validate">
+                <label for="edit-displayname-input">Display Name</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" onclick="app.updateProfile()">Update</a>
+        <a href="#" class="modal-close btn-flat">Close</a>
+    </div>
+</div>
+
+<!-- users -->
+<template id="user-lst-template">
+    <h2>Users</h2>
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large modal-trigger" href="#new-user-modal"><i class="material-icons">add</i></a>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Display Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>&nbsp;</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</template>
+<div id="new-user-modal" class="modal">
+    <div class="modal-content">
+        <h4>New User</h4>
+        <div class="row">
+            <div class="input-field col m4 s12">
+                <input id="new-username-input" type="text" class="validate">
+                <label for="new-username-input">Username</label>
+            </div>
+            <div class="input-field col m4 s12">
+                <input id="new-displayname-input" type="text" class="validate">
+                <label for="new-displayname-input">Display Name</label>
+            </div>
+            <div class="input-field col m4 s12">
+                <label>
+                    <input id="new-isadmin-input" type="checkbox"/>
+                    <span>Admin</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" onclick="app.addUser()">Create user</a>
+        <a href="#" class="modal-close btn-flat">Close</a>
+    </div>
+</div>
+
+<!-- content -->
+<div class="container" id="content"></div>
 </body>
 </html>
