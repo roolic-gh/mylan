@@ -100,7 +100,7 @@ public final class DefaultRestUserService implements RestUserService {
             final var passwordChangeRequired = service.userMustChangePassword(user.getUserId());
             return new UserAuthResult(user, key, passwordChangeRequired);
         }
-        throw new UnauthenticatedException();
+        throw new UnauthenticatedException("Invalid username and/or password.");
     }
 
     @Override
@@ -150,7 +150,7 @@ public final class DefaultRestUserService implements RestUserService {
         }
         final var currentUser = userCtx.currentUser();
         if (!currentUser.isAdmin()) {
-            throw new UnauthorizedException("User status cabe only updated by administrator.");
+            throw new UnauthorizedException("User status update is only allowed to administrator.");
         }
         if (Objects.equals(currentUser.getUserId(), status.getUserId())) {
             throw new IllegalArgumentException("Administrator cannot update own status.");
@@ -164,7 +164,7 @@ public final class DefaultRestUserService implements RestUserService {
             throw new UnauthorizedException("User deletion is only allowed to administrator.");
         }
         if (Objects.equals(userCtx.currentUser().getUserId(), userId)) {
-            throw new IllegalArgumentException("Administrator cannot delete self.");
+            throw new IllegalArgumentException("Administrator cannot delete himself.");
         }
         service.deleteUser(userId);
     }

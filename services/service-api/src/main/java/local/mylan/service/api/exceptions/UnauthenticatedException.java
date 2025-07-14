@@ -20,4 +20,12 @@ import java.io.Serial;
 public class UnauthenticatedException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
+
+    public UnauthenticatedException() {
+        // default
+    }
+
+    public UnauthenticatedException(final String message) {
+        super(message);
+    }
 }

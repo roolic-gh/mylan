@@ -26,6 +26,7 @@ import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +46,7 @@ class RestRequestHandler {
     private final List<RestArgBuilder> argBuilders;
 
     RestRequestHandler(final HttpMethod httpMethod, final RestPathMatcher pathMatcher, final Method method,
-            final Object serviceInstance) {
+        final Object serviceInstance) {
         this.httpMethod = httpMethod;
         this.pathMatcher = pathMatcher;
         this.method = method;
@@ -76,12 +77,16 @@ class RestRequestHandler {
                 final var content = RestConverter.toResponseBody(result, encoding);
                 sendResponse(ctx, responseWithContent(ctx.protocolVersion(), OK, content, encoding.mediaType()));
             }
-        } catch (Exception e) {
+        } catch (InvocationTargetException e) {
+            final var cause = e.getCause();
             LOG.error("Exception processing request {}", ctx.contextPath(), e);
-            final var content = RestConverter.toResponseBody(new ErrorMessage(e.getMessage()), encoding);
+            final var content = RestConverter.toResponseBody(new ErrorMessage(cause.getMessage()), encoding);
             // todo response code by exception type
             sendResponse(ctx, responseWithContent(ctx.protocolVersion(), INTERNAL_SERVER_ERROR,
                 content, encoding.mediaType()));
+        } catch (IllegalAccessException e) {
+            LOG.error("Exception processing request {}", ctx.contextPath(), e);
+            sendResponse(ctx, simpleResponse(ctx.protocolVersion(), INTERNAL_SERVER_ERROR));
         }
     }
 
