@@ -40,23 +40,33 @@ class DefaultEncryptionServiceTest {
 
     @Test
     @Order(1)
-    void initial() {
+    void firstRun() {
         final var encryptionService = new DefaultEncryptionService(tmpDir, tmpDir);
+
         final var encrypted1 = encryptionService.encrypt(TEXT);
         assertNotNull(encrypted1);
         assertEquals(TEXT, encryptionService.decrypt(encrypted1));
+
+        final var encrypted2 = encryptionService.encrypt(TEXT, PASSWORD);
+        assertNotNull(encrypted2);
+        assertEquals(TEXT, encryptionService.decrypt(encrypted2, PASSWORD));
+
         final var hashed = encryptionService.buildHash(TEXT);
         assertNotNull(hashed);
+
         encryptedString1 = encrypted1;
+        encryptedString2 = encrypted2;
         hashedString = hashed;
     }
 
     @Test
     @Order(2)
-    void subsequent() {
+    void subsequentRun() {
         final var encryptionService = new DefaultEncryptionService(tmpDir, tmpDir);
         assertEquals(encryptedString1, encryptionService.encrypt(TEXT));
         assertEquals(TEXT, encryptionService.decrypt(encryptedString1));
+        assertEquals(encryptedString2, encryptionService.encrypt(TEXT, PASSWORD));
+        assertEquals(TEXT, encryptionService.decrypt(encryptedString2, PASSWORD));
         assertEquals(hashedString, encryptionService.buildHash(TEXT));
     }
 }

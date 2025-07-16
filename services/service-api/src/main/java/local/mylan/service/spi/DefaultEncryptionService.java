@@ -112,7 +112,7 @@ public final class DefaultEncryptionService implements EncryptionService {
 
     @Override
     public String decrypt(final String input, final String password) {
-        return decrypt(input, confSecret);
+        return decrypt(input, toSecret(password));
     }
 
     private String decrypt(final String input, final SecretKeySpec secret) {
