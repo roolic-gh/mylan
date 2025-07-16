@@ -16,17 +16,19 @@
 package local.mylan.service.data;
 
 import java.util.stream.Stream;
+import local.mylan.service.api.EncryptionService;
+import local.mylan.service.api.NotificationService;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.JdbcSettings;
 
 final class TestUtils {
 
-    private TestUtils(){
+    private TestUtils() {
         // utility class
     }
 
-    protected static SessionFactory setupSessionFactory(final Class<?>... entityClasses) {
+    static SessionFactory setupSessionFactory(final Class<?>... entityClasses) {
         final var builder = new Configuration()
             .setProperty(JdbcSettings.JAKARTA_JDBC_URL, "jdbc:h2:mem:test")
             .setProperty(JdbcSettings.JAKARTA_JDBC_USER, "sa")
@@ -42,5 +44,39 @@ final class TestUtils {
         if (sessionFactory != null && sessionFactory.isOpen()) {
             sessionFactory.close();
         }
+    }
+
+    static NotificationService notificationService() {
+        return new NotificationService() {
+        };
+    }
+
+    static EncryptionService encryptionService() {
+        return new EncryptionService() {
+            @Override
+            public String encrypt(final String input) {
+                return input;
+            }
+
+            @Override
+            public String encrypt(final String input, final String password) {
+                return input;
+            }
+
+            @Override
+            public String decrypt(final String input) {
+                return input;
+            }
+
+            @Override
+            public String decrypt(final String input, final String password) {
+                return input;
+            }
+
+            @Override
+            public String buildHash(final String input) {
+                return input;
+            }
+        };
     }
 }

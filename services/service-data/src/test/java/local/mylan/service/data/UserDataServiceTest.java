@@ -15,6 +15,8 @@
  */
 package local.mylan.service.data;
 
+import static local.mylan.service.data.TestUtils.encryptionService;
+import static local.mylan.service.data.TestUtils.notificationService;
 import static local.mylan.service.data.TestUtils.setupSessionFactory;
 import static local.mylan.service.data.TestUtils.tearDownSessionFactory;
 import static local.mylan.service.data.UserDataService.ADMIN_USERNAME;
@@ -58,7 +60,7 @@ public class UserDataServiceTest {
     @BeforeAll
     static void beforeAll() {
         sessionFactory = setupSessionFactory(UserEntity.class, UserCredEntity.class);
-        userService = new UserDataService(sessionFactory);
+        userService = new UserDataService(sessionFactory, encryptionService(), notificationService());
     }
 
     @AfterAll

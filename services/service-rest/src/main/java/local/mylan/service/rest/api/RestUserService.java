@@ -21,18 +21,12 @@ import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
 import local.mylan.service.api.UserContext;
-import local.mylan.service.api.UserService;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
-import local.mylan.service.rest.spi.DefaultRestUserService;
 
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
 public interface RestUserService {
-
-    static RestUserService defaultInstance(final UserService service){
-        return new DefaultRestUserService(service);
-    }
 
     UserContext authenticate(String authHeader);
 

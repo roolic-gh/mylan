@@ -18,6 +18,8 @@ package local.mylan.service.data;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
 import java.util.Optional;
+import local.mylan.service.api.EncryptionService;
+import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
@@ -40,8 +42,14 @@ public class UserDataService extends AbstractDataService implements UserService 
     @VisibleForTesting
     static final String ADMIN_DISPLAYNAME = "Administrator";
 
-    public UserDataService(final SessionFactory sessionFactory) {
+    private final EncryptionService encryptionService;
+    private final NotificationService notificationService;
+
+    public UserDataService(final SessionFactory sessionFactory, final EncryptionService encryptionService,
+            final NotificationService notificationService) {
         super(sessionFactory);
+        this.encryptionService = encryptionService;
+        this.notificationService = notificationService;
         checkAdminUserExists();
     }
 
@@ -61,7 +69,7 @@ public class UserDataService extends AbstractDataService implements UserService 
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_USER_BY_CREDENTIALS, UserEntity.class)
                 .setParameter("username", credentials.getUsername())
-                .setParameter("password", encryptPassword(credentials.getPassword()))
+                .setParameter("password", toHash(credentials.getPassword()))
                 .uniqueResultOptional()
         ).map(MAPPER::fromEntity);
     }
@@ -72,7 +80,7 @@ public class UserDataService extends AbstractDataService implements UserService 
         final int updated = fromTransaction(session ->
             session.createNamedMutationQuery(Queries.RESET_USER_PASSWORD)
                 .setParameter("userId", userId)
-                .setParameter("password", encryptPassword(userEntity.getUsername()))
+                .setParameter("password", toHash(userEntity.getUsername()))
                 .executeUpdate());
         if (updated < 1) {
             // TODO throw dedicated exception if no entries updated
@@ -84,8 +92,8 @@ public class UserDataService extends AbstractDataService implements UserService 
         final int updated = fromTransaction(session ->
             session.createNamedMutationQuery(Queries.UPDATE_USER_PASSWORD)
                 .setParameter("userId", userId)
-                .setParameter("oldPassword", encryptPassword(oldPassword))
-                .setParameter("newPassword", encryptPassword(newPassword))
+                .setParameter("oldPassword", toHash(oldPassword))
+                .setParameter("newPassword", toHash(newPassword))
                 .executeUpdate());
         if (updated < 1) {
             // TODO throw dedicated exception if no entries updated
@@ -117,7 +125,7 @@ public class UserDataService extends AbstractDataService implements UserService 
     @Override
     public User createUser(final User newUser) {
         final var entity = MAPPER.toEntity(newUser);
-        final var cred = new UserCredEntity(encryptPassword(newUser.getUsername()), entity, true);
+        final var cred = new UserCredEntity(toHash(newUser.getUsername()), entity, true);
         inTransaction(session -> {
             session.persist(entity);
             session.persist(cred);
@@ -165,8 +173,7 @@ public class UserDataService extends AbstractDataService implements UserService 
         }
     }
 
-    private static String encryptPassword(final String password) {
-        // TODO encrypt password
-        return password;
+    private String toHash(final String password) {
+        return encryptionService.buildHash(password);
     }
 }

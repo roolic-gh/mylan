@@ -16,8 +16,11 @@
 package local.mylan.app;
 
 import java.nio.file.Path;
+import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
 import local.mylan.service.rest.api.RestUserService;
+import local.mylan.service.rest.spi.DefaultRestUserService;
+import local.mylan.service.spi.DefaultEncryptionService;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
 import local.mylan.transport.http.rest.RestServiceDispatcher;
@@ -43,12 +46,16 @@ final class Application {
     void start() {
         LOG.info("Starting application with conf dir: {} and work dir: {}", confDir, workDir);
 
-        // persistence layer
+        // independent services
+        final var notificationService = new NotificationService(){};
+        final var encryptionService = new DefaultEncryptionService(confDir, workDir);
+
+        // persistence layer services
         dataServiceProvider = new DataServiceProvider(confDir, workDir);
-        final var userService = dataServiceProvider.getUserService();
+        final var userService = dataServiceProvider.buildUserService(encryptionService, notificationService);
 
         // rest
-        final var restUserService = RestUserService.defaultInstance(userService);
+        final var restUserService = new DefaultRestUserService(userService);
         final var restDispatcher = new RestServiceDispatcher("/rest", restUserService);
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest",
             RestUserService.class);

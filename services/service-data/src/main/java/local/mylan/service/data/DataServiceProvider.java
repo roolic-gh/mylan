@@ -23,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
+import local.mylan.service.api.EncryptionService;
+import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.UserService;
 import local.mylan.service.data.entities.UserCredEntity;
 import local.mylan.service.data.entities.UserEntity;
@@ -44,14 +46,12 @@ public final class DataServiceProvider implements AutoCloseable {
     private static final List<Class<?>> ENTITYCLASSES = List.of(UserEntity.class, UserCredEntity.class);
 
     private final SessionFactory sessionFactory;
-    private final UserService userService;
 
     public DataServiceProvider(final Path confDir, final Path workDir) {
         final var conf = new Configuration().setProperties(loadProperties(confDir, workDir));
         ENTITYCLASSES.forEach(conf::addAnnotatedClass);
         sessionFactory = conf.buildSessionFactory();
         sessionFactory.getSchemaManager().validateMappedObjects();
-        userService = new UserDataService(sessionFactory);
         LOG.info("Initialized.");
     }
 
@@ -95,8 +95,9 @@ public final class DataServiceProvider implements AutoCloseable {
         return properties;
     }
 
-    public UserService getUserService(){
-        return userService;
+    public UserService buildUserService(final EncryptionService encryptionService,
+            final NotificationService notificationService) {
+        return new UserDataService(sessionFactory, encryptionService, notificationService);
     }
 
     @Override
