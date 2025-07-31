@@ -17,24 +17,13 @@ package local.mylan.service.api.model;
 
 import java.util.List;
 
-public class Device {
-
+public class DeviceWithCredentials {
     private Integer deviceId;
     private String identifier;
     private Integer userId;
-    private List<DeviceIpAddress> ipAddresses;
+    private DeviceCredentials credentials;
     private DeviceProtocol protocol;
-    private String username;
-    private boolean keyLocked;
-
-    public Device() {
-        // default
-    }
-
-    public Device(final String identifier, final DeviceProtocol protocol) {
-        this.identifier = identifier;
-        this.protocol = protocol;
-    }
+    private List<DeviceIpAddress> ipAddresses;
 
     public Integer getDeviceId() {
         return deviceId;
@@ -60,20 +49,12 @@ public class Device {
         this.userId = userId;
     }
 
-    public String getUsername() {
-        return username;
+    public DeviceCredentials getCredentials() {
+        return credentials;
     }
 
-    public void setUsername(final String username) {
-        this.username = username;
-    }
-
-    public List<DeviceIpAddress> getIpAddresses() {
-        return ipAddresses;
-    }
-
-    public void setIpAddresses(final List<DeviceIpAddress> ipAddresses) {
-        this.ipAddresses = ipAddresses;
+    public void setCredentials(final DeviceCredentials credentials) {
+        this.credentials = credentials;
     }
 
     public DeviceProtocol getProtocol() {
@@ -84,12 +65,11 @@ public class Device {
         this.protocol = protocol;
     }
 
-    public boolean isKeyLocked() {
-        return keyLocked;
+    public List<DeviceIpAddress> getIpAddresses() {
+        return ipAddresses;
     }
 
-    public void setKeyLocked(final boolean keyLocked) {
-        this.keyLocked = keyLocked;
+    public void setIpAddresses(final List<DeviceIpAddress> ipAddresses) {
+        this.ipAddresses = ipAddresses;
     }
-
 }

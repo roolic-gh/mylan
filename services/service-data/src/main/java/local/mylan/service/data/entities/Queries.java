@@ -24,4 +24,9 @@ public interface Queries {
     String RESET_USER_PASSWORD = "reset-user-password";
     String UPDATE_USER_PASSWORD = "update-user-password";
     String UPDATE_USER_STATUS = "update-user-status";
+
+    String GET_LOCAL_DEVICE = "get-local-device";
+    String GET_ALL_DEVICES = "get-all-devices";
+    String GET_DEVICES_BY_USER = "get-devices-by-user";
+    String UPDATE_DEVICE_CREDENTIALS = "update-device-credentials";
 }

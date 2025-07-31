@@ -13,8 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api.model;
+package local.mylan.service.api.exceptions;
 
-public enum DeviceProtocol {
-    LOCAL, NFS, SMB, OTHER;
+import java.io.Serial;
+
+public class DataCollisionException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    public DataCollisionException(final String message) {
+        super(message);
+    }
+
+    public DataCollisionException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

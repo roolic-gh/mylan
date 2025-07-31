@@ -19,6 +19,7 @@ import java.util.List;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
+import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavBookmark;
 import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceId;
@@ -26,17 +27,23 @@ import local.mylan.service.api.model.ShareType;
 
 public interface NavResourceService {
 
-    void getUserDevices(Integer userId);
+    Device getLocalDevice();
 
-    void createDevice(Device device, DeviceCredentials credentials);
+    DeviceWithCredentials getDevice(Integer deviceId);
 
-    void setDeviceCredentials(Integer deviceId, DeviceCredentials credentials);
+    List<DeviceWithCredentials> getAllDevices();
+
+    List<Device> getUserDevices(Integer userId);
+
+    Device createUserDevice(Integer userId, Device deviceInfo, DeviceCredentials credentials);
+
+    void updateDeviceCredentials(Integer deviceId, DeviceCredentials credentials);
 
     void addDeviceAddress(Integer deviceId, DeviceIpAddress ipAddress);
 
     void removeDeviceAddress(Integer deviceId, String ipAddress);
 
-    void deleteDevice(Integer deviceId);
+    void removeDevice(Integer userId, Integer deviceId);
 
     List<NavResource> getSharedResources(Integer userId);
 

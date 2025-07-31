@@ -35,5 +35,27 @@ public class DeviceCredentials {
         this.key = key;
     }
 
+    public String getUsername() {
+        return username;
+    }
 
+    public void setUsername(final String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(final String password) {
+        this.password = password;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(final String key) {
+        this.key = key;
+    }
 }

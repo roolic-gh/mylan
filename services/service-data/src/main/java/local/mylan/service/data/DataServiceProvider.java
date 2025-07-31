@@ -24,8 +24,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import local.mylan.service.api.EncryptionService;
+import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.UserService;
+import local.mylan.service.data.entities.DeviceCredEntity;
+import local.mylan.service.data.entities.DeviceEntity;
+import local.mylan.service.data.entities.DeviceIpAddressEntity;
 import local.mylan.service.data.entities.UserCredEntity;
 import local.mylan.service.data.entities.UserEntity;
 import org.hibernate.SessionFactory;
@@ -43,7 +47,8 @@ public final class DataServiceProvider implements AutoCloseable {
     private static final String CONF_RESOURCE = '/' + CONF_FILENAME;
     private static final String DATABASE_DIR_REPLACE = "${databaseDir}";
 
-    private static final List<Class<?>> ENTITYCLASSES = List.of(UserEntity.class, UserCredEntity.class);
+    private static final List<Class<?>> ENTITYCLASSES = List.of(UserEntity.class, UserCredEntity.class,
+        DeviceEntity.class, DeviceCredEntity.class, DeviceIpAddressEntity.class);
 
     private final SessionFactory sessionFactory;
 
@@ -98,6 +103,10 @@ public final class DataServiceProvider implements AutoCloseable {
     public UserService buildUserService(final EncryptionService encryptionService,
             final NotificationService notificationService) {
         return new UserDataService(sessionFactory, encryptionService, notificationService);
+    }
+
+    public NavResourceService buildNavResourceService(final NotificationService notificationService) {
+        return new NavResourceDataService(sessionFactory, notificationService);
     }
 
     @Override
