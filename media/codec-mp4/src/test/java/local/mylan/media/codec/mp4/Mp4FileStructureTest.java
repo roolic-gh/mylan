@@ -17,11 +17,13 @@ package local.mylan.media.codec.mp4;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class Mp4FileStructureTest {
 
     @Test
+    @Disabled
     void fileStructure() throws IOException {
 //        final var path = Path.of("/home/roolic/test/SampleVideo_1280x720_1mb.mp4");
         final var path = Path.of("/home/roolic/test/ok-ko1.mp4");
