@@ -15,15 +15,29 @@
  */
 package local.mylan.service.api.model;
 
-import java.util.List;
+public class NavResourceShare {
 
-public class NavDirectory extends NavResourceShareBased {
-
+    private Long shareId;
     private Integer deviceId;
-    private String deviceName;
+    private String path;
+    private String displayName;
+    private ShareType shareType;
 
-    private List<String> subDirs;
-    private List<NavFile> files;
+    public Long getShareId() {
+        return shareId;
+    }
+
+    public void setShareId(final Long shareId) {
+        this.shareId = shareId;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(final String displayName) {
+        this.displayName = displayName;
+    }
 
     public Integer getDeviceId() {
         return deviceId;
@@ -33,27 +47,20 @@ public class NavDirectory extends NavResourceShareBased {
         this.deviceId = deviceId;
     }
 
-    public String getDeviceName() {
-        return deviceName;
+    public String getPath() {
+        return path;
     }
 
-    public void setDeviceName(final String deviceName) {
-        this.deviceName = deviceName;
+    public void setPath(final String path) {
+        this.path = path;
     }
 
-    public List<String> getSubDirs() {
-        return subDirs;
+    public ShareType getShareType() {
+        return shareType;
     }
 
-    public void setSubDirs(final List<String> subDirs) {
-        this.subDirs = subDirs;
+    public void setShareType(final ShareType shareType) {
+        this.shareType = shareType;
     }
 
-    public List<NavFile> getFiles() {
-        return files;
-    }
-
-    public void setFiles(final List<NavFile> files) {
-        this.files = files;
-    }
 }

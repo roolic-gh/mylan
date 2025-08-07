@@ -21,9 +21,8 @@ import local.mylan.service.api.model.DeviceCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavBookmark;
-import local.mylan.service.api.model.NavResource;
-import local.mylan.service.api.model.NavResourceId;
-import local.mylan.service.api.model.ShareType;
+import local.mylan.service.api.model.NavResourceBookmark;
+import local.mylan.service.api.model.NavResourceShare;
 
 public interface NavResourceService {
 
@@ -45,15 +44,15 @@ public interface NavResourceService {
 
     void removeDevice(Integer userId, Integer deviceId);
 
-    List<NavResource> getSharedResources(Integer userId);
+    List<NavResourceShare> getSharedResources(Integer userId);
 
-    void setResourceShare(NavResourceId resourceId, ShareType shareType);
+    void addSharedResource(NavResourceShare share);
 
-    void deleteResourceShare(NavResourceId resourceId);
+    void removeSharedResource(Long shareId);
 
-    List<NavResource> getBookmarkedResources(Integer userId);
+    List<NavResourceBookmark> getBookmarkedResources(Integer userId);
 
-    NavBookmark createBookmark(NavResourceId resourceId, Integer userId, String comment);
+    NavBookmark addBookmark(Integer userId, Long shareId, String path);
 
-    void deleteBookmark(Long bookmarkId);
+    void removeBookmark(Long bookmarkId);
 }

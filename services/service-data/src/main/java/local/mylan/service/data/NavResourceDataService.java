@@ -31,9 +31,8 @@ import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavBookmark;
-import local.mylan.service.api.model.NavResource;
-import local.mylan.service.api.model.NavResourceId;
-import local.mylan.service.api.model.ShareType;
+import local.mylan.service.api.model.NavResourceBookmark;
+import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.data.entities.DeviceEntity;
 import local.mylan.service.data.entities.DeviceIpAddressEntity;
 import local.mylan.service.data.entities.Queries;
@@ -194,32 +193,32 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
-    public List<NavResource> getSharedResources(final Integer userId) {
+    public List<NavResourceShare> getSharedResources(final Integer userId) {
         return List.of();
     }
 
     @Override
-    public void setResourceShare(final NavResourceId resourceId, final ShareType shareType) {
+    public void addSharedResource(final NavResourceShare share) {
 
     }
 
     @Override
-    public void deleteResourceShare(final NavResourceId resourceId) {
+    public void removeSharedResource(final Long shareId) {
 
     }
 
     @Override
-    public List<NavResource> getBookmarkedResources(final Integer userId) {
+    public List<NavResourceBookmark> getBookmarkedResources(final Integer userId) {
         return List.of();
     }
 
     @Override
-    public NavBookmark createBookmark(final NavResourceId resourceId, final Integer userId, final String comment) {
+    public NavBookmark addBookmark(final Integer userId, final Long shareId, final String path) {
         return null;
     }
 
     @Override
-    public void deleteBookmark(final Long bookmarkId) {
+    public void removeBookmark(final Long bookmarkId) {
 
     }
 }

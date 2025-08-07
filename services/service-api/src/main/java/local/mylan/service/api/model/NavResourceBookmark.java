@@ -15,24 +15,33 @@
  */
 package local.mylan.service.api.model;
 
-public class NavResourceId {
+public class NavResourceBookmark extends NavResourceShareBased {
 
-    private Integer deviceId;
-    private String path;
+    private Long bookmarkId;
+    private Integer userId;
+    private String comment;
 
-    public Integer getDeviceId() {
-        return deviceId;
+    public Long getBookmarkId() {
+        return bookmarkId;
     }
 
-    public void setDeviceId(final Integer deviceId) {
-        this.deviceId = deviceId;
+    public void setBookmarkId(final Long bookmarkId) {
+        this.bookmarkId = bookmarkId;
     }
 
-    public String getPath() {
-        return path;
+    public Integer getUserId() {
+        return userId;
     }
 
-    public void setPath(final String path) {
-        this.path = path;
+    public void setUserId(final Integer userId) {
+        this.userId = userId;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(final String comment) {
+        this.comment = comment;
     }
 }

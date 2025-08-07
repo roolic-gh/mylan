@@ -19,7 +19,8 @@ import java.util.List;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceState;
 import local.mylan.service.api.model.NavDirectory;
-import local.mylan.service.api.model.NavResource;
+import local.mylan.service.api.model.NavResourceBookmark;
+import local.mylan.service.api.model.NavResourceShare;
 
 public interface NavigationService {
 
@@ -27,13 +28,15 @@ public interface NavigationService {
 
     List<DeviceState> getDeviceStatesForUser(Integer userId);
 
-    void unlockDevice(Integer deviceId, String key);
+    void unlockDevice(Integer userId, Integer deviceId, String key);
 
-    void lockDevice(Integer deviceId);
+    void lockDevice(Integer userId, Integer deviceId);
 
-    NavDirectory getDirectoryContent(Integer userId, Integer deviceId, String path);
+    NavDirectory getDeviceDirectoryContent(Integer userId, Integer deviceId, String path);
 
-    List<NavResource> getBookmarkedResources(Integer userId);
+    NavDirectory getSharedDirectoryContent(Integer userId, Long shareId, String path);
 
-    List<NavResource> getSharedResources(Integer userId);
+    List<NavResourceShare> getSharedResources(Integer userId);
+
+    List<NavResourceBookmark> getBookmarks(Integer userId);
 }
