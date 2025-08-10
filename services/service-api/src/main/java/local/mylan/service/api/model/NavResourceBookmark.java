@@ -15,11 +15,10 @@
  */
 package local.mylan.service.api.model;
 
-public class NavResourceBookmark extends NavResourceShareBased {
+public class NavResourceBookmark extends NavResource {
 
     private Long bookmarkId;
     private Integer userId;
-    private String comment;
 
     public Long getBookmarkId() {
         return bookmarkId;
@@ -37,11 +36,4 @@ public class NavResourceBookmark extends NavResourceShareBased {
         this.userId = userId;
     }
 
-    public String getComment() {
-        return comment;
-    }
-
-    public void setComment(final String comment) {
-        this.comment = comment;
-    }
 }

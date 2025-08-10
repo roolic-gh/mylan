@@ -20,4 +20,12 @@ import java.io.Serial;
 public class NoDataException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
+
+    public NoDataException() {
+        super();
+    }
+
+    public NoDataException(final String message) {
+        super(message);
+    }
 }

@@ -17,29 +17,10 @@ package local.mylan.service.api.model;
 
 import java.util.List;
 
-public class NavDirectory extends NavResourceShareBased {
-
-    private Integer deviceId;
-    private String deviceName;
+public class NavDirectory extends NavResource {
 
     private List<String> subDirs;
     private List<NavFile> files;
-
-    public Integer getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(final Integer deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    public String getDeviceName() {
-        return deviceName;
-    }
-
-    public void setDeviceName(final String deviceName) {
-        this.deviceName = deviceName;
-    }
 
     public List<String> getSubDirs() {
         return subDirs;

@@ -15,11 +15,36 @@
  */
 package local.mylan.service.api.model;
 
-public class NavResourceShareBased {
+public class NavResource {
 
+    private Integer deviceId;
     private Long shareId;
-    private String shareName;
+    private String resourceName;
     private String path;
+
+    public NavResource() {
+        // default
+    }
+
+    public NavResource(final Integer deviceId, final String resourceName, final String path) {
+        this.deviceId = deviceId;
+        this.resourceName = resourceName;
+        this.path = path;
+    }
+
+    public NavResource(final Long shareId, final String resourceName, final String path) {
+        this.shareId = shareId;
+        this.resourceName = resourceName;
+        this.path = path;
+    }
+
+    public Integer getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(final Integer deviceId) {
+        this.deviceId = deviceId;
+    }
 
     public Long getShareId() {
         return shareId;
@@ -29,12 +54,12 @@ public class NavResourceShareBased {
         this.shareId = shareId;
     }
 
-    public String getShareName() {
-        return shareName;
+    public String getResourceName() {
+        return resourceName;
     }
 
-    public void setShareName(final String shareName) {
-        this.shareName = shareName;
+    public void setResourceName(final String resourceName) {
+        this.resourceName = resourceName;
     }
 
     public String getPath() {

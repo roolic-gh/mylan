@@ -20,7 +20,7 @@ import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceWithCredentials;
-import local.mylan.service.api.model.NavBookmark;
+import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 
@@ -44,15 +44,25 @@ public interface NavResourceService {
 
     void removeDevice(Integer userId, Integer deviceId);
 
+    List<NavResourceShare> getAllSharedResources();
+
     List<NavResourceShare> getSharedResources(Integer userId);
 
-    void addSharedResource(NavResourceShare share);
+    NavResourceShare getSharedResource(Long shareId);
 
-    void removeSharedResource(Long shareId);
+    void syncLocalSharedResources(List<NavResourceShare> shares);
 
-    List<NavResourceBookmark> getBookmarkedResources(Integer userId);
+    NavResourceShare addSharedResource(Integer userId, NavResourceShare share);
 
-    NavBookmark addBookmark(Integer userId, Long shareId, String path);
+    void updateSharedResource(Integer userId, NavResourceShare share);
 
-    void removeBookmark(Long bookmarkId);
+    void removeSharedResource(Integer userId, Long shareId);
+
+    List<NavResourceBookmark> getBookmarks(Integer userId);
+
+    NavResourceBookmark getBookmark(Long bookmarkId);
+
+    NavResourceBookmark addBookmark(Integer userId, NavResource resource);
+
+    void removeBookmark(Integer userId, Long bookmarkId);
 }

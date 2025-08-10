@@ -15,7 +15,7 @@
  */
 package local.mylan.service.api.model;
 
-public class NavFile extends NavResourceShareBased {
+public class NavFile extends NavResource {
 
     private String filename;
     private FileType type;

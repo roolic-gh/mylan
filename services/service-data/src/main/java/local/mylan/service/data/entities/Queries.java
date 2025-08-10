@@ -29,4 +29,10 @@ public interface Queries {
     String GET_ALL_DEVICES = "get-all-devices";
     String GET_DEVICES_BY_USER = "get-devices-by-user";
     String UPDATE_DEVICE_CREDENTIALS = "update-device-credentials";
+
+    String GET_ALL_SHARED_RESOURCES = "get-all-shared-resources";
+    String GET_LOCAL_SHARED_RESOURCES = "get-local-shared-resources";
+    String GET_SHARED_RESOURCES_FOR_USER = "get-shared-resources-for-user";
+    String GET_SHARED_RESOURCES_FOR_GUEST = "get-shared-resources-for-guest";
+    String GET_USER_BOOKMARKS = "get-user-bookmarks";
 }

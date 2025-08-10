@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Set;
@@ -37,10 +38,14 @@ import local.mylan.service.api.model.DeviceCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceWithCredentials;
+import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.api.model.ShareType;
 import local.mylan.service.api.model.User;
 import local.mylan.service.data.entities.DeviceCredEntity;
 import local.mylan.service.data.entities.DeviceEntity;
 import local.mylan.service.data.entities.DeviceIpAddressEntity;
+import local.mylan.service.data.entities.NavResourceBookmarkEntity;
+import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.UserEntity;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -66,6 +71,19 @@ class NavResourceDataServiceTest {
     private static final String IP_1 = "192.168.1.101";
     private static final String IP_2 = "192.168.1.102";
 
+    private static final String SHARE_NAME_1 = "share-name-1";
+    private static final String SHARE_NAME_2 = "share-name-2";
+    private static final String SHARE_NAME_3 = "share-name-3";
+    private static final String SHARE_NAME_UPDATED = "share-name-UPDATED";
+    private static final String SHARE_PATH_1 = "/share/path/1";
+    private static final String SHARE_PATH_2 = "/share/path/2";
+    private static final String SHARE_PATH_3 = "/share/path/3";
+
+    private static final String BOOKMARK_1 = "bookmark-1";
+    private static final String BOOKMARK_2 = "bookmark-2";
+    private static final String BOOKMARK_PATH_1 = "/bookmark/path/1";
+    private static final String BOOKMARK_PATH_2 = "/bookmark/path/2";
+
     static SessionFactory sessionFactory;
     static NavResourceService navResourceService;
     static User user1;
@@ -74,10 +92,19 @@ class NavResourceDataServiceTest {
     static Device userDevice2;
     static Device localDevice;
 
+    static NavResourceShare localShareAll;
+    static NavResourceShare localShareReg;
+
+    static Long shareId1;
+    static Long shareId2;
+    static Long shareId3;
+    static Long bookmarkId1;
+    static Long bookmarkId2;
+
     @BeforeAll
     static void beforeAll() {
         sessionFactory = setupSessionFactory(UserEntity.class, DeviceEntity.class, DeviceCredEntity.class,
-            DeviceIpAddressEntity.class);
+            DeviceIpAddressEntity.class, NavResourceShareEntity.class, NavResourceBookmarkEntity.class);
         navResourceService = new NavResourceDataService(sessionFactory, notificationService());
 
         user1 = createUser("user-1");
@@ -162,6 +189,51 @@ class NavResourceDataServiceTest {
         assertWithCredentials(map.get(userDevice2.getDeviceId()), userDevice2, PASSWORD_2, CRYPT_KEY);
     }
 
+    private static void assertDevice(final Device device, final Integer userId, final String identifier,
+        final DeviceProtocol protocol, final String username, final boolean keyLocked) {
+        assertNotNull(device);
+        assertNotNull(device.getDeviceId());
+        assertEquals(userId, device.getUserId());
+        assertEquals(identifier, device.getIdentifier());
+        assertEquals(protocol, device.getProtocol());
+        assertEquals(username, device.getUsername());
+        assertEquals(keyLocked, device.isKeyLocked());
+    }
+
+    private static void assertDevice(final Device expected, final Device actual) {
+        assertNotNull(actual);
+        assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        assertEquals(expected.getUserId(), actual.getUserId());
+        assertEquals(expected.getIdentifier(), actual.getIdentifier());
+        assertEquals(expected.getProtocol(), actual.getProtocol());
+        assertEquals(expected.getUsername(), actual.getUsername());
+        assertEquals(expected.isKeyLocked(), actual.isKeyLocked());
+    }
+
+    private static void assertWithCredentials(final DeviceWithCredentials actual, final Device expected,
+        final String password, final String key) {
+        assertNotNull(actual);
+        assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        assertEquals(expected.getIdentifier(), actual.getIdentifier());
+        assertEquals(expected.getProtocol(), actual.getProtocol());
+        if (expected.getUserId() == null) {
+            // local
+            assertNull(actual.getUserId());
+            assertNull(actual.getCredentials());
+        } else {
+            assertEquals(expected.getUserId(), actual.getUserId());
+            final var creds = actual.getCredentials();
+            assertNotNull(creds);
+            assertEquals(expected.getUsername(), creds.getUsername());
+            assertEquals(password, creds.getPassword());
+            if (key == null) {
+                assertNull(creds.getKey());
+            } else {
+                assertEquals(key, creds.getKey());
+            }
+        }
+    }
+
     @Test
     @Order(4)
     void updateCredentials() {
@@ -212,7 +284,80 @@ class NavResourceDataServiceTest {
         assertDeviceIpAddresses(check.getIpAddresses(), Set.of(IP_1));
     }
 
-    // TODO resources
+    private static void assertDeviceIpAddresses(final List<DeviceIpAddress> ipAddresses, final Set<String> expected) {
+        assertNotNull(ipAddresses);
+        final var actual = ipAddresses.stream().map(DeviceIpAddress::getIpAddress).collect(Collectors.toSet());
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @Order(7)
+    void syncLocalShares() {
+        final var local1 = new NavResourceShare(null, SHARE_NAME_1, SHARE_PATH_1, ShareType.ALL);
+        final var local2 = new NavResourceShare(null, SHARE_NAME_2, SHARE_PATH_2, ShareType.ALL);
+        final var local2upd = new NavResourceShare(null, SHARE_NAME_UPDATED, SHARE_PATH_2, ShareType.REGISTERED);
+        final var local3 = new NavResourceShare(null, SHARE_NAME_3, SHARE_PATH_3, ShareType.ALL);
+        final var local4 = new NavResourceShare(null, SHARE_NAME_2, SHARE_PATH_2, ShareType.REGISTERED);
+
+        // no shares
+        final var initial = navResourceService.getAllSharedResources();
+        assertNotNull(initial);
+        assertTrue(initial.isEmpty());
+
+        // first sync - 2 entries added
+        final var firstExpected = List.of(local1, local2);
+        navResourceService.syncLocalSharedResources(firstExpected);
+        final var firstActual = navResourceService.getAllSharedResources();
+        assertSharesByPath(firstExpected, firstActual);
+
+        // second sync -> 1 removed, 2 udated, 3 inserted
+        final var secondExpected = List.of(local2upd, local3);
+        navResourceService.syncLocalSharedResources(secondExpected);
+        final var secondActual = navResourceService.getAllSharedResources();
+        assertSharesByPath(secondExpected, secondActual);
+        // assert 2nd entry updated -> id is same
+        final var original = byPath(firstActual, SHARE_PATH_2);
+        final var updated = byPath(secondActual, SHARE_PATH_2);
+        assertEquals(original.getShareId(),updated.getShareId());
+
+        // third sync replace all for below tests
+        final var thirdExpected = List.of(local1, local4);
+        navResourceService.syncLocalSharedResources(firstExpected);
+        final var thirdActual = navResourceService.getAllSharedResources();
+        assertSharesByPath(thirdExpected, thirdActual);
+        localShareAll = byPath(thirdActual, SHARE_PATH_1);
+        localShareReg = byPath(thirdActual, SHARE_PATH_2);
+    }
+
+    private static NavResourceShare byPath(final List<NavResourceShare> list, final String path){
+        return list.stream().filter(share -> path.equals(share.getPath())).findFirst().orElseThrow();
+    }
+
+    private static void assertSharesByPath(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
+        assertNotNull(actual);
+        assertEquals(expected.size(), actual.size());
+        final var expectedMap = expected.stream().collect(toMap(NavResourceShare::getPath, Function.identity()));
+        final var actualMap = actual.stream().collect(toMap(NavResourceShare::getPath, Function.identity()));
+        for (var entry : expectedMap.entrySet()) {
+            assertShare(entry.getValue(), actualMap.get(entry.getKey()));
+        }
+    }
+
+    private static void assertShare(final NavResourceShare expected, final NavResourceShare actual) {
+        assertNotNull(actual);
+        assertNotNull(actual.getShareId());
+        if (expected.getShareId() != null) {
+            assertEquals(expected.getShareId(), actual.getShareId());
+        }
+        assertEquals(expected.getResourceName(), actual.getResourceName());
+
+        if (expected.getDeviceId() == null) {
+            assertEquals(localDevice.getDeviceId(), actual.getDeviceId());
+        } else {
+            assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        }
+        assertEquals(expected.getPath(), actual.getPath());
+    }
 
     @Test
     @Order(20)
@@ -227,54 +372,4 @@ class NavResourceDataServiceTest {
             navResourceService.removeDevice(userDevice1.getUserId(), userDevice2.getDeviceId()));
     }
 
-    private static void assertDevice(final Device device, final Integer userId, final String identifier,
-        final DeviceProtocol protocol, final String username, final boolean keyLocked) {
-        assertNotNull(device);
-        assertNotNull(device.getDeviceId());
-        assertEquals(userId, device.getUserId());
-        assertEquals(identifier, device.getIdentifier());
-        assertEquals(protocol, device.getProtocol());
-        assertEquals(username, device.getUsername());
-        assertEquals(keyLocked, device.isKeyLocked());
-    }
-
-    private static void assertDevice(final Device expected, final Device actual) {
-        assertNotNull(actual);
-        assertEquals(expected.getDeviceId(), actual.getDeviceId());
-        assertEquals(expected.getUserId(), actual.getUserId());
-        assertEquals(expected.getIdentifier(), actual.getIdentifier());
-        assertEquals(expected.getProtocol(), actual.getProtocol());
-        assertEquals(expected.getUsername(), actual.getUsername());
-        assertEquals(expected.isKeyLocked(), actual.isKeyLocked());
-    }
-
-    private static void assertWithCredentials(final DeviceWithCredentials actual, final Device expected,
-        final String password, final String key) {
-        assertNotNull(actual);
-        assertEquals(expected.getDeviceId(), actual.getDeviceId());
-        assertEquals(expected.getIdentifier(), actual.getIdentifier());
-        assertEquals(expected.getProtocol(), actual.getProtocol());
-        if (expected.getUserId() == null) {
-            // local
-            assertNull(actual.getUserId());
-            assertNull(actual.getCredentials());
-        } else {
-            assertEquals(expected.getUserId(), actual.getUserId());
-            final var creds = actual.getCredentials();
-            assertNotNull(creds);
-            assertEquals(expected.getUsername(), creds.getUsername());
-            assertEquals(password, creds.getPassword());
-            if (key == null) {
-                assertNull(creds.getKey());
-            } else {
-                assertEquals(key, creds.getKey());
-            }
-        }
-    }
-
-    private static void assertDeviceIpAddresses(final List<DeviceIpAddress> ipAddresses, final Set<String> expected) {
-        assertNotNull(ipAddresses);
-        final var actual = ipAddresses.stream().map(DeviceIpAddress::getIpAddress).collect(Collectors.toSet());
-        assertEquals(expected, actual);
-    }
 }

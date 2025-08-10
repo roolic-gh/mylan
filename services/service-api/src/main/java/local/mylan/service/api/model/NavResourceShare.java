@@ -15,44 +15,21 @@
  */
 package local.mylan.service.api.model;
 
-public class NavResourceShare {
+public class NavResourceShare extends NavResource {
 
-    private Long shareId;
-    private Integer deviceId;
-    private String path;
-    private String displayName;
     private ShareType shareType;
 
-    public Long getShareId() {
-        return shareId;
+    public NavResourceShare() {
+        super();
     }
 
-    public void setShareId(final Long shareId) {
-        this.shareId = shareId;
+    public NavResourceShare(final Long shareId, final String name) {
+        super(shareId, name, null);
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(final String displayName) {
-        this.displayName = displayName;
-    }
-
-    public Integer getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(final Integer deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(final String path) {
-        this.path = path;
+    public NavResourceShare(final Integer deviceId, final String name, final String path, final ShareType shareType) {
+        super(deviceId, name, path);
+        this.shareType = shareType;
     }
 
     public ShareType getShareType() {
