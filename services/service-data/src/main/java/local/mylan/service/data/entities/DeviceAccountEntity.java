@@ -19,29 +19,45 @@ import com.google.common.base.Objects;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-@NamedQuery(name = Queries.UPDATE_DEVICE_CREDENTIALS,
-    query = "UPDATE DeviceCredEntity dc SET dc.username = :username, dc.password = :password, dc.key = :key " +
-            "WHERE dc.deviceId = :deviceId")
+@NamedQuery(name = Queries.GET_ALL_ACCOUNTS, resultClass = DeviceAccountEntity.class,
+    query = "SELECT a FROM DeviceAccountEntity a")
+@NamedQuery(name = Queries.GET_USER_ACCOUNTS, resultClass = DeviceAccountEntity.class,
+    query = "SELECT a FROM DeviceAccountEntity a WHERE a.userId = :userId")
+@NamedQuery(name = Queries.GET_LOCAL_ACCOUNT, resultClass = DeviceAccountEntity.class,
+    query = "SELECT a FROM DeviceAccountEntity a WHERE a.device.protocol = DeviceProtocol.LOCAL")
 
 @Entity
-@Table(name = "device_cred")
-public class DeviceCredEntity {
+@Table(name = "device_accounts", uniqueConstraints = {@UniqueConstraint(columnNames = {"device_id", "username"})})
+public class DeviceAccountEntity {
 
     @Id
+    @Column(name = "account_id")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    Integer accountId;
+
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private Integer userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private UserEntity user;
+
     @Column(name = "device_id", insertable = false, updatable = false)
     private Integer deviceId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "device_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private DeviceEntity device;
@@ -54,6 +70,30 @@ public class DeviceCredEntity {
 
     @Column(name = "crypt_key")
     private String key;
+
+    public Integer getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(final Integer accountId) {
+        this.accountId = accountId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(final Integer userId) {
+        this.userId = userId;
+    }
+
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public void setUser(final UserEntity user) {
+        this.user = user;
+    }
 
     public Integer getDeviceId() {
         return deviceId;
@@ -100,16 +140,16 @@ public class DeviceCredEntity {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DeviceCredEntity that)) {
+        if (!(o instanceof final DeviceAccountEntity that)) {
             return false;
         }
-        return Objects.equal(deviceId, that.deviceId) && Objects.equal(
-            username, that.username) && Objects.equal(password,
-            that.password) && Objects.equal(key, that.key);
+        return Objects.equal(accountId, that.accountId) && Objects.equal(userId, that.userId)
+            && Objects.equal(deviceId, that.deviceId) && Objects.equal(username, that.username)
+            && Objects.equal(password, that.password) && Objects.equal(key, that.key);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(deviceId, username, password, key);
+        return Objects.hashCode(accountId, userId, deviceId, username, password, key);
     }
 }

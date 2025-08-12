@@ -27,8 +27,8 @@ public class NavResourceShare extends NavResource {
         super(shareId, name, null);
     }
 
-    public NavResourceShare(final Integer deviceId, final String name, final String path, final ShareType shareType) {
-        super(deviceId, name, path);
+    public NavResourceShare(final Integer accountId, final String name, final String path, final ShareType shareType) {
+        super(accountId, name, path);
         this.shareType = shareType;
     }
 

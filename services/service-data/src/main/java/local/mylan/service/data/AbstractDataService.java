@@ -15,6 +15,7 @@
  */
 package local.mylan.service.data;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.hibernate.Session;
@@ -41,5 +42,9 @@ class AbstractDataService {
 
     protected <R> R fromTransaction(final Function<Session, R> action) {
         return sessionFactory.fromTransaction(action);
+    }
+
+    protected <R> Optional<R> entityById(final Class<R> entityClass, final Object id) {
+        return Optional.ofNullable(fromSession(session -> session.get(entityClass, id)));
     }
 }

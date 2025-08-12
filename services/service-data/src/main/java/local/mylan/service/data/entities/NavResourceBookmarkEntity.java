@@ -42,13 +42,13 @@ public class NavResourceBookmarkEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long bookmarkId;
 
-    @Column(name = "device_id", insertable = false, updatable = false)
-    private Integer deviceId;
+    @Column(name = "account_id", insertable = false, updatable = false)
+    private Integer accountId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "device_id")
+    @JoinColumn(name = "account_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private DeviceEntity device;
+    private DeviceAccountEntity account;
 
     @Column(name = "share_id", insertable = false, updatable = false)
     private Long shareId;
@@ -77,20 +77,20 @@ public class NavResourceBookmarkEntity {
         this.bookmarkId = bookmarkId;
     }
 
-    public Integer getDeviceId() {
-        return deviceId;
+    public Integer getAccountId() {
+        return accountId;
     }
 
-    public void setDeviceId(final Integer deviceId) {
-        this.deviceId = deviceId;
+    public void setAccountId(final Integer accountId) {
+        this.accountId = accountId;
     }
 
-    public DeviceEntity getDevice() {
-        return device;
+    public DeviceAccountEntity getAccount() {
+        return account;
     }
 
-    public void setDevice(final DeviceEntity device) {
-        this.device = device;
+    public void setAccount(final DeviceAccountEntity account) {
+        this.account = account;
     }
 
     public Long getShareId() {
@@ -138,17 +138,16 @@ public class NavResourceBookmarkEntity {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof final NavResourceBookmarkEntity that)) {
+        if (!(o instanceof NavResourceBookmarkEntity that)) {
             return false;
         }
-        return Objects.equal(bookmarkId, that.bookmarkId) && Objects.equal(
-            deviceId, that.deviceId) && Objects.equal(shareId,
-            that.shareId) && Objects.equal(userId,
-            that.userId) && Objects.equal(path, that.path);
+        return Objects.equal(bookmarkId, that.bookmarkId) && Objects.equal(accountId, that.accountId)
+               && Objects.equal(shareId, that.shareId) && Objects.equal(userId, that.userId)
+               && Objects.equal(path, that.path);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(bookmarkId, deviceId, shareId, userId, path);
+        return Objects.hashCode(bookmarkId, accountId, shareId, userId, path);
     }
 }

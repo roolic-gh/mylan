@@ -38,7 +38,7 @@ public class DeviceIpAddressEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_id")
-    @OnDelete(action = OnDeleteAction.SET_NULL)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private DeviceEntity device;
 
     @Column(name = "is_static")

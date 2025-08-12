@@ -35,7 +35,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @NamedQuery(name = Queries.GET_ALL_SHARED_RESOURCES, resultClass = NavResourceShareEntity.class,
     query = "SELECT s from NavResourceShareEntity s")
 @NamedQuery(name = Queries.GET_LOCAL_SHARED_RESOURCES, resultClass = NavResourceShareEntity.class,
-    query = "SELECT s from NavResourceShareEntity s WHERE s.device.protocol = DeviceProtocol.LOCAL")
+    query = "SELECT s from NavResourceShareEntity s WHERE s.account.device.protocol = DeviceProtocol.LOCAL")
 @NamedQuery(name = Queries.GET_SHARED_RESOURCES_FOR_GUEST, resultClass = NavResourceShareEntity.class,
     query = "SELECT s from NavResourceShareEntity s WHERE s.shareType = ShareType.ALL")
 @NamedQuery(name = Queries.GET_SHARED_RESOURCES_FOR_USER, resultClass = NavResourceShareEntity.class,
@@ -51,13 +51,13 @@ public class NavResourceShareEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long shareId;
 
-    @Column(name = "device_id", insertable = false, updatable = false)
-    private Integer deviceId;
+    @Column(name = "account_id", insertable = false, updatable = false)
+    private Integer accountId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "device_id")
+    @JoinColumn(name = "account_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private DeviceEntity device;
+    private DeviceAccountEntity account;
 
     @Column(name = "user_id", insertable = false, updatable = false)
     private Integer userId;
@@ -85,20 +85,20 @@ public class NavResourceShareEntity {
         this.shareId = shareId;
     }
 
-    public Integer getDeviceId() {
-        return deviceId;
+    public Integer getAccountId() {
+        return accountId;
     }
 
-    public void setDeviceId(final Integer deviceId) {
-        this.deviceId = deviceId;
+    public void setAccountId(final Integer accountId) {
+        this.accountId = accountId;
     }
 
-    public DeviceEntity getDevice() {
-        return device;
+    public DeviceAccountEntity getAccount() {
+        return account;
     }
 
-    public void setDevice(final DeviceEntity device) {
-        this.device = device;
+    public void setAccount(final DeviceAccountEntity account) {
+        this.account = account;
     }
 
     public Integer getUserId() {
@@ -149,13 +149,13 @@ public class NavResourceShareEntity {
         if (!(o instanceof NavResourceShareEntity that)) {
             return false;
         }
-        return Objects.equal(shareId, that.shareId) && Objects.equal(deviceId, that.deviceId)
+        return Objects.equal(shareId, that.shareId) && Objects.equal(accountId, that.accountId)
                && Objects.equal(userId, that.userId) && Objects.equal(path, that.path)
                && Objects.equal(displayName, that.displayName) && shareType == that.shareType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(shareId, deviceId, userId, path, displayName, shareType);
+        return Objects.hashCode(shareId, accountId, userId, path, displayName, shareType);
     }
 }

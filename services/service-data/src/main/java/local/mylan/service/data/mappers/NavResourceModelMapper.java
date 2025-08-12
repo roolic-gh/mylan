@@ -16,12 +16,11 @@
 package local.mylan.service.data.mappers;
 
 import local.mylan.service.api.model.Device;
-import local.mylan.service.api.model.DeviceCredentials;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceIpAddress;
-import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
-import local.mylan.service.data.entities.DeviceCredEntity;
+import local.mylan.service.data.entities.DeviceAccountEntity;
 import local.mylan.service.data.entities.DeviceEntity;
 import local.mylan.service.data.entities.DeviceIpAddressEntity;
 import local.mylan.service.data.entities.NavResourceBookmarkEntity;
@@ -32,46 +31,40 @@ import org.mapstruct.Mapping;
 @Mapper(uses = UserModelMapper.class)
 public interface NavResourceModelMapper {
 
-    @Mapping(target = "userId", source = "user.userId")
-    @Mapping(target = "username", source = "credentials.username")
-    @Mapping(target = "keyLocked", source = "credentials")
-    Device fromDeviceEntity(DeviceEntity entity);
+    DeviceEntity toEntity(Device model);
 
-    default boolean keyLocked(DeviceCredEntity credEntity) {
-        return credEntity != null && credEntity.getKey() != null;
-    }
+    Device fromEntity(DeviceEntity entity);
+
+    @Mapping(target = "deviceId", ignore = true)
+    @Mapping(target = "device", ignore = true)
+    DeviceIpAddressEntity toEntity(DeviceIpAddress model);
+
+    DeviceIpAddress fromEntity(DeviceIpAddressEntity entity);
 
     @Mapping(target = "user", ignore = true)
-    DeviceEntity toDeviceEntity(Device model, DeviceCredentials credentials);
-
-    DeviceWithCredentials fromDeviceEntityWithCredentials(DeviceEntity entity);
-
     @Mapping(target = "device", ignore = true)
-    @Mapping(target = "deviceId", ignore = true)
-    DeviceCredEntity toCredEntity(DeviceCredentials model);
+    DeviceAccountEntity toEntity(DeviceAccount model);
 
-    DeviceCredentials fromCredEntity(DeviceCredEntity entity);
+    DeviceAccount fromEntity(DeviceAccountEntity entity);
 
-    DeviceIpAddress fromIpAddressEntity(DeviceIpAddressEntity entity);
-
-    @Mapping(target = "device", ignore = true)
-    @Mapping(target = "deviceId", ignore = true)
-    DeviceIpAddressEntity toIpAddressEntity(DeviceIpAddress model);
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "key", ignore = true)
+    DeviceAccount fromEntityMin(DeviceAccountEntity entity);
 
     @Mapping(target = "displayName", source = "resourceName")
-    @Mapping(target = "deviceId", ignore = true)
-    @Mapping(target = "device", ignore = true)
+    @Mapping(target = "accountId", ignore = true)
+    @Mapping(target = "account", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "user", ignore = true)
-    NavResourceShareEntity toShareEntity(NavResourceShare model);
+    NavResourceShareEntity toEntity(NavResourceShare model);
 
     @Mapping(target = "resourceName", source = "displayName")
-    NavResourceShare fromShareEntity(NavResourceShareEntity entity);
+    NavResourceShare fromEntity(NavResourceShareEntity entity);
 
-    default NavResourceShare fromShareEntityMin(NavResourceShareEntity entity) {
+    default NavResourceShare fromEntityMin(NavResourceShareEntity entity) {
         return entity == null ? null : new NavResourceShare(entity.getShareId(), entity.getDisplayName());
     }
 
-    NavResourceBookmark fromBookmarkEntity(NavResourceBookmarkEntity entity);
-
+    @Mapping(target = "resourceName", ignore = true)
+    NavResourceBookmark fromEntity(NavResourceBookmarkEntity entity);
 }

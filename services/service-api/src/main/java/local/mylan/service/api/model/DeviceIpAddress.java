@@ -45,7 +45,7 @@ public class DeviceIpAddress {
         return isStatic;
     }
 
-    public void setStatic(final boolean aStatic) {
-        isStatic = aStatic;
+    public void setStatic(final boolean isStatic) {
+        this.isStatic = isStatic;
     }
 }

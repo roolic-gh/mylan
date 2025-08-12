@@ -17,7 +17,7 @@ package local.mylan.service.api.model;
 
 public class NavResource {
 
-    private Integer deviceId;
+    private Integer accountId;
     private Long shareId;
     private String resourceName;
     private String path;
@@ -26,8 +26,8 @@ public class NavResource {
         // default
     }
 
-    public NavResource(final Integer deviceId, final String resourceName, final String path) {
-        this.deviceId = deviceId;
+    public NavResource(final Integer accountId, final String resourceName, final String path) {
+        this.accountId = accountId;
         this.resourceName = resourceName;
         this.path = path;
     }
@@ -38,12 +38,12 @@ public class NavResource {
         this.path = path;
     }
 
-    public Integer getDeviceId() {
-        return deviceId;
+    public Integer getAccountId() {
+        return accountId;
     }
 
-    public void setDeviceId(final Integer deviceId) {
-        this.deviceId = deviceId;
+    public void setAccountId(final Integer accountId) {
+        this.accountId = accountId;
     }
 
     public Long getShareId() {

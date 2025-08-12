@@ -17,32 +17,39 @@ package local.mylan.service.api;
 
 import java.util.List;
 import local.mylan.service.api.model.Device;
-import local.mylan.service.api.model.DeviceCredentials;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceIpAddress;
-import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 
 public interface NavResourceService {
 
-    Device getLocalDevice();
+    Device getDevice(Integer deviceId);
 
-    DeviceWithCredentials getDevice(Integer deviceId);
+    List<Device> getAllDevices();
 
-    List<DeviceWithCredentials> getAllDevices();
+    Device createDevice(Device device);
 
-    List<Device> getUserDevices(Integer userId);
-
-    Device createUserDevice(Integer userId, Device deviceInfo, DeviceCredentials credentials);
-
-    void updateDeviceCredentials(Integer deviceId, DeviceCredentials credentials);
+    void removeDevice(Integer deviceId);
 
     void addDeviceAddress(Integer deviceId, DeviceIpAddress ipAddress);
 
     void removeDeviceAddress(Integer deviceId, String ipAddress);
 
-    void removeDevice(Integer userId, Integer deviceId);
+    DeviceAccount getLocalAccount();
+
+    DeviceAccount getAccount(Integer accountId);
+
+    List<DeviceAccount> getAllAccounts();
+
+    List<DeviceAccount> getUserAccounts(Integer userId);
+
+    DeviceAccount createAccount(Integer userId, DeviceAccount account);
+
+    void updateAccount(Integer userId, DeviceAccount account);
+
+    void removeAccount(Integer userId, Integer accountId);
 
     List<NavResourceShare> getAllSharedResources();
 
@@ -52,7 +59,7 @@ public interface NavResourceService {
 
     void syncLocalSharedResources(List<NavResourceShare> shares);
 
-    NavResourceShare addSharedResource(Integer userId, NavResourceShare share);
+    NavResourceShare createSharedResource(Integer userId, NavResourceShare share);
 
     void updateSharedResource(Integer userId, NavResourceShare share);
 
@@ -62,7 +69,7 @@ public interface NavResourceService {
 
     NavResourceBookmark getBookmark(Long bookmarkId);
 
-    NavResourceBookmark addBookmark(Integer userId, NavResource resource);
+    NavResourceBookmark createBookmark(Integer userId, NavResource resource);
 
     void removeBookmark(Integer userId, Long bookmarkId);
 }

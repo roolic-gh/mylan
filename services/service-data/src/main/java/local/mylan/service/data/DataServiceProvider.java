@@ -27,9 +27,11 @@ import local.mylan.service.api.EncryptionService;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.UserService;
-import local.mylan.service.data.entities.DeviceCredEntity;
+import local.mylan.service.data.entities.DeviceAccountEntity;
 import local.mylan.service.data.entities.DeviceEntity;
 import local.mylan.service.data.entities.DeviceIpAddressEntity;
+import local.mylan.service.data.entities.NavResourceBookmarkEntity;
+import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.UserCredEntity;
 import local.mylan.service.data.entities.UserEntity;
 import org.hibernate.SessionFactory;
@@ -48,7 +50,8 @@ public final class DataServiceProvider implements AutoCloseable {
     private static final String DATABASE_DIR_REPLACE = "${databaseDir}";
 
     private static final List<Class<?>> ENTITYCLASSES = List.of(UserEntity.class, UserCredEntity.class,
-        DeviceEntity.class, DeviceCredEntity.class, DeviceIpAddressEntity.class);
+        DeviceEntity.class,  DeviceIpAddressEntity.class, DeviceAccountEntity.class, NavResourceShareEntity.class,
+        NavResourceBookmarkEntity.class);
 
     private final SessionFactory sessionFactory;
 

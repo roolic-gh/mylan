@@ -26,16 +26,15 @@ import java.util.stream.Collectors;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.exceptions.DataCollisionException;
-import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
-import local.mylan.service.api.model.DeviceCredentials;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.data.entities.DeviceAccountEntity;
 import local.mylan.service.data.entities.DeviceEntity;
 import local.mylan.service.data.entities.DeviceIpAddressEntity;
 import local.mylan.service.data.entities.NavResourceBookmarkEntity;
@@ -49,111 +48,99 @@ import org.mapstruct.factory.Mappers;
 
 public class NavResourceDataService extends AbstractDataService implements NavResourceService {
     private static final NavResourceModelMapper MAPPER = Mappers.getMapper(NavResourceModelMapper.class);
+
     @VisibleForTesting
     static final String LOCAL_DEVICE_IDENTIFIER = "mylan.server.local";
+    @VisibleForTesting
+    static final String LOCAL_ACCOUNT_USERNAME = "local";
+
+    final Integer localDeviceId;
+    final Integer localAccountId;
 
     public NavResourceDataService(final SessionFactory sessionFactory, final NotificationService notificationService) {
         super(sessionFactory);
-        checkLocalDevice();
+        final var localDevice = getLocalDeviceEntity();
+        localDeviceId = localDevice.getDeviceId();
+        final var localAccount = getLocalAccountEntity(localDevice);
+        localAccountId = localAccount.getAccountId();
     }
 
-    private void checkLocalDevice() {
-        if (getLocalDeviceEntity() == null) {
-            final var localDevice = new DeviceEntity();
-            localDevice.setIdentifier(LOCAL_DEVICE_IDENTIFIER);
-            localDevice.setProtocol(DeviceProtocol.LOCAL);
-            inTransaction(session -> session.persist(localDevice));
-        }
+    private DeviceEntity getLocalDeviceEntity(){
+        return fromTransaction(session -> {
+            final var curLocalDevice =
+                session.createNamedQuery(Queries.GET_LOCAL_DEVICE, DeviceEntity.class).uniqueResult();
+            if (curLocalDevice != null) {
+                return curLocalDevice;
+            }
+            final var newLocalDevice = new DeviceEntity();
+            newLocalDevice.setIdentifier(LOCAL_DEVICE_IDENTIFIER);
+            newLocalDevice.setProtocol(DeviceProtocol.LOCAL);
+            session.persist(newLocalDevice);
+            return newLocalDevice;
+        });
+    }
+
+    private DeviceAccountEntity getLocalAccountEntity(final DeviceEntity localDevice) {
+        return fromTransaction(session -> {
+            final var curLocalAccount =
+                session.createNamedQuery(Queries.GET_LOCAL_ACCOUNT, DeviceAccountEntity.class).uniqueResult();
+            if (curLocalAccount != null) {
+                return curLocalAccount;
+            }
+            final var newLocalAccount = new DeviceAccountEntity();
+            newLocalAccount.setDevice(localDevice);
+            newLocalAccount.setUsername(LOCAL_ACCOUNT_USERNAME);
+            session.persist(newLocalAccount);
+            return newLocalAccount;
+        });
     }
 
     @Override
-    public Device getLocalDevice() {
-        return MAPPER.fromDeviceEntity(getLocalDeviceEntity());
-    }
-
-    private DeviceEntity getLocalDeviceEntity() {
-        return fromSession(session ->
-            session.createNamedQuery(Queries.GET_LOCAL_DEVICE, DeviceEntity.class).uniqueResult());
+    public Device getDevice(final Integer deviceId) {
+        return entityById(DeviceEntity.class, deviceId).map(MAPPER::fromEntity).orElse(null);
     }
 
     @Override
-    public DeviceWithCredentials getDevice(final Integer deviceId) {
-        final var entity = fromSession(session -> session.get(DeviceEntity.class, deviceId));
-        return MAPPER.fromDeviceEntityWithCredentials(entity);
-    }
-
-    @Override
-    public List<DeviceWithCredentials> getAllDevices() {
+    public List<Device> getAllDevices() {
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_ALL_DEVICES, DeviceEntity.class).getResultList()
-        ).stream().map(MAPPER::fromDeviceEntityWithCredentials).toList();
+        ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
-    public List<Device> getUserDevices(final Integer userId) {
-        return fromSession(session -> session.createNamedQuery(Queries.GET_DEVICES_BY_USER, DeviceEntity.class)
-            .setParameter("userId", userId).getResultList()
-        ).stream().map(MAPPER::fromDeviceEntity).toList();
-    }
-
-    @Override
-    public Device createUserDevice(final Integer userId, final Device device,
-        final DeviceCredentials credentials) {
-
-        requireNonNull(userId, "userId is required");
-        requireNonNull(credentials, "credentials device requred");
+    public Device createDevice(final Device device) {
+        requireNonNull(device);
         checkArgument(device.getProtocol() != null && device.getProtocol() != DeviceProtocol.LOCAL,
             "illegal device protocol");
-
-        final var entity = MAPPER.toDeviceEntity(device, credentials);
-        final var userEntity = fromSession(session -> session.get(UserEntity.class, userId));
-        if (userEntity == null) {
-            throw new IllegalArgumentException("Unknown user ID " + userId);
-        }
-        entity.setUser(userEntity);
-        // map device id for child entities
-        entity.getCredentials().setDevice(entity);
+        final var entity = MAPPER.toEntity(device);
         if (entity.getIpAddresses() != null) {
             entity.getIpAddresses().forEach(ip -> ip.setDevice(entity));
         }
         try {
-            inTransaction(session -> {
-                session.persist(entity);
-            });
-            return MAPPER.fromDeviceEntity(entity);
-
+            inTransaction(session -> session.persist(entity));
         } catch (ConstraintViolationException e) {
             throw new DataCollisionException("Device with identifier %s already exists."
                 .formatted(device.getIdentifier()), e);
         }
+        return MAPPER.fromEntity(entity);
     }
 
     @Override
-    public void updateDeviceCredentials(final Integer deviceId, final DeviceCredentials credentials) {
-        final var updated = fromTransaction(session ->
-            session.createNamedMutationQuery(Queries.UPDATE_DEVICE_CREDENTIALS)
-                .setParameter("deviceId", deviceId)
-                .setParameter("username", credentials.getUsername())
-                .setParameter("password", credentials.getPassword())
-                .setParameter("key", credentials.getKey())
-                .executeUpdate());
-        if (updated < 1) {
-            throw new IllegalArgumentException("No credentials exist for device with id " + deviceId);
-        }
-    }
-
-    private DeviceEntity getValidDeviceEntity(final Integer deviceId) {
+    public void removeDevice(final Integer deviceId) {
         requireNonNull(deviceId, "deviceId is required");
-        final var deviceEntity = fromSession(session -> session.get(DeviceEntity.class, deviceId));
-        if (deviceEntity == null) {
-            throw new IllegalArgumentException("No device founf with id " + deviceId);
-        }
-        return deviceEntity;
+        checkArgument(!deviceId.equals(localDeviceId),
+            "Requested device is for internal use only. It cannot be deleted");
+        inTransaction(session -> {
+            final var entity = session.get(DeviceEntity.class, deviceId);
+            if (entity != null) {
+                session.remove(entity);
+            }
+        });
     }
 
     @Override
     public void addDeviceAddress(final Integer deviceId, final DeviceIpAddress ipAddress) {
-        final var deviceEntity = getValidDeviceEntity(deviceId);
+        final var deviceEntity = validDeviceEntity(deviceId);
         if (deviceEntity.getIpAddresses() != null) {
             for (var deviceIp : deviceEntity.getIpAddresses()) {
                 if (deviceIp.getIpAddress().equals(ipAddress.getIpAddress())) {
@@ -162,7 +149,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
                 }
             }
         }
-        final var addressEntity = MAPPER.toIpAddressEntity(ipAddress);
+        final var addressEntity = MAPPER.toEntity(ipAddress);
         addressEntity.setDevice(deviceEntity);
         try {
             inTransaction(session -> session.persist(addressEntity));
@@ -186,15 +173,68 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
-    public void removeDevice(final Integer userId, final Integer deviceId) {
-        requireNonNull(userId, "userId is required");
-        requireNonNull(deviceId, "deviceId is required");
+    public DeviceAccount getLocalAccount() {
+        return getAccount(localAccountId);
+    }
+
+    @Override
+    public DeviceAccount getAccount(final Integer accountId) {
+        return entityById(DeviceAccountEntity.class, accountId).map(MAPPER::fromEntity).orElse(null);
+    }
+
+    @Override
+    public List<DeviceAccount> getAllAccounts() {
+        return fromSession(session ->
+            session.createNamedQuery(Queries.GET_ALL_ACCOUNTS, DeviceAccountEntity.class).getResultList()
+        ).stream().map(MAPPER::fromEntity).toList();
+    }
+
+    @Override
+    public List<DeviceAccount> getUserAccounts(final Integer userId) {
+        requireNonNull(userId);
+        return fromSession(session ->
+            session.createNamedQuery(Queries.GET_USER_ACCOUNTS, DeviceAccountEntity.class)
+                .setParameter("userId", userId).getResultList()
+        ).stream().map(MAPPER::fromEntityMin).toList();
+    }
+
+    @Override
+    public DeviceAccount createAccount(final Integer userId, final DeviceAccount account) {
+        requireNonNull(account, "account data is requred");
+        final var deviceEntity = validDeviceEntity(account.getDeviceId());
+        final var userEntity = validUserEntity(userId);
+        final var entity = MAPPER.toEntity(account);
+        entity.setDevice(deviceEntity);
+        entity.setUser(userEntity);
+        try {
+            inTransaction(session -> session.persist(entity));
+            inSession(session -> session.refresh(entity));
+            return MAPPER.fromEntity(entity);
+        } catch (ConstraintViolationException e) {
+            throw new DataCollisionException("Account for user %s at device %s is already defined."
+                .formatted(account.getUsername(), deviceEntity.getIdentifier()), e);
+        }
+    }
+
+    @Override
+    public void updateAccount(final Integer userId, final DeviceAccount account) {
+        final var entity = validAccountEntity(account.getAccountId());
+        validateOwner(userId, entity.getUserId(), "Account can be updated by owner only");
+        entity.setUsername(account.getUsername());
+        entity.setPassword(account.getPassword());
+        entity.setKey(account.getKey());
+        inTransaction(session -> session.merge(entity));
+    }
+
+    @Override
+    public void removeAccount(final Integer userId, final Integer accountId) {
+        requireNonNull(accountId, "accountId is required");
+        checkArgument(!accountId.equals(localAccountId),
+            "Requested account is for internal use only. It cannot be deleted");
         inTransaction(session -> {
-            final var entity = session.get(DeviceEntity.class, deviceId);
+            final var entity = session.get(DeviceAccountEntity.class, accountId);
             if (entity != null) {
-                if (!userId.equals(entity.getUserId())) {
-                    throw new UnauthorizedException("Device does not belong to request user");
-                }
+                validateOwner(userId, entity.getUserId(), "Account can be removed by owner only");
                 session.remove(entity);
             }
         });
@@ -204,7 +244,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     public List<NavResourceShare> getAllSharedResources() {
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_ALL_SHARED_RESOURCES, NavResourceShareEntity.class).getResultList()
-        ).stream().map(MAPPER::fromShareEntity).toList();
+        ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
@@ -213,28 +253,26 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             return fromSession(session ->
                 session.createNamedQuery(Queries.GET_SHARED_RESOURCES_FOR_GUEST, NavResourceShareEntity.class)
                     .getResultList()
-            ).stream().map(MAPPER::fromShareEntityMin).toList();
+            ).stream().map(MAPPER::fromEntityMin).toList();
         }
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_SHARED_RESOURCES_FOR_USER, NavResourceShareEntity.class)
                 .setParameter("userId", userId).getResultList()
         ).stream().map(entity ->
-            userId.equals(entity.getUserId()) ? MAPPER.fromShareEntity(entity) : MAPPER.fromShareEntityMin(entity)
+            userId.equals(entity.getUserId()) ? MAPPER.fromEntity(entity) : MAPPER.fromEntityMin(entity)
         ).toList();
     }
 
     @Override
     public NavResourceShare getSharedResource(final Long shareId) {
-        return MAPPER.fromShareEntity(
-            fromSession(session -> session.get(NavResourceShareEntity.class, shareId))
-        );
+        return entityById(NavResourceShareEntity.class, shareId).map(MAPPER::fromEntity).orElse(null);
     }
 
     @Override
     public void syncLocalSharedResources(final List<NavResourceShare> shares) {
         requireNonNull(shares);
         inTransaction(session -> {
-            final var deviceEntity = getLocalDeviceEntity();
+            final var localAccount = session.get(DeviceAccountEntity.class, localAccountId);
             final var entitiesMap = session.createNamedQuery(Queries.GET_LOCAL_SHARED_RESOURCES,
                     NavResourceShareEntity.class)
                 .stream().collect(Collectors.toMap(NavResourceShareEntity::getPath, Function.identity()));
@@ -242,8 +280,8 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
                 final var entity = entitiesMap.remove(share.getPath());
                 if (entity == null) {
                     // new shares
-                    final var newEntity = MAPPER.toShareEntity(share);
-                    newEntity.setDevice(deviceEntity);
+                    final var newEntity = MAPPER.toEntity(share);
+                    newEntity.setAccount(localAccount);
                     session.persist(newEntity);
                     continue;
                 }
@@ -261,52 +299,37 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
-    public NavResourceShare addSharedResource(final Integer userId, final NavResourceShare share) {
-        requireNonNull(userId, "userId is required");
+    public NavResourceShare createSharedResource(final Integer userId, final NavResourceShare share) {
         requireNonNull(share, "Shared resource data is required");
-        final var deviceEntity = getValidDeviceEntity(share.getDeviceId());
-        if (!userId.equals(deviceEntity.getUserId())) {
-            throw new UnauthorizedException("Resource can be shared by only device owner");
-        }
-        final var entity = MAPPER.toShareEntity(share);
-        entity.setDevice(deviceEntity);
-        entity.setUser(deviceEntity.getUser());
+        final var accountEntity = validAccountEntity(share.getAccountId());
+        final var userEntity = validUserEntity(userId);
+        validateOwner(userId, accountEntity.getUserId(), "Resouurce can be shared by account owner only");
+        final var entity = MAPPER.toEntity(share);
+        entity.setAccount(accountEntity);
+        entity.setUser(userEntity);
         inTransaction(session -> session.persist(entity));
-        return MAPPER.fromShareEntity(entity);
+        return MAPPER.fromEntity(entity);
     }
 
     @Override
     public void updateSharedResource(final Integer userId, final NavResourceShare share) {
-        requireNonNull(userId, "userId is required");
         requireNonNull(share);
-        requireNonNull(share.getShareId(), "shareId is required");
-        inTransaction(session -> {
-            final var entity = session.get(NavResourceShareEntity.class, share.getShareId());
-            if (entity == null) {
-                throw new NoDataException("No Shared resource found with shareId = " + share.getShareId());
-            }
-            if (!userId.equals(entity.getUserId())) {
-                throw new UnauthorizedException("Shared resource can be edited by owner only");
-            }
-            entity.setDisplayName(share.getResourceName());
-            entity.setShareType(share.getShareType());
-            session.merge(entity);
-        });
+        final var entity = validShareEntity(share.getShareId());
+        validateOwner(userId, entity.getUserId(), "Shared resource can be edited by owner only");
+        entity.setDisplayName(share.getResourceName());
+        entity.setShareType(share.getShareType());
+        inTransaction(session -> session.merge(entity));
     }
 
     @Override
     public void removeSharedResource(final Integer userId, final Long shareId) {
-        requireNonNull(userId, "userId is required");
         requireNonNull(shareId, "shareId is required");
         inTransaction(session -> {
             final var entity = session.get(NavResourceShareEntity.class, shareId);
-            if (entity == null) {
-                return;
+            if (entity != null) {
+                validateOwner(userId, entity.getUserId(), "Shared resource can be removed by owner only");
+                session.remove(entity);
             }
-            if (!userId.equals(entity.getUserId())) {
-                throw new UnauthorizedException("Shared resource can be edited by owner only");
-            }
-            session.remove(entity);
         });
     }
 
@@ -316,64 +339,79 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_USER_BOOKMARKS, NavResourceBookmarkEntity.class)
                 .setParameter("userId", userId).getResultList()
-        ).stream().map(MAPPER::fromBookmarkEntity).toList();
+        ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
     public NavResourceBookmark getBookmark(final Long bookmarkId) {
-        return MAPPER.fromBookmarkEntity(
-            fromSession(session -> session.get(NavResourceBookmarkEntity.class, bookmarkId))
-        );
+        return entityById(NavResourceBookmarkEntity.class, bookmarkId).map(MAPPER::fromEntity).orElse(null);
     }
 
     @Override
-    public NavResourceBookmark addBookmark(final Integer userId, final NavResource resource) {
-        requireNonNull(userId, "userId is required");
+    public NavResourceBookmark createBookmark(final Integer userId, final NavResource resource) {
         requireNonNull(resource, "Bookmark resource data is required");
-        checkArgument(resource.getDeviceId() != null || resource.getShareId() != null,
-            "Either deviceId or shareId should be defined in bookmark resource");
+        checkArgument(resource.getAccountId() != null || resource.getShareId() != null,
+            "Either accountId or shareId should be defined in bookmark resource");
 
         final var entity = new NavResourceBookmarkEntity();
+        entity.setUser(validUserEntity(userId));
         entity.setPath(resource.getPath());
-
-        if (resource.getDeviceId() != null) {
-            // by device
-            final var deviceEntity = getValidDeviceEntity(resource.getDeviceId());
-            if (!userId.equals(deviceEntity.getUserId())) {
-                throw new UnauthorizedException("Resource can be shared by only device owner");
-            }
-            entity.setDevice(deviceEntity);
-            entity.setUser(deviceEntity.getUser());
-            inTransaction(session -> session.persist(entity));
-
+        if (resource.getAccountId() != null) {
+            // by account
+            final var accountEntity = validAccountEntity(resource.getAccountId());
+            validateOwner(userId, accountEntity.getUserId(), "Resource can be shared by account owner only");
+            entity.setAccount(accountEntity);
         } else {
             // by share
-            inTransaction(session -> {
-                final var shareEntity = session.get(NavResourceShareEntity.class, resource.getShareId());
-                if (shareEntity != null) {
-                    throw new NoDataException("No Shared resource found with shareId = " + resource.getShareId());
-                }
-                final var userEntity = session.get(UserEntity.class, userId);
-                if (userEntity == null) {
-                    throw new IllegalArgumentException("No user found with id = " + userId);
-                }
-                entity.setShare(shareEntity);
-                entity.setUser(userEntity);
-                session.persist(entity);
-            });
+            final var shareEntity = validShareEntity(resource.getShareId());
+            entity.setShare(shareEntity);
         }
-        return MAPPER.fromBookmarkEntity(entity);
+        inTransaction(session -> session.persist(entity));
+        return MAPPER.fromEntity(entity);
     }
 
     @Override
     public void removeBookmark(final Integer userId, final Long bookmarkId) {
-        requireNonNull(userId, "userId is required");
+        requireNonNull(bookmarkId, "bookmarkId is required");
         inTransaction(session -> {
             final var entity = session.get(NavResourceBookmarkEntity.class, bookmarkId);
-            if (!userId.equals(entity.getUserId())) {
-                throw new UnauthorizedException("Bookmark can be removed by owner only");
+            if (entity != null) {
+                validateOwner(userId, entity.getUserId(), "Bookmark can be removed by owner only");
+                session.remove(entity);
             }
-            session.remove(entity);
         });
+    }
+
+    private UserEntity validUserEntity(final Integer userId) {
+        requireNonNull(userId, "userId is required");
+        return entityById(UserEntity.class, userId)
+            .orElseThrow(() -> new IllegalArgumentException("No user found with userId = " + userId));
+    }
+
+    private DeviceEntity validDeviceEntity(final Integer deviceId) {
+        requireNonNull(deviceId, "deviceId is required");
+        checkArgument(!deviceId.equals(localDeviceId), "Requested device is for internal use only.");
+        return entityById(DeviceEntity.class, deviceId)
+            .orElseThrow(() -> new IllegalArgumentException("No device found with deviceId = " + deviceId));
+    }
+
+    private DeviceAccountEntity validAccountEntity(final Integer accountId) {
+        requireNonNull(accountId, "accountId is required");
+        checkArgument(!accountId.equals(localAccountId), "Requested account is for internal use only.");
+        return entityById(DeviceAccountEntity.class, accountId)
+            .orElseThrow(() -> new IllegalArgumentException("No account found with accountId = " + accountId));
+    }
+
+    private NavResourceShareEntity validShareEntity(final Long shareId) {
+        requireNonNull(shareId, "shareId is required");
+        return entityById(NavResourceShareEntity.class, shareId)
+            .orElseThrow(() -> new IllegalArgumentException("No shared resource found with shareId = " + shareId));
+    }
+
+    private static void validateOwner(final Integer userId, final Integer ownerId, final String errorMessage) {
+        requireNonNull(userId, "userId is required");
+        if (!Objects.equals(userId, ownerId)) {
+            throw new UnauthorizedException(errorMessage);
+        }
     }
 }

@@ -21,11 +21,8 @@ public class Device {
 
     private Integer deviceId;
     private String identifier;
-    private Integer userId;
-    private List<DeviceIpAddress> ipAddresses;
     private DeviceProtocol protocol;
-    private String username;
-    private boolean keyLocked;
+    private List<DeviceIpAddress> ipAddresses;
 
     public Device() {
         // default
@@ -34,6 +31,12 @@ public class Device {
     public Device(final String identifier, final DeviceProtocol protocol) {
         this.identifier = identifier;
         this.protocol = protocol;
+    }
+
+    public Device(final String identifier, final DeviceProtocol protocol, final List<DeviceIpAddress> ipAddresses) {
+        this.identifier = identifier;
+        this.protocol = protocol;
+        this.ipAddresses = List.copyOf(ipAddresses);
     }
 
     public Integer getDeviceId() {
@@ -52,30 +55,6 @@ public class Device {
         this.identifier = identifier;
     }
 
-    public Integer getUserId() {
-        return userId;
-    }
-
-    public void setUserId(final Integer userId) {
-        this.userId = userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(final String username) {
-        this.username = username;
-    }
-
-    public List<DeviceIpAddress> getIpAddresses() {
-        return ipAddresses;
-    }
-
-    public void setIpAddresses(final List<DeviceIpAddress> ipAddresses) {
-        this.ipAddresses = ipAddresses;
-    }
-
     public DeviceProtocol getProtocol() {
         return protocol;
     }
@@ -84,12 +63,11 @@ public class Device {
         this.protocol = protocol;
     }
 
-    public boolean isKeyLocked() {
-        return keyLocked;
+    public List<DeviceIpAddress> getIpAddresses() {
+        return ipAddresses == null ? null : List.copyOf(ipAddresses);
     }
 
-    public void setKeyLocked(final boolean keyLocked) {
-        this.keyLocked = keyLocked;
+    public void setIpAddresses(final List<DeviceIpAddress> ipAddresses) {
+        this.ipAddresses = ipAddresses == null ? null : List.copyOf(ipAddresses);
     }
-
 }

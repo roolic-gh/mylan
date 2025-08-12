@@ -15,24 +15,53 @@
  */
 package local.mylan.service.api.model;
 
-public class DeviceCredentials {
+public class DeviceAccount {
+    private Integer accountId;
+    private Integer userId;
+    private Integer deviceId;
     private String username;
     private String password;
     private String key;
 
-    public DeviceCredentials() {
+    public DeviceAccount() {
         // default
     }
 
-    public DeviceCredentials(final String username, final String password) {
+    public DeviceAccount(final Integer deviceId, final String username, final String password) {
+        this.deviceId = deviceId;
         this.username = username;
         this.password = password;
     }
 
-    public DeviceCredentials(final String username, final String password, final String key) {
+    public DeviceAccount(final Integer deviceId, final String username, final String password, final String key) {
+        this.deviceId = deviceId;
         this.username = username;
         this.password = password;
         this.key = key;
+    }
+
+    public Integer getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(final Integer accountId) {
+        this.accountId = accountId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(final Integer userId) {
+        this.userId = userId;
+    }
+
+    public Integer getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(final Integer deviceId) {
+        this.deviceId = deviceId;
     }
 
     public String getUsername() {

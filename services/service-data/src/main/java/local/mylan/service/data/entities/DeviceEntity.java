@@ -25,23 +25,15 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import java.util.List;
 import local.mylan.service.api.model.DeviceProtocol;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 @NamedQuery(name = Queries.GET_ALL_DEVICES, resultClass = DeviceEntity.class, query = "SELECT d FROM DeviceEntity d")
 @NamedQuery(name = Queries.GET_LOCAL_DEVICE, resultClass = DeviceEntity.class,
     query = "SELECT d FROM DeviceEntity d WHERE d.protocol = DeviceProtocol.LOCAL")
-@NamedQuery(name = Queries.GET_DEVICES_BY_USER, resultClass = DeviceEntity.class,
-    query = "SELECT d FROM DeviceEntity d WHERE d.user.userId = :userId")
 
 @Entity
 @Table(name = "devices")
@@ -52,24 +44,12 @@ public class DeviceEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Integer deviceId;
 
-    @Column(name = "user_id", insertable = false, updatable = false)
-    private Integer userId;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id")
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private UserEntity user;
-
     @Column(name = "identifier", unique = true)
     private String identifier;
 
     @Column(name = "protocol")
     @Enumerated(EnumType.STRING)
     private DeviceProtocol protocol;
-
-    @OneToOne(mappedBy = "device", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @PrimaryKeyJoinColumn
-    private DeviceCredEntity credentials;
 
     @OneToMany(mappedBy = "device", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<DeviceIpAddressEntity> ipAddresses;
@@ -80,22 +60,6 @@ public class DeviceEntity {
 
     public void setDeviceId(final Integer deviceId) {
         this.deviceId = deviceId;
-    }
-
-    public Integer getUserId() {
-        return userId;
-    }
-
-    public void setUserId(final Integer userId) {
-        this.userId = userId;
-    }
-
-    public UserEntity getUser() {
-        return user;
-    }
-
-    public void setUser(final UserEntity user) {
-        this.user = user;
     }
 
     public String getIdentifier() {
@@ -114,14 +78,6 @@ public class DeviceEntity {
         this.protocol = protocol;
     }
 
-    public DeviceCredEntity getCredentials() {
-        return credentials;
-    }
-
-    public void setCredentials(final DeviceCredEntity credentials) {
-        this.credentials = credentials;
-    }
-
     public List<DeviceIpAddressEntity> getIpAddresses() {
         return ipAddresses;
     }
@@ -135,16 +91,15 @@ public class DeviceEntity {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof final DeviceEntity that)) {
+        if (!(o instanceof DeviceEntity that)) {
             return false;
         }
-        return Objects.equal(deviceId, that.deviceId) && Objects.equal(userId, that.userId)
-               && Objects.equal(identifier, that.identifier) && protocol == that.protocol
-               && Objects.equal(credentials, that.credentials) && Objects.equal(ipAddresses, that.ipAddresses);
+        return Objects.equal(deviceId, that.deviceId) && Objects.equal(identifier, that.identifier)
+            && protocol == that.protocol && Objects.equal(ipAddresses, that.ipAddresses);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(deviceId, userId, identifier, protocol, credentials, ipAddresses);
+        return Objects.hashCode(deviceId, identifier, protocol, ipAddresses);
     }
 }

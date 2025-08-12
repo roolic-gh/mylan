@@ -15,7 +15,7 @@
  */
 package local.mylan.service.data;
 
-import static java.util.stream.Collectors.toMap;
+import static local.mylan.service.data.NavResourceDataService.LOCAL_ACCOUNT_USERNAME;
 import static local.mylan.service.data.NavResourceDataService.LOCAL_DEVICE_IDENTIFIER;
 import static local.mylan.service.data.TestUtils.notificationService;
 import static local.mylan.service.data.TestUtils.setupSessionFactory;
@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,14 +35,12 @@ import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
-import local.mylan.service.api.model.DeviceCredentials;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.api.model.DeviceWithCredentials;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.api.model.ShareType;
-import local.mylan.service.api.model.User;
-import local.mylan.service.data.entities.DeviceCredEntity;
+import local.mylan.service.data.entities.DeviceAccountEntity;
 import local.mylan.service.data.entities.DeviceEntity;
 import local.mylan.service.data.entities.DeviceIpAddressEntity;
 import local.mylan.service.data.entities.NavResourceBookmarkEntity;
@@ -61,9 +60,11 @@ class NavResourceDataServiceTest {
     private static final String USERNAME_1 = "username-1";
     private static final String USERNAME_2 = "username-2";
     private static final String USERNAME_3 = "username-3";
+    private static final String USERNAME_X = "username-X";
     private static final String PASSWORD_1 = "pa$$W0rd";
     private static final String PASSWORD_2 = "Pa$$w0rd";
     private static final String PASSWORD_3 = "pA$$w0RD";
+    private static final String PASSWORD_X = "Pa5$wXXX";
     private static final String CRYPT_KEY = "crypt-key";
 
     private static final String IDENTIFIER_1 = "identifier-1";
@@ -86,11 +87,17 @@ class NavResourceDataServiceTest {
 
     static SessionFactory sessionFactory;
     static NavResourceService navResourceService;
-    static User user1;
-    static User user2;
-    static Device userDevice1;
-    static Device userDevice2;
-    static Device localDevice;
+
+    static Integer userId1;
+    static Integer userId2;
+    static Integer localDeviceId;
+    static Integer localAccountId;
+    static Device device1;
+    static Device device2;
+
+    static DeviceAccount account1;
+    static DeviceAccount account2;
+    static DeviceAccount account3;
 
     static NavResourceShare localShareAll;
     static NavResourceShare localShareReg;
@@ -103,27 +110,34 @@ class NavResourceDataServiceTest {
 
     @BeforeAll
     static void beforeAll() {
-        sessionFactory = setupSessionFactory(UserEntity.class, DeviceEntity.class, DeviceCredEntity.class,
+        sessionFactory = setupSessionFactory(UserEntity.class, DeviceEntity.class, DeviceAccountEntity.class,
             DeviceIpAddressEntity.class, NavResourceShareEntity.class, NavResourceBookmarkEntity.class);
         navResourceService = new NavResourceDataService(sessionFactory, notificationService());
 
-        user1 = createUser("user-1");
-        user2 = createUser("user-2");
-        localDevice = navResourceService.getLocalDevice();
+        userId1 = newUserId("user-1");
+        userId2 = newUserId("user-2");
+
+        final var localAccount = navResourceService.getLocalAccount();
+        assertNotNull(localAccount);
+        assertNull(localAccount.getUserId());
+        assertEquals(LOCAL_ACCOUNT_USERNAME, localAccount.getUsername());
+        localAccountId = localAccount.getAccountId();
+        assertNotNull(localAccountId);
+        localDeviceId = localAccount.getDeviceId();
+        assertNotNull(localDeviceId);
+
+        final var localDevice = navResourceService.getDevice(localAccount.getDeviceId());
         assertNotNull(localDevice);
-        assertNotNull(localDevice.getDeviceId());
         assertEquals(LOCAL_DEVICE_IDENTIFIER, localDevice.getIdentifier());
         assertEquals(DeviceProtocol.LOCAL, localDevice.getProtocol());
-        assertNull(localDevice.getUserId());
     }
 
-    private static User createUser(final String username) {
-        final var userId = sessionFactory.fromTransaction(session -> {
+    private static Integer newUserId(final String username) {
+        return sessionFactory.fromTransaction(session -> {
             final var userEntity = new UserEntity(username, false);
             session.persist(userEntity);
             return userEntity.getUserId();
         });
-        return new User(userId, username, username, false);
     }
 
     @AfterAll
@@ -134,130 +148,54 @@ class NavResourceDataServiceTest {
     @Test
     @Order(1)
     void createDevice() {
-        final var device = new Device(IDENTIFIER_1, DeviceProtocol.NFS);
-        device.setIpAddresses(List.of(new DeviceIpAddress(IP_1)));
-        final var creds = new DeviceCredentials(USERNAME_1, PASSWORD_1);
-        userDevice1 = navResourceService.createUserDevice(user1.getUserId(), device, creds);
-        assertDevice(userDevice1, user1.getUserId(), IDENTIFIER_1, DeviceProtocol.NFS, USERNAME_1, false);
-        assertDeviceIpAddresses(userDevice1.getIpAddresses(), Set.of(IP_1));
+        final var inDevice1 = new Device(IDENTIFIER_1, DeviceProtocol.NFS);
+        inDevice1.setIpAddresses(List.of(new DeviceIpAddress(IP_1)));
+        device1 = navResourceService.createDevice(inDevice1);
+        assertDevice(inDevice1, device1);
+        assertDeviceIpAddresses(device1.getIpAddresses(), Set.of(IP_1));
+        final var checkDevice1 = navResourceService.getDevice(device1.getDeviceId());
+        assertDevice(device1, checkDevice1);
+        assertDeviceIpAddresses(checkDevice1.getIpAddresses(), Set.of(IP_1));
 
-        userDevice2 = navResourceService.createUserDevice(user2.getUserId(),
-            new Device(IDENTIFIER_2, DeviceProtocol.SMB),
-            new DeviceCredentials(USERNAME_2, PASSWORD_2, CRYPT_KEY));
-        assertDevice(userDevice2, user2.getUserId(), IDENTIFIER_2, DeviceProtocol.SMB, USERNAME_2, true);
+        final var inDevice2 = new Device(IDENTIFIER_2, DeviceProtocol.SMB);
+        device2 = navResourceService.createDevice(inDevice2);
+        assertDevice(inDevice2, device2);
 
-        // non-existing user
+        // local not allower
         assertThrows(IllegalArgumentException.class,
-            () -> navResourceService.createUserDevice(-1, device, creds));
+            () -> navResourceService.createDevice(new Device("NEW LOCAL", DeviceProtocol.LOCAL)));
 
-        // identifier exists
-        assertThrows(DataCollisionException.class,
-            () -> navResourceService.createUserDevice(user2.getUserId(), device, creds));
-    }
-
-    @Test
-    @Order(2)
-    void getUserDevices() {
-        assertUserList(user1.getUserId(), userDevice1);
-        assertUserList(user2.getUserId(), userDevice2);
-    }
-
-    private static void assertUserList(final int userId, final Device expected) {
-        final var list = navResourceService.getUserDevices(userId);
-        assertNotNull(list);
-        assertEquals(1, list.size());
-        assertDevice(expected, list.getFirst());
-    }
-
-    @Test
-    @Order(3)
-    void getWithCredentials() {
-        final var fullLocal = navResourceService.getDevice(localDevice.getDeviceId());
-        assertWithCredentials(fullLocal, localDevice, null, null);
-        final var fullDevice1 = navResourceService.getDevice(userDevice1.getDeviceId());
-        assertWithCredentials(fullDevice1, userDevice1, PASSWORD_1, null);
-        assertDeviceIpAddresses(fullDevice1.getIpAddresses(), Set.of(IP_1));
-        final var fullDevice2 = navResourceService.getDevice(userDevice2.getDeviceId());
-        assertWithCredentials(fullDevice2, userDevice2, PASSWORD_2, CRYPT_KEY);
-
-        final var list = navResourceService.getAllDevices();
-        assertNotNull(list);
-        assertEquals(3, list.size());
-        final var map = list.stream().collect(toMap(DeviceWithCredentials::getDeviceId, Function.identity()));
-        assertWithCredentials(map.get(localDevice.getDeviceId()), localDevice, null, null);
-        assertWithCredentials(map.get(userDevice1.getDeviceId()), userDevice1, PASSWORD_1, null);
-        assertWithCredentials(map.get(userDevice2.getDeviceId()), userDevice2, PASSWORD_2, CRYPT_KEY);
-    }
-
-    private static void assertDevice(final Device device, final Integer userId, final String identifier,
-        final DeviceProtocol protocol, final String username, final boolean keyLocked) {
-        assertNotNull(device);
-        assertNotNull(device.getDeviceId());
-        assertEquals(userId, device.getUserId());
-        assertEquals(identifier, device.getIdentifier());
-        assertEquals(protocol, device.getProtocol());
-        assertEquals(username, device.getUsername());
-        assertEquals(keyLocked, device.isKeyLocked());
+        // identifier conflict
+        assertThrows(DataCollisionException.class, () -> navResourceService.createDevice(inDevice1));
     }
 
     private static void assertDevice(final Device expected, final Device actual) {
         assertNotNull(actual);
-        assertEquals(expected.getDeviceId(), actual.getDeviceId());
-        assertEquals(expected.getUserId(), actual.getUserId());
-        assertEquals(expected.getIdentifier(), actual.getIdentifier());
-        assertEquals(expected.getProtocol(), actual.getProtocol());
-        assertEquals(expected.getUsername(), actual.getUsername());
-        assertEquals(expected.isKeyLocked(), actual.isKeyLocked());
-    }
-
-    private static void assertWithCredentials(final DeviceWithCredentials actual, final Device expected,
-        final String password, final String key) {
-        assertNotNull(actual);
-        assertEquals(expected.getDeviceId(), actual.getDeviceId());
-        assertEquals(expected.getIdentifier(), actual.getIdentifier());
-        assertEquals(expected.getProtocol(), actual.getProtocol());
-        if (expected.getUserId() == null) {
-            // local
-            assertNull(actual.getUserId());
-            assertNull(actual.getCredentials());
+        if (expected.getDeviceId() == null) {
+            assertNotNull(actual.getDeviceId());
         } else {
-            assertEquals(expected.getUserId(), actual.getUserId());
-            final var creds = actual.getCredentials();
-            assertNotNull(creds);
-            assertEquals(expected.getUsername(), creds.getUsername());
-            assertEquals(password, creds.getPassword());
-            if (key == null) {
-                assertNull(creds.getKey());
-            } else {
-                assertEquals(key, creds.getKey());
-            }
+            assertEquals(expected.getDeviceId(), actual.getDeviceId());
         }
+        assertEquals(expected.getIdentifier(), actual.getIdentifier());
+        assertEquals(expected.getProtocol(), actual.getProtocol());
     }
 
     @Test
-    @Order(4)
-    void updateCredentials() {
-        final var creds = new DeviceCredentials(USERNAME_3, PASSWORD_3, CRYPT_KEY);
-        navResourceService.updateDeviceCredentials(userDevice1.getDeviceId(), creds);
-        final var check = navResourceService.getDevice(userDevice1.getDeviceId());
-        assertNotNull(check);
-        final var checkCreds = check.getCredentials();
-        assertNotNull(checkCreds);
-        assertEquals(USERNAME_3, checkCreds.getUsername());
-        assertEquals(PASSWORD_3, checkCreds.getPassword());
-        assertEquals(CRYPT_KEY, checkCreds.getKey());
-
-        // cannot update non-existent creds
-        assertThrows(IllegalArgumentException.class, () ->
-            navResourceService.updateDeviceCredentials(-1, creds));
-        assertThrows(IllegalArgumentException.class, () ->
-            navResourceService.updateDeviceCredentials(localDevice.getDeviceId(), creds));
+    @Order(2)
+    void getAllDevices() {
+        final var list = navResourceService.getAllDevices();
+        assertNotNull(list);
+        assertEquals(3, list.size());
+        final var deviceMap = toMap(list, Device::getDeviceId);
+        assertDevice(device1, deviceMap.get(device1.getDeviceId()));
+        assertDevice(device2, deviceMap.get(device2.getDeviceId()));
+        assertNotNull(deviceMap.get(localDeviceId));
     }
 
     @Test
-    @Order(5)
+    @Order(3)
     void addIpAddress() {
-        final var deviceId = userDevice1.getDeviceId();
+        final var deviceId = device1.getDeviceId();
         // already assigned to same device - omit error
         navResourceService.addDeviceAddress(deviceId, new DeviceIpAddress(IP_1));
         // new ip address
@@ -266,22 +204,7 @@ class NavResourceDataServiceTest {
         assertDeviceIpAddresses(check.getIpAddresses(), Set.of(IP_1, IP_2));
         // already assigned to other device - collision error
         assertThrows(DataCollisionException.class, () ->
-            navResourceService.addDeviceAddress(userDevice2.getDeviceId(), new DeviceIpAddress(IP_1)));
-    }
-
-    @Test
-    @Order(6)
-    void removeIpAddress() {
-        navResourceService.removeDeviceAddress(userDevice1.getDeviceId(), IP_2);
-        // wrong device - collision error
-        assertThrows(DataCollisionException.class, () ->
-            navResourceService.removeDeviceAddress(userDevice2.getDeviceId(), IP_1));
-        // removing non-existent ip address - no error
-        navResourceService.removeDeviceAddress(userDevice1.getDeviceId(), IP_2);
-        navResourceService.removeDeviceAddress(userDevice2.getDeviceId(), IP_2);
-        // validate db
-        final var check = navResourceService.getDevice(userDevice1.getDeviceId());
-        assertDeviceIpAddresses(check.getIpAddresses(), Set.of(IP_1));
+            navResourceService.addDeviceAddress(device2.getDeviceId(), new DeviceIpAddress(IP_1)));
     }
 
     private static void assertDeviceIpAddresses(final List<DeviceIpAddress> ipAddresses, final Set<String> expected) {
@@ -291,7 +214,155 @@ class NavResourceDataServiceTest {
     }
 
     @Test
+    @Order(4)
+    void removeIpAddress() {
+        navResourceService.removeDeviceAddress(device1.getDeviceId(), IP_2);
+        // wrong device - collision error
+        assertThrows(DataCollisionException.class, () ->
+            navResourceService.removeDeviceAddress(device2.getDeviceId(), IP_1));
+        // removing non-existent ip address - no error
+        navResourceService.removeDeviceAddress(device1.getDeviceId(), IP_2);
+        navResourceService.removeDeviceAddress(device2.getDeviceId(), IP_2);
+        // validate db
+        final var check = navResourceService.getDevice(device1.getDeviceId());
+        assertDeviceIpAddresses(check.getIpAddresses(), Set.of(IP_1));
+    }
+
+    @Test
+    @Order(4)
+    void createAccount() {
+        // single account to device 1
+        final var inAccount1 = new DeviceAccount(device1.getDeviceId(), USERNAME_1, PASSWORD_1);
+        account1 = navResourceService.createAccount(userId1, inAccount1);
+        assertAccount(inAccount1, account1, true);
+        final var checkAccount1 = navResourceService.getAccount(account1.getAccountId());
+        assertAccount(account1, checkAccount1, true);
+
+        // 2 accounts to device 2
+        final var inAccount2 = new DeviceAccount(device2.getDeviceId(), USERNAME_2, PASSWORD_2, CRYPT_KEY);
+        account2 = navResourceService.createAccount(userId2, inAccount2);
+        assertAccount(inAccount2, account2, true);
+
+        final var inAccount3 = new DeviceAccount(device2.getDeviceId(), USERNAME_1, PASSWORD_1);
+        account3 = navResourceService.createAccount(userId2, inAccount3);
+        assertAccount(inAccount3, account3, true);
+
+        // error cases
+        // local device is not allowed
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.createAccount(
+            userId1, new DeviceAccount(localDeviceId, USERNAME_X, PASSWORD_X)));
+        // account with same username already defined on target device
+        assertThrows(DataCollisionException.class, () -> navResourceService.createAccount(
+            userId1, new DeviceAccount(device1.getDeviceId(), USERNAME_1, PASSWORD_X)));
+        // non-existing user
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.createAccount(
+            -1, new DeviceAccount(device1.getDeviceId(), USERNAME_2, PASSWORD_X)));
+    }
+
+    private static void assertAccount(final DeviceAccount expected, final DeviceAccount actual,
+        final boolean withPassword) {
+
+        assertNotNull(actual);
+        assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        if (localDeviceId.equals(expected.getDeviceId())) {
+            // local
+            assertNull(actual.getUserId());
+            assertNull(actual.getUsername());
+            assertNull(actual.getPassword());
+            assertNull(actual.getKey());
+            return;
+        }
+        if (expected.getUserId() == null) {
+            assertNotNull(actual.getUserId());
+        } else {
+            assertEquals(expected.getUserId(), actual.getUserId());
+        }
+        assertEquals(expected.getUsername(), actual.getUsername());
+        if (withPassword) {
+            assertEquals(expected.getPassword(), actual.getPassword());
+            if (expected.getKey() == null) {
+                assertNull(actual.getKey());
+            } else {
+                assertEquals(expected.getKey(), actual.getKey());
+            }
+        } else {
+            assertNull(actual.getPassword());
+            assertNull(actual.getKey());
+        }
+    }
+
+    @Test
+    @Order(5)
+    void updateAccount() {
+        // only accountId and credentials are taken from input
+        final var update = new DeviceAccount(null, USERNAME_X, PASSWORD_X, CRYPT_KEY);
+        update.setAccountId(account3.getAccountId());
+        navResourceService.updateAccount(userId2, update);
+
+        // validate credentials only updated
+        final var check = navResourceService.getAccount(account3.getAccountId());
+        assertNotNull(check);
+        assertEquals(userId2, check.getUserId());
+        assertEquals(device2.getDeviceId(), check.getDeviceId());
+        assertEquals(USERNAME_X, check.getUsername());
+        assertEquals(PASSWORD_X, check.getPassword());
+        assertEquals(CRYPT_KEY, check.getKey());
+        account3 = check;
+
+        // error cases
+        // non-existent account
+        update.setAccountId(-1);
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.updateAccount(userId2, update));
+
+        // local account is not eligible for update
+        update.setAccountId(localAccountId);
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.updateAccount(userId2, update));
+        // account owned by other user
+        update.setAccountId(account1.getAccountId());
+        assertThrows(UnauthorizedException.class, () -> navResourceService.updateAccount(userId2, update));
+    }
+
+    @Test
+    @Order(6)
+    void getAccounts() {
+        final var allList = navResourceService.getAllAccounts();
+        assertNotNull(allList);
+        assertEquals(4, allList.size());
+        final var allMap = toMap(allList, DeviceAccount::getAccountId);
+        assertAccount(account1, allMap.get(account1.getAccountId()), true);
+        assertAccount(account2, allMap.get(account2.getAccountId()), true);
+        assertAccount(account3, allMap.get(account3.getAccountId()), true);
+        assertNotNull(allMap.get(localAccountId));
+
+        final var list1 = navResourceService.getUserAccounts(userId1);
+        assertNotNull(list1);
+        assertEquals(1, list1.size());
+        assertAccount(account1, list1.getFirst(), false);
+
+        final var list2 = navResourceService.getUserAccounts(userId2);
+        assertNotNull(list2);
+        assertEquals(2, list2.size());
+        final var map = toMap(list2, DeviceAccount::getAccountId);
+        assertAccount(account2, map.get(account2.getAccountId()), false);
+        assertAccount(account3, map.get(account3.getAccountId()), false);
+    }
+
+    @Test
     @Order(7)
+    void removeAccount() {
+        navResourceService.removeAccount(userId2, account3.getAccountId());
+        account3 = navResourceService.getAccount(account3.getAccountId());
+        assertNull(account3);
+
+        // removing local account is not allowed
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.removeAccount(userId2, localAccountId));
+        // account belongs to other user
+        assertThrows(UnauthorizedException.class,
+            () -> navResourceService.removeAccount(userId2, account1.getAccountId()));
+    }
+
+    @Test
+    @Order(8)
     void syncLocalShares() {
         final var local1 = new NavResourceShare(null, SHARE_NAME_1, SHARE_PATH_1, ShareType.ALL);
         final var local2 = new NavResourceShare(null, SHARE_NAME_2, SHARE_PATH_2, ShareType.ALL);
@@ -318,7 +389,7 @@ class NavResourceDataServiceTest {
         // assert 2nd entry updated -> id is same
         final var original = byPath(firstActual, SHARE_PATH_2);
         final var updated = byPath(secondActual, SHARE_PATH_2);
-        assertEquals(original.getShareId(),updated.getShareId());
+        assertEquals(original.getShareId(), updated.getShareId());
 
         // third sync replace all for below tests
         final var thirdExpected = List.of(local1, local4);
@@ -329,15 +400,17 @@ class NavResourceDataServiceTest {
         localShareReg = byPath(thirdActual, SHARE_PATH_2);
     }
 
-    private static NavResourceShare byPath(final List<NavResourceShare> list, final String path){
+    private static NavResourceShare byPath(final List<NavResourceShare> list, final String path) {
         return list.stream().filter(share -> path.equals(share.getPath())).findFirst().orElseThrow();
     }
 
-    private static void assertSharesByPath(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
+    private static void assertSharesByPath(final List<NavResourceShare> expected,
+        final List<NavResourceShare> actual) {
+
         assertNotNull(actual);
         assertEquals(expected.size(), actual.size());
-        final var expectedMap = expected.stream().collect(toMap(NavResourceShare::getPath, Function.identity()));
-        final var actualMap = actual.stream().collect(toMap(NavResourceShare::getPath, Function.identity()));
+        final var expectedMap = toMap(expected, NavResourceShare::getPath);
+        final var actualMap = toMap(actual, NavResourceShare::getPath);
         for (var entry : expectedMap.entrySet()) {
             assertShare(entry.getValue(), actualMap.get(entry.getKey()));
         }
@@ -351,10 +424,10 @@ class NavResourceDataServiceTest {
         }
         assertEquals(expected.getResourceName(), actual.getResourceName());
 
-        if (expected.getDeviceId() == null) {
-            assertEquals(localDevice.getDeviceId(), actual.getDeviceId());
+        if (expected.getAccountId() == null) {
+            assertEquals(localAccountId, actual.getAccountId());
         } else {
-            assertEquals(expected.getDeviceId(), actual.getDeviceId());
+            assertEquals(expected.getAccountId(), actual.getAccountId());
         }
         assertEquals(expected.getPath(), actual.getPath());
     }
@@ -362,14 +435,14 @@ class NavResourceDataServiceTest {
     @Test
     @Order(20)
     void removeDevice() {
-        navResourceService.removeDevice(userDevice1.getUserId(), userDevice1.getDeviceId());
-        assertNull(navResourceService.getDevice(userDevice1.getDeviceId()));
+        navResourceService.removeDevice(device1.getDeviceId());
+        assertNull(navResourceService.getDevice(device1.getDeviceId()));
 
         // TODO validate dependent resources removed
 
-        // device does not belong to user
-        assertThrows(UnauthorizedException.class, () ->
-            navResourceService.removeDevice(userDevice1.getUserId(), userDevice2.getDeviceId()));
     }
 
+    private static <K, V> Map<K, V> toMap(final List<V> list, Function<V, K> keyBuilder) {
+        return list.stream().collect(Collectors.toMap(keyBuilder, Function.identity()));
+    }
 }
