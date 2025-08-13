@@ -26,9 +26,26 @@ public class NavResource {
         // default
     }
 
+    public NavResource(final NavResource other) {
+        accountId = other.accountId;
+        shareId = other.shareId;
+        resourceName = other.resourceName;
+        path = other.path;
+    }
+
+    public NavResource(final Integer accountId, final String path) {
+        this.accountId = accountId;
+        this.path = path;
+    }
+
     public NavResource(final Integer accountId, final String resourceName, final String path) {
         this.accountId = accountId;
         this.resourceName = resourceName;
+        this.path = path;
+    }
+
+    public NavResource(final Long shareId, final String path) {
+        this.shareId = shareId;
         this.path = path;
     }
 

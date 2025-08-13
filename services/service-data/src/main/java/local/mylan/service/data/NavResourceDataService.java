@@ -17,12 +17,12 @@ package local.mylan.service.data;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.exceptions.DataCollisionException;
@@ -65,7 +65,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         localAccountId = localAccount.getAccountId();
     }
 
-    private DeviceEntity getLocalDeviceEntity(){
+    private DeviceEntity getLocalDeviceEntity() {
         return fromTransaction(session -> {
             final var curLocalDevice =
                 session.createNamedQuery(Queries.GET_LOCAL_DEVICE, DeviceEntity.class).uniqueResult();
@@ -206,9 +206,11 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         final var entity = MAPPER.toEntity(account);
         entity.setDevice(deviceEntity);
         entity.setUser(userEntity);
+        // direct setting foreign key ids allows skipping post-persitence refresh to ensure the entity is up-to-date
+        entity.setDeviceId(deviceEntity.getDeviceId());
+        entity.setUserId(userEntity.getUserId());
         try {
             inTransaction(session -> session.persist(entity));
-            inSession(session -> session.refresh(entity));
             return MAPPER.fromEntity(entity);
         } catch (ConstraintViolationException e) {
             throw new DataCollisionException("Account for user %s at device %s is already defined."
@@ -271,12 +273,15 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     @Override
     public void syncLocalSharedResources(final List<NavResourceShare> shares) {
         requireNonNull(shares);
+        // ensure no paths repeated
+        final var uniquePaths =
+            shares.stream().collect(toMap(NavResourceShare::getPath, Function.identity())).values();
         inTransaction(session -> {
             final var localAccount = session.get(DeviceAccountEntity.class, localAccountId);
-            final var entitiesMap = session.createNamedQuery(Queries.GET_LOCAL_SHARED_RESOURCES,
-                    NavResourceShareEntity.class)
-                .stream().collect(Collectors.toMap(NavResourceShareEntity::getPath, Function.identity()));
-            for (var share : shares) {
+            final var entitiesMap = session
+                    .createNamedQuery(Queries.GET_LOCAL_SHARED_RESOURCES, NavResourceShareEntity.class)
+                    .stream().collect(toMap(NavResourceShareEntity::getPath, Function.identity()));
+            for (var share : uniquePaths) {
                 final var entity = entitiesMap.remove(share.getPath());
                 if (entity == null) {
                     // new shares
@@ -307,6 +312,9 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         final var entity = MAPPER.toEntity(share);
         entity.setAccount(accountEntity);
         entity.setUser(userEntity);
+        // direct setting foreign key ids allows skipping post-persitence refresh to ensure the entity is up-to-date
+        entity.setAccountId(accountEntity.getAccountId());
+        entity.setUserId(userEntity.getUserId());
         inTransaction(session -> session.persist(entity));
         return MAPPER.fromEntity(entity);
     }
@@ -355,16 +363,19 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
 
         final var entity = new NavResourceBookmarkEntity();
         entity.setUser(validUserEntity(userId));
+        entity.setUserId(userId);
         entity.setPath(resource.getPath());
         if (resource.getAccountId() != null) {
             // by account
             final var accountEntity = validAccountEntity(resource.getAccountId());
             validateOwner(userId, accountEntity.getUserId(), "Resource can be shared by account owner only");
             entity.setAccount(accountEntity);
+            entity.setAccountId(accountEntity.getAccountId());
         } else {
             // by share
             final var shareEntity = validShareEntity(resource.getShareId());
             entity.setShare(shareEntity);
+            entity.setShareId(shareEntity.getShareId());
         }
         inTransaction(session -> session.persist(entity));
         return MAPPER.fromEntity(entity);

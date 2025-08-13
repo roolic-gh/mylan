@@ -20,6 +20,15 @@ public class NavResourceBookmark extends NavResource {
     private Long bookmarkId;
     private Integer userId;
 
+    public NavResourceBookmark() {
+        super();
+    }
+
+    public NavResourceBookmark(final Integer userId, NavResource navResource) {
+        super(navResource);
+        this.userId = userId;
+    }
+
     public Long getBookmarkId() {
         return bookmarkId;
     }

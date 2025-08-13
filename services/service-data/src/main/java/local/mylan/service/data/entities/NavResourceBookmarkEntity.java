@@ -16,7 +16,6 @@
 package local.mylan.service.data.entities;
 
 import com.google.common.base.Objects;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -53,7 +52,7 @@ public class NavResourceBookmarkEntity {
     @Column(name = "share_id", insertable = false, updatable = false)
     private Long shareId;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "share_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private NavResourceShareEntity share;
@@ -61,7 +60,7 @@ public class NavResourceBookmarkEntity {
     @Column(name = "user_id", insertable = false, updatable = false)
     private Integer userId;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
