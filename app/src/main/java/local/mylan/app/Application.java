@@ -21,6 +21,7 @@ import local.mylan.service.data.DataServiceProvider;
 import local.mylan.service.rest.api.RestUserService;
 import local.mylan.service.rest.spi.DefaultRestUserService;
 import local.mylan.service.spi.DefaultEncryptionService;
+import local.mylan.service.spi.DefaultNotificationService;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
 import local.mylan.transport.http.rest.RestServiceDispatcher;
@@ -36,6 +37,7 @@ final class Application {
     private final Path workDir;
 
     private DataServiceProvider dataServiceProvider;
+    private NotificationService notificationService;
     private HttpServer server;
 
     Application(final Path confDir, final Path workDir) {
@@ -47,7 +49,7 @@ final class Application {
         LOG.info("Starting application with conf dir: {} and work dir: {}", confDir, workDir);
 
         // independent services
-        final var notificationService = new NotificationService(){};
+        notificationService = new DefaultNotificationService();
         final var encryptionService = new DefaultEncryptionService(confDir, workDir);
 
         // persistence layer services
@@ -80,6 +82,9 @@ final class Application {
             } catch (Exception e) {
                 // ignore;
             }
+        }
+        if (notificationService != null) {
+            notificationService.stop();
         }
     }
 }
