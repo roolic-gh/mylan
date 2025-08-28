@@ -1,0 +1,59 @@
+/*
+ * Copyright 2025 Ruslan Kashapov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package local.transport.netty.smb.protocol.spnego;
+
+/**
+ * SPNEGO negotiation token response.
+ * Addresses <a href="https://www.rfc-editor.org/rfc/rfc4178.html#section-4.2.2.">RFC 4178 #4.2.2. negTokenResp</a>
+ */
+public class NegTokenResp implements NegToken {
+    private NegState state;
+    private MechType supportedMech;
+    private byte[] mechToken;
+    private byte[] mechListMIC;
+
+    public NegState state() {
+        return state;
+    }
+
+    public void setState(final NegState state) {
+        this.state = state;
+    }
+
+    public MechType supportedMech() {
+        return supportedMech;
+    }
+
+    public void setSupportedMech(final MechType supportedMech) {
+        this.supportedMech = supportedMech;
+    }
+
+    public byte[] mechToken() {
+        return mechToken;
+    }
+
+    public void setMechToken(final byte[] mechToken) {
+        this.mechToken = mechToken;
+    }
+
+    public byte[] mechListMIC() {
+        return mechListMIC;
+    }
+
+    public void setMechListMIC(final byte[] mechListMIC) {
+        this.mechListMIC = mechListMIC;
+    }
+}
