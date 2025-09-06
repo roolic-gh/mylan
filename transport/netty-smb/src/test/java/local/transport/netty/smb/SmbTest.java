@@ -16,17 +16,9 @@
 package local.transport.netty.smb;
 
 import io.netty.buffer.Unpooled;
-import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
 import java.util.Base64;
 import local.transport.netty.smb.handler.codec.CodecUtils;
-import local.transport.netty.smb.handler.codec.SpnegoCodecUtils;
 import local.transport.netty.smb.protocol.SmbDialect;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.junit.jupiter.api.Test;
 
 class SmbTest {
@@ -49,52 +41,6 @@ class SmbTest {
         System.out.println();
     }
 
-    @Test
-    void gss() throws Exception {
 
-        final var initBytes = Base64.getDecoder().decode(
-            "YIIBPAYGKwYBBQUCoIIBMDCCASygGjAYBgorBgEEAYI3AgIeBgorBgEEAYI3AgIKooIBDASCAQhORUdPRVhUUwEAAAAAAAAAYAAAAHAAAABmoqbU3wIqY4uvcviYiI+WV9ijr+VZaWWhRiFb8nXvN2cVNGDr7lL+j3QDrBLxTBEAAAAAAAAAAGAAAAABAAAAAAAAAAAAAABcM1MN6vkNTbLsSuN4bsMITkVHT0VYVFMDAAAAAQAAAEAAAACYAAAAZqKm1N8CKmOLr3L4mIiPllwzUw3q+Q1NsuxK43huwwhAAAAAWAAAADBWoFQwUjAngCUwIzEhMB8GA1UEAxMYVG9rZW4gU2lnbmluZyBQdWJsaWMgS2V5MCeAJTAjMSEwHwYDVQQDExhUb2tlbiBTaWduaW5nIFB1YmxpYyBLZXk="
-//            "YEgGBisGAQUFAqA+MDygDjAMBgorBgEEAYI3AgIKoioEKE5UTE1TU1AAAQAAABWCCGIAAAAAKAAAAAAAAAAoAAAABgEAAAAAAA8="
-        );
-        final var respBytes = Base64.getDecoder().decode(
-            "oYHOMIHLoAMKAQGhDAYKKwYBBAGCNwICCqKBtQSBsk5UTE1TU1AAAgAAABIAEgA4AAAAFYKKYhEj+2kAdCOsAAAAAAAAAABoAGgASgAAAAoAYUoAAAAPUgBPAE8ATABJAEMALQBaADkAAgASAFIATwBPAEwASQBDAC0AWgA5AAEAEgBSAE8ATwBMAEkAQwAtAFoAOQAEABIAUgBvAG8AbABpAGMALQBaADkAAwASAFIAbwBvAGwAaQBjAC0AWgA5AAcACACg/7A0qQ3cAQAAAAA="
-        );
 
-        final var initToken = SpnegoCodecUtils.decodeNegToken(Unpooled.wrappedBuffer(initBytes));
-        final var respToken = SpnegoCodecUtils.decodeNegToken(Unpooled.wrappedBuffer(respBytes));
-
-        final var list = new ArrayList<ASN1Primitive>();
-        try (var in = new ASN1InputStream(new ByteArrayInputStream(initBytes))) {
-            ASN1Primitive obj;
-            while ((obj = in.readObject()) != null) {
-                list.add(obj);
-            }
-        }
-        list.forEach(obj -> dump(obj, ""));
-
-    }
-
-    private static void dump(final ASN1Primitive obj, final String indent) {
-        System.out.println(indent + "* " + obj.getClass());
-        switch (obj) {
-            case ASN1TaggedObject tagged -> {
-                final var baseobj = tagged.getBaseObject();
-                System.out.printf(indent + "= %d %d %s %n", tagged.getTagNo(), tagged.getTagClass(),
-                    baseobj.getClass());
-                if (baseobj instanceof ASN1Sequence seq) {
-                    seq.forEach(o -> {
-                        if (o instanceof ASN1Primitive prim) {
-                            dump(prim, indent + "    ");
-                        } else {
-                            System.out.println(indent + "    * " + o.getClass());
-                        }
-                    });
-                }
-            }
-            case ASN1ObjectIdentifier oid -> System.out.println(indent + "= " + oid.getId());
-            default -> {
-            }
-        }
-
-    }
 }

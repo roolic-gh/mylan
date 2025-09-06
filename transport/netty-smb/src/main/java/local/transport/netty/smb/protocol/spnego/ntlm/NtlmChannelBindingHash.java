@@ -13,14 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.spnego.ntlm;
 
-public interface MechToken {
-
-    static MechToken encoded(final byte[] bytes) {
-        return new EncodedMechToken(bytes);
-    }
-
-    record EncodedMechToken(byte[] bytes) implements MechToken {
-    }
+public record NtlmChannelBindingHash(byte[] hash) {
 }

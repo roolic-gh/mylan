@@ -23,30 +23,34 @@ import java.util.List;
  */
 public class NegTokenInit implements NegToken {
     private List<MechType> mechTypes;
-    private byte[] mechToken;
-    private byte[] mechListMIC;
+    private MechToken mechToken;
+    private MechListMIC mechListMIC;
 
     public List<MechType> mechTypes() {
         return mechTypes;
+    }
+
+    public MechType optimisticMechType() {
+        return mechTypes != null && !mechTypes.isEmpty() ? mechTypes.getFirst() : MechType.OTHER;
     }
 
     public void setMechTypes(final List<MechType> mechTypes) {
         this.mechTypes = mechTypes;
     }
 
-    public byte[] mechToken() {
+    public MechToken mechToken() {
         return mechToken;
     }
 
-    public void setMechToken(final byte[] mechToken) {
+    public void setMechToken(final MechToken mechToken) {
         this.mechToken = mechToken;
     }
 
-    public byte[] mechListMIC() {
+    public MechListMIC mechListMIC() {
         return mechListMIC;
     }
 
-    public void setMechListMIC(final byte[] mechListMIC) {
+    public void setMechListMIC(final MechListMIC mechListMIC) {
         this.mechListMIC = mechListMIC;
     }
 }

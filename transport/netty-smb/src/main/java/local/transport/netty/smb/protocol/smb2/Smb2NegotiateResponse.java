@@ -19,6 +19,7 @@ import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.SmbCommand;
 import local.transport.netty.smb.protocol.SmbDialect;
 import local.transport.netty.smb.protocol.SmbResponseMessage;
+import local.transport.netty.smb.protocol.spnego.NegToken;
 
 /**
  *  SMB2 Negotiate response. Addresses MS-SMB2 (#2.2.4 SMB2 NEGOTIATE Response).
@@ -33,6 +34,8 @@ public class Smb2NegotiateResponse implements SmbResponseMessage {
     private int maxWriteSize;
     private long systemTime;
     private long serverStartTime;
+
+    private NegToken token;
 
     @Override
     public SmbCommand command() {
@@ -103,5 +106,13 @@ public class Smb2NegotiateResponse implements SmbResponseMessage {
 
     public void setServerStartTime(final long serverStartTime) {
         this.serverStartTime = serverStartTime;
+    }
+
+    public NegToken token() {
+        return token;
+    }
+
+    public void setToken(final NegToken token) {
+        this.token = token;
     }
 }

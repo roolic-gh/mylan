@@ -22,8 +22,8 @@ package local.transport.netty.smb.protocol.spnego;
 public class NegTokenResp implements NegToken {
     private NegState state;
     private MechType supportedMech;
-    private byte[] mechToken;
-    private byte[] mechListMIC;
+    private MechToken mechToken;
+    private MechListMIC mechListMIC;
 
     public NegState state() {
         return state;
@@ -41,19 +41,19 @@ public class NegTokenResp implements NegToken {
         this.supportedMech = supportedMech;
     }
 
-    public byte[] mechToken() {
+    public MechToken mechToken() {
         return mechToken;
     }
 
-    public void setMechToken(final byte[] mechToken) {
+    public void setMechToken(final MechToken mechToken) {
         this.mechToken = mechToken;
     }
 
-    public byte[] mechListMIC() {
+    public MechListMIC mechListMIC() {
         return mechListMIC;
     }
 
-    public void setMechListMIC(final byte[] mechListMIC) {
+    public void setMechListMIC(final MechListMIC mechListMIC) {
         this.mechListMIC = mechListMIC;
     }
 }

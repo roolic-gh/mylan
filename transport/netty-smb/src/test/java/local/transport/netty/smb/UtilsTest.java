@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class UtilsTest {
 
     @Test
-    void readWriteGuid(){
+    void readWriteGuid() {
         final var expected = UUID.fromString("996e16b1-e7fb-9464-6b35-35057de29f07");
         final var readBytes = Base64.getDecoder().decode("sRZumfvnZJRrNTUFfeKfBw==");
         final var readBuf = Unpooled.wrappedBuffer(readBytes);
@@ -40,5 +40,13 @@ class UtilsTest {
 
         Utils.writeGuid(writeBuf, actual);
         assertArrayEquals(readBytes, writeBytes);
+    }
+
+    @Test
+    void filetimeToMillisAndBack() {
+        final var millis = 1755237329892L;
+        final var filetime = 133997109298920000L;
+        assertEquals(filetime, Utils.filetimeFromUnixMillis(millis));
+        assertEquals(millis, Utils.unixMillisFromFiletime(filetime));
     }
 }

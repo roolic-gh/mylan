@@ -23,7 +23,7 @@
         <groupId>local.mylan</groupId>
         <artifactId>mylan-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>netty-smb</artifactId>

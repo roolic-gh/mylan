@@ -15,12 +15,12 @@
  */
 package local.transport.netty.smb.protocol.spnego;
 
-public interface MechToken {
+public interface MechListMIC {
 
-    static MechToken encoded(final byte[] bytes) {
-        return new EncodedMechToken(bytes);
+    static MechListMIC encoded(final byte[] bytes) {
+        return new EncodedMechListMIC(bytes);
     }
 
-    record EncodedMechToken(byte[] bytes) implements MechToken {
+    record EncodedMechListMIC(byte[] bytes) implements MechListMIC {
     }
 }

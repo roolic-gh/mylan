@@ -13,27 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.spnego.ntlm;
 
-public enum NegState {
-    UNDEFINED(-1),
-    ACCEPT_COMPLETED(0),
-    ACCEPT_INCOMPLETE(1),
-    REJECT(2),
-    REQUEST_MIC(3);
+/**
+ * NTLM Message type. Addresses MS-NLMP (#2.2 Message Syntax).
+ */
+public enum NtlmMessageType {
+    NtLmNegotiate(0x00000001),
+    NtLmChallenge(0x00000002),
+    NtLmAuthenticate(0x00000003),
+    Unidentified(0x00);
 
     private final int code;
 
-    NegState(final int code) {
+    NtlmMessageType(final int code) {
         this.code = code;
     }
 
-    public static NegState fromCode(final int code) {
-        for (var ns : values()) {
-            if (ns.code == code) {
-                return ns;
+    public int code() {
+        return code;
+    }
+
+    public static NtlmMessageType fromCode(final int code) {
+        for (var mt : values()) {
+            if (mt.code == code) {
+                return mt;
             }
         }
-        return UNDEFINED;
+        return Unidentified;
     }
 }

@@ -52,6 +52,12 @@ public final class Utils {
         return result;
     }
 
+    public static byte[] getByteArray(final ByteBuf byteBuf, final int pos, final int length) {
+        final var result = new byte[length];
+        byteBuf.getBytes(pos, result);
+        return result;
+    }
+
     public static int readToIntValue(final ByteBuf byteBuf, final int length) {
         return toIntValue(readToByteArray(byteBuf, length));
     }
@@ -90,5 +96,13 @@ public final class Utils {
         byteBuf.writeShortLE((int) (higher >> 16 & 0xFFFF));
         byteBuf.writeShortLE((int) (higher & 0xFFFF));
         byteBuf.writeLong(guid.getLeastSignificantBits());
+    }
+
+    public static long unixMillisFromFiletime(final long filetime) {
+        return (filetime - 116_444_736_000_000_000L)/10_000L;
+    }
+
+    public static long filetimeFromUnixMillis(final long millis){
+        return millis * 10_000 + 116_444_736_000_000_000L;
     }
 }
