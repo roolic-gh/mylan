@@ -20,12 +20,8 @@ import local.transport.netty.smb.handler.codec.CodecUtils;
 import local.transport.netty.smb.protocol.SmbRequest;
 import local.transport.netty.smb.protocol.SmbResponse;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SmbClientCodec extends SmbCodec<SmbResponse, SmbRequest> {
-    private static final Logger LOG = LoggerFactory.getLogger(SmbClientCodec.class);
-
     final ConnectionDetails details;
 
     public SmbClientCodec(final ConnectionDetails details) {
@@ -34,11 +30,11 @@ public class SmbClientCodec extends SmbCodec<SmbResponse, SmbRequest> {
 
     @Override
     void encode(final SmbRequest request, final ByteBuf byteBuf) {
-        CodecUtils.encodeRequest(request, byteBuf, null);
+        CodecUtils.encodeRequest(request, byteBuf, details.dialect());
     }
 
     @Override
     SmbResponse decode(final ByteBuf byteBuf) {
-        return CodecUtils.decodeResponse(byteBuf, null);
+        return CodecUtils.decodeResponse(byteBuf, details.dialect());
     }
 }

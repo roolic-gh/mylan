@@ -29,7 +29,7 @@ public class GlobalDetails {
     private boolean transportCapabilitiesSupported;
     private boolean serverToClientNotificationsSupported;
 
-    public boolean isRequireMessageSigning() {
+    public boolean requireMessageSigning() {
         return requireMessageSigning;
     }
 
@@ -37,7 +37,7 @@ public class GlobalDetails {
         this.requireMessageSigning = requireMessageSigning;
     }
 
-    public boolean isEncryptionSupported() {
+    public boolean encryptionSupported() {
         return encryptionSupported;
     }
 
@@ -45,7 +45,7 @@ public class GlobalDetails {
         this.encryptionSupported = encryptionSupported;
     }
 
-    public boolean isCompressionSupported() {
+    public boolean compressionSupported() {
         return compressionSupported;
     }
 
@@ -53,7 +53,7 @@ public class GlobalDetails {
         this.compressionSupported = compressionSupported;
     }
 
-    public boolean isChainedCompressionSupported() {
+    public boolean chainedCompressionSupported() {
         return chainedCompressionSupported;
     }
 
@@ -61,7 +61,7 @@ public class GlobalDetails {
         this.chainedCompressionSupported = chainedCompressionSupported;
     }
 
-    public boolean isRdmaTransformSupported() {
+    public boolean rdmaTransformSupported() {
         return rdmaTransformSupported;
     }
 
@@ -69,7 +69,7 @@ public class GlobalDetails {
         this.rdmaTransformSupported = rdmaTransformSupported;
     }
 
-    public boolean isDisableEncryptionOverSecureTransport() {
+    public boolean disableEncryptionOverSecureTransport() {
         return disableEncryptionOverSecureTransport;
     }
 
@@ -77,7 +77,7 @@ public class GlobalDetails {
         this.disableEncryptionOverSecureTransport = disableEncryptionOverSecureTransport;
     }
 
-    public boolean isSigningCapabilitiesSupported() {
+    public boolean signingCapabilitiesSupported() {
         return signingCapabilitiesSupported;
     }
 
@@ -85,7 +85,7 @@ public class GlobalDetails {
         this.signingCapabilitiesSupported = signingCapabilitiesSupported;
     }
 
-    public boolean isTransportCapabilitiesSupported() {
+    public boolean transportCapabilitiesSupported() {
         return transportCapabilitiesSupported;
     }
 
@@ -93,7 +93,7 @@ public class GlobalDetails {
         this.transportCapabilitiesSupported = transportCapabilitiesSupported;
     }
 
-    public boolean isServerToClientNotificationsSupported() {
+    public boolean serverToClientNotificationsSupported() {
         return serverToClientNotificationsSupported;
     }
 

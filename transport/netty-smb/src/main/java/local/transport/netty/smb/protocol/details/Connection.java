@@ -15,7 +15,14 @@
  */
 package local.transport.netty.smb.protocol.details;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 public interface Connection {
     ConnectionDetails details();
 
+    boolean isActive();
+
+    ListenableFuture<Void> closeFuture();
+
+    ListenableFuture<Void> close();
 }

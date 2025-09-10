@@ -29,17 +29,18 @@ public final class Flags<T extends Flags.BitMaskProvider> implements Cloneable {
         this.bitset = bitset;
     }
 
-    public int asIntValue(){
+    public int asIntValue() {
         return bitset;
     }
 
-    public void set(final T flag, final boolean value) {
+    public Flags<T> set(final T flag, final boolean value) {
         final var mask = flag.mask();
         if (value) {
             bitset |= mask;
         } else {
             bitset &= ~mask;
         }
+        return this;
     }
 
     public boolean get(final T flag) {
@@ -47,7 +48,7 @@ public final class Flags<T extends Flags.BitMaskProvider> implements Cloneable {
     }
 
     @Override
-    protected Flags<T> clone(){
+    protected Flags<T> clone() {
         return new Flags<>(bitset);
     }
 

@@ -15,6 +15,7 @@
  */
 package local.transport.netty.smb.protocol.smb2;
 
+import java.util.UUID;
 import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.SmbCommand;
 import local.transport.netty.smb.protocol.SmbDialect;
@@ -32,6 +33,7 @@ public class Smb2NegotiateResponse implements SmbResponseMessage {
     private int maxTransactSize;
     private int MaxReadSize;
     private int maxWriteSize;
+    private UUID serverGuid;
     private long systemTime;
     private long serverStartTime;
 
@@ -76,7 +78,7 @@ public class Smb2NegotiateResponse implements SmbResponseMessage {
         this.maxTransactSize = maxTransactSize;
     }
 
-    public int MaxReadSize() {
+    public int maxReadSize() {
         return MaxReadSize;
     }
 
@@ -106,6 +108,14 @@ public class Smb2NegotiateResponse implements SmbResponseMessage {
 
     public void setServerStartTime(final long serverStartTime) {
         this.serverStartTime = serverStartTime;
+    }
+
+    public UUID serverGuid() {
+        return serverGuid;
+    }
+
+    public void setServerGuid(final UUID serverGuid) {
+        this.serverGuid = serverGuid;
     }
 
     public NegToken token() {

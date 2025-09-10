@@ -15,43 +15,55 @@
  */
 package local.transport.netty.smb.handler;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.concurrent.atomic.AtomicReference;
 import local.transport.netty.smb.protocol.ClientFlow;
+import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.SmbRequest;
 import local.transport.netty.smb.protocol.SmbResponse;
 import local.transport.netty.smb.protocol.details.ClientDetails;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
 import local.transport.netty.smb.protocol.flows.ClientNegotiationFlow;
+import local.transport.netty.smb.protocol.smb2.Smb2Header;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SmbClientConnectionHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(SmbClientConnectionHandler.class);
 
-    private final ConnectionDetails details;
-    private final ClientFlow<Void> negotiation;
+    private final ConnectionDetails connDetails;
+    private final ClientFlow<Void> negotiationFlow;
+    private final AtomicReference<ClientFlow<?>> currentFlow = new AtomicReference<>(null);
 
     public SmbClientConnectionHandler(final ClientDetails clientDetails, final ConnectionDetails connDetails) {
-        details = connDetails;
-        negotiation = new ClientNegotiationFlow(clientDetails, connDetails);
+        this.connDetails = connDetails;
+        negotiationFlow = new ClientNegotiationFlow(clientDetails, connDetails);
     }
 
     public ListenableFuture<Void> negotiationFuture() {
-        return negotiation.completeFuture();
+        return negotiationFlow.completeFuture();
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(process(negotiation.initialRequest()));
+        currentFlow.set(negotiationFlow);
+        process(ctx, negotiationFlow.initialRequest());
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         if (msg instanceof SmbResponse response) {
             process(response);
-            if (!negotiation.isComplete()) {
-                negotiation.handleResponse(response);
-                if (!negotiation.isComplete()) {
-                    ctx.writeAndFlush(process(negotiation.nextRequest()));
+            final var curFlow = currentFlow.get();
+            if (curFlow != null && !curFlow.isComplete()) {
+                curFlow.handleResponse(response);
+                if (curFlow.isComplete()) {
+                    currentFlow.set(null);
+                } else {
+                    process(ctx, curFlow.nextRequest());
                 }
                 return;
             }
@@ -59,11 +71,38 @@ public class SmbClientConnectionHandler extends ChannelDuplexHandler {
         super.channelRead(ctx, msg);
     }
 
-    private SmbRequest process(final SmbRequest request) {
-        return request;
+    private void process(final ChannelHandlerContext ctx, final SmbRequest request) {
+        if (request.header() instanceof Smb2Header header) {
+            if (header.command() == null) {
+                header.setCommand(request.message().command());
+            }
+            if (header.flags() == null) {
+                header.setFlags(new Flags<>());
+            }
+            if(header.signature() == null){
+                header.setSignature(new byte[16]);
+            }
+            header.setCreditRequest(connDetails.defaultCreditsRequest());
+            final var messageIdOpt = connDetails.sequenceWindow().nextMessageId();
+            if (messageIdOpt.isEmpty()) {
+                LOG.warn("Message {} wasn't sent and moved to pending state due to luck of credits", header.command());
+                connDetails.pendingRequests().add(request); // TODO add timestamp
+                return;
+            }
+            header.setMessageId(messageIdOpt.get());
+        }
+        ctx.writeAndFlush(request);
     }
 
     private SmbResponse process(SmbResponse response) {
+        if (response.header() instanceof Smb2Header header) {
+            connDetails.sequenceWindow().acceptGranted(header.creditResponse());
+        }
         return response;
+    }
+
+    public ListenableFuture<Void> finish() {
+        // TODO check pending actions
+        return Futures.immediateFuture(null);
     }
 }

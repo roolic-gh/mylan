@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol;
+package local.transport.netty.smb.handler;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import javax.annotation.Nonnull;
+import io.netty.buffer.ByteBuf;
+import local.transport.netty.smb.handler.codec.CodecUtils;
+import local.transport.netty.smb.protocol.SmbRequest;
+import local.transport.netty.smb.protocol.SmbResponse;
 
-public interface ClientFlow <T> {
+public class SmbServerCodec extends SmbCodec<SmbRequest, SmbResponse> {
 
-    @Nonnull
-    SmbRequest initialRequest();
+    @Override
+    void encode(final SmbResponse outObj, final ByteBuf byteBuf) {
+        CodecUtils.encodeResponse(outObj, byteBuf, null);
+    }
 
-    @Nonnull
-    SmbRequest nextRequest();
-
-    void handleResponse(@Nonnull SmbResponse response);
-
-    boolean isComplete();
-
-    ListenableFuture<T> completeFuture();
+    @Override
+    SmbRequest decode(final ByteBuf byteBuf) {
+        return CodecUtils.decodeRequest(byteBuf, null);
+    }
 }

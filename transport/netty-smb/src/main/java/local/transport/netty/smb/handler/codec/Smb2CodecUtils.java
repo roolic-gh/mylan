@@ -192,11 +192,11 @@ final class Smb2CodecUtils {
                 // add padding if necessary to ensure first context is 8 byte aligned;
                 final var align = (byteBuf.writerIndex() - msgStartPos) % 8;
                 if (align != 0) {
-                    byteBuf.writeBytes(new byte[8-align]);
+                    byteBuf.writeBytes(new byte[8 - align]);
                 }
                 byteBuf.setIntLE(negCtxInfoPos, byteBuf.writerIndex() - ctx.headerStartPosition()); // offset
                 byteBuf.setShortLE(negCtxInfoPos + 4, negCtxs.size()); // cnt
-                    // todo encode contexts
+                // todo encode contexts
             }
         }
     }
@@ -204,13 +204,25 @@ final class Smb2CodecUtils {
     // SMB2 NEGOTIATE Response (MS-SMB2 #2.2.4)
 
     private static SmbResponseMessage decodeNegotiateResponse(final ByteBuf byteBuf, final CodecContext ctx) {
-
         final var response = new Smb2NegotiateResponse();
-        final var structureSize = byteBuf.readShortLE(); // todo validate expected const value = 65
-
-
-
-
+        final var structureSize = byteBuf.readUnsignedShortLE(); // todo validate expected const value = 65
+        response.setSecurityMode(new Flags<>(byteBuf.readUnsignedShortLE()));
+        response.setDialectRevision(SmbDialect.fromCode(byteBuf.readUnsignedShortLE()));
+        final var negCtxsCount = byteBuf.readUnsignedShortLE();
+        response.setServerGuid(Utils.readGuid(byteBuf));
+        response.setCapabilities(new Flags<>(byteBuf.readIntLE()));
+        response.setMaxTransactSize(byteBuf.readIntLE());
+        response.setMaxReadSize(byteBuf.readIntLE());
+        response.setMaxWriteSize(byteBuf.readIntLE());
+        response.setSystemTime(Utils.unixMillisFromFiletime(byteBuf.readLongLE()));
+        response.setServerStartTime(Utils.unixMillisFromFiletime(byteBuf.readLongLE()));
+        final var securityBufPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
+        final var securityBuflength = byteBuf.readUnsignedShortLE();
+        response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(securityBufPos, securityBuflength)));
+        if (response.dialectRevision().sameOrAfter(SmbDialect.SMB3_1_1)) {
+            final var negCtxsPos = ctx.headerStartPosition() + byteBuf.readIntLE();
+            // todo read contexts
+        }
         return response;
     }
 

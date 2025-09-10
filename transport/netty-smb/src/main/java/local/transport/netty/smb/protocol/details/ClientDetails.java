@@ -35,7 +35,7 @@ public class ClientDetails extends GlobalDetails {
     // SMB 3.x +
     private SmbDialect maxDialect;
     boolean requireSecureNegotiate;
-    private final Map<Object, ServerDetails> servers = new ConcurrentHashMap<>();
+    private final Map<UUID, ServerDetails> servers = new ConcurrentHashMap<>();
     private final Map<Object, ShareDetails> shares = new ConcurrentHashMap<>();
     // SMB 3.1.1 +
     boolean compressAllRequests;
@@ -52,7 +52,7 @@ public class ClientDetails extends GlobalDetails {
         return connections;
     }
 
-    public Map<Object, ServerDetails> servers() {
+    public Map<UUID, ServerDetails> servers() {
         return servers;
     }
 

@@ -26,22 +26,26 @@ import local.transport.netty.smb.protocol.cifs.CifsSmbHeader;
 import local.transport.netty.smb.protocol.cifs.SmbComNegotiateRequest;
 import local.transport.netty.smb.protocol.details.ClientDetails;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
+import local.transport.netty.smb.protocol.details.ServerDetails;
+import local.transport.netty.smb.protocol.smb2.Smb2Header;
+import local.transport.netty.smb.protocol.smb2.Smb2NegotiateRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2NegotiateResponse;
 
 public class ClientNegotiationFlow implements ClientFlow<Void> {
 
-    private final SmbDialect minDialect;
-    private final SmbDialect maxDialect;
-    private final ConnectionDetails details;
+    private final ClientDetails clientDetails;
+    private final ConnectionDetails connDetails;
     private final SettableFuture<Void> completeFuture = SettableFuture.create();
 
     public ClientNegotiationFlow(final ClientDetails clientDetails, final ConnectionDetails connDetails) {
-        minDialect = clientDetails.minDialect();
-        maxDialect = clientDetails.maxDialect();
-        details = connDetails;
+        this.clientDetails = clientDetails;
+        this.connDetails = connDetails;
     }
 
     @Override
     public SmbRequest initialRequest() {
+        final var minDialect = clientDetails.minDialect();
+        final var maxDialect = clientDetails.maxDialect();
         if (minDialect.protocolVersion() == ProtocolVersion.CIFS_SMB) {
             // start with CIFS request
             final var req = new SmbComNegotiateRequest();
@@ -49,7 +53,12 @@ public class ClientNegotiationFlow implements ClientFlow<Void> {
             return new SmbRequest(new CifsSmbHeader(), req);
         }
         // start from SMB2 request
-        return null;
+        final var req = new Smb2NegotiateRequest();
+        req.setDialects(SmbDialect.smb2NegotiateDialects(minDialect, maxDialect));
+        req.setSecurityMode(connDetails.clientSecurityMode());
+        req.setCapabilities(connDetails.clientCapabilities());
+        req.setClientGuid(connDetails.clientGuid());
+        return new SmbRequest(new Smb2Header(), req);
     }
 
     @Override
@@ -59,7 +68,22 @@ public class ClientNegotiationFlow implements ClientFlow<Void> {
 
     @Override
     public void handleResponse(final SmbResponse response) {
+        if (response.message() instanceof Smb2NegotiateResponse resp) {
+            connDetails.setDialect(resp.dialectRevision());
+            connDetails.setMaxTransactSize(resp.maxTransactSize());
+            connDetails.setMaxReadSize(resp.maxReadSize());
+            connDetails.setMaxWriteSize(resp.maxWriteSize());
+            connDetails.setNegotiateToken(resp.token());
 
+            final var serverGuid = resp.serverGuid();
+            final var server = clientDetails.servers().computeIfAbsent(serverGuid, key -> new ServerDetails());
+            server.setServerGuid(serverGuid);
+            server.setSecurityMode(resp.securityMode());
+            server.setCapabilities(resp.capabilities());
+            connDetails.setServer(server);
+
+            completeFuture.set(null);
+        }
     }
 
     @Override

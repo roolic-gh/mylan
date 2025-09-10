@@ -17,8 +17,16 @@ package local.transport.netty.smb.protocol.details;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.SmbRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
+import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
+import local.transport.netty.smb.protocol.spnego.NegToken;
 
 /**
  * SMB2 Transport connection details. Addresses MS_SMB2 (3.2.1.2 Per SMB2 Transport Connection).
@@ -27,21 +35,15 @@ public class ConnectionDetails {
 
     private final int connectionId;
 
-    Map<Long, Session> sessions;
-    Map<Long, Session> preauthSessions; // A table of sessions that have not completed authentication,
-    Map<Object, PendingRequestDetails> outstandingRequests; // a table of requests, as specified in section 3.2.1.7, that have
-    //been issued on this connection and are awaiting a response. The table MUST allow lookup by
-    //Request.CancelId and by MessageId, and each request MUST store the time at which the
-    //request was sent.
+    final Map<Long, Session> sessions = new ConcurrentHashMap<>();
+    final Map<Long, Session> preauthSessions = new ConcurrentHashMap<>();
+    final Queue<SmbRequest> pendingRequests = new ConcurrentLinkedDeque<>();
+    final SequenceWindow sequenceWindow = new SequenceWindow(); // messageId sequencer
 
-    Map<Object, Object> sequenceWindow; // A table of available sequence numbers for sending requests to the server
-    byte[] gssNegotiateToken;
-    int maxTransactSize;
-    int maxReadSize;
-    int maxWriteSize;
-    UUID serverGuid;
-    boolean requireSigning;
-    String serverName;
+    private NegToken negotiateToken;
+    private int maxTransactSize;
+    private int maxReadSize;
+    private int maxWriteSize;
 
     // SMB 2.1 +
     SmbDialect dialect;
@@ -54,9 +56,8 @@ public class ConnectionDetails {
     boolean supportsMultiChannel;
     boolean supportsPersistentHandles;
     boolean supportsEncryption;
-    Object clientCapabilities;
-    Object ServerCapabilities;
-    Object clientSecurityMode;
+    Flags<Smb2CapabilitiesFlags> clientCapabilities;
+    Flags<Smb2NegotiateFlags> clientSecurityMode;
     ServerDetails server;
     List<SmbDialect> offeredDialects;
 
@@ -70,6 +71,9 @@ public class ConnectionDetails {
     boolean acceptTransportSecurity;
     boolean supportsNotifications;
 
+    // non-spec
+    private int defaultCreditsRequest = 1;
+
     public ConnectionDetails(final UUID clientGuid, final int connectionId) {
         this.connectionId = connectionId;
         this.clientGuid = clientGuid;
@@ -81,5 +85,205 @@ public class ConnectionDetails {
 
     public UUID clientGuid() {
         return clientGuid;
+    }
+
+    public Map<Long, Session> sessions() {
+        return sessions;
+    }
+
+    public Map<Long, Session> preauthSessions() {
+        return preauthSessions;
+    }
+
+    public Queue<SmbRequest> pendingRequests() {
+        return pendingRequests;
+    }
+
+    public SequenceWindow sequenceWindow() {
+        return sequenceWindow;
+    }
+
+    public int defaultCreditsRequest() {
+        return defaultCreditsRequest;
+    }
+
+    public void setDefaultCreditsRequest(final int defaultCreditsRequest) {
+        this.defaultCreditsRequest = defaultCreditsRequest;
+    }
+
+    public NegToken negotiateToken() {
+        return negotiateToken;
+    }
+
+    public void setNegotiateToken(final NegToken negotiateToken) {
+        this.negotiateToken = negotiateToken;
+    }
+
+    public int maxTransactSize() {
+        return maxTransactSize;
+    }
+
+    public void setMaxTransactSize(final int maxTransactSize) {
+        this.maxTransactSize = maxTransactSize;
+    }
+
+    public int maxReadSize() {
+        return maxReadSize;
+    }
+
+    public void setMaxReadSize(final int maxReadSize) {
+        this.maxReadSize = maxReadSize;
+    }
+
+    public int maxWriteSize() {
+        return maxWriteSize;
+    }
+
+    public void setMaxWriteSize(final int maxWriteSize) {
+        this.maxWriteSize = maxWriteSize;
+    }
+
+    public UUID serverGuid() {
+        return server == null ? null : server.serverGuid;
+    }
+
+    public boolean requireSigning() {
+        return server == null || server.securityMode() == null
+            ? false : server.securityMode().get(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED);
+    }
+
+    public String serverName() {
+        return server == null ? null : server.serverName();
+    }
+
+    public SmbDialect dialect() {
+        return dialect;
+    }
+
+    public void setDialect(final SmbDialect dialect) {
+        this.dialect = dialect;
+    }
+
+    public boolean supportsFileLeasing() {
+        return serverCapability(Smb2CapabilitiesFlags.SMB2_GLOBAL_CAP_LEASING);
+    }
+
+
+    public boolean supportsMultiCredit() {
+        return false;
+    }
+
+    public boolean supportsDirectoryLeasing() {
+        return serverCapability(Smb2CapabilitiesFlags.SMB2_GLOBAL_CAP_DIRECTORY_LEASING);
+    }
+
+    public boolean supportsMultiChannel() {
+        return serverCapability(Smb2CapabilitiesFlags.SMB2_GLOBAL_CAP_MULTI_CHANNEL);
+    }
+
+    public boolean supportsPersistentHandles() {
+        return serverCapability(Smb2CapabilitiesFlags.SMB2_GLOBAL_CAP_PERSISTENT_HANDLES);
+    }
+
+    public boolean supportsEncryption() {
+        return serverCapability(Smb2CapabilitiesFlags.SMB2_GLOBAL_CAP_ENCRYPTION);
+    }
+
+    private boolean serverCapability(final Smb2CapabilitiesFlags flag) {
+        return server == null || server.capabilities() == null ? false : server.capabilities.get(flag);
+    }
+
+    public Flags<Smb2CapabilitiesFlags> clientCapabilities() {
+        return clientCapabilities;
+    }
+
+    public void setClientCapabilities(
+        final Flags<Smb2CapabilitiesFlags> clientCapabilities) {
+        this.clientCapabilities = clientCapabilities;
+    }
+
+    public Flags<Smb2NegotiateFlags> clientSecurityMode() {
+        return clientSecurityMode;
+    }
+
+    public void setClientSecurityMode(
+        final Flags<Smb2NegotiateFlags> clientSecurityMode) {
+        this.clientSecurityMode = clientSecurityMode;
+    }
+
+    public ServerDetails server() {
+        return server;
+    }
+
+    public void setServer(final ServerDetails server) {
+        this.server = server;
+    }
+
+    public List<SmbDialect> offeredDialects() {
+        return offeredDialects;
+    }
+
+    public void setOfferedDialects(final List<SmbDialect> offeredDialects) {
+        this.offeredDialects = offeredDialects;
+    }
+
+    public String preauthIntegrityHashId() {
+        return preauthIntegrityHashId;
+    }
+
+    public void setPreauthIntegrityHashId(final String preauthIntegrityHashId) {
+        this.preauthIntegrityHashId = preauthIntegrityHashId;
+    }
+
+    public byte[] preauthIntegrityHashValue() {
+        return preauthIntegrityHashValue;
+    }
+
+    public void setPreauthIntegrityHashValue(final byte[] preauthIntegrityHashValue) {
+        this.preauthIntegrityHashValue = preauthIntegrityHashValue;
+    }
+
+    public String cipherId() {
+        return server == null ? null : server.cipherId();
+    }
+
+    public boolean supportsChainedCompression() {
+        return supportsChainedCompression;
+    }
+
+    public void setSupportsChainedCompression(final boolean supportsChainedCompression) {
+        this.supportsChainedCompression = supportsChainedCompression;
+    }
+
+    public List<String> rdmaTransformIds() {
+        return rdmaTransformIds;
+    }
+
+    public void setRdmaTransformIds(final List<String> rdmaTransformIds) {
+        this.rdmaTransformIds = rdmaTransformIds;
+    }
+
+    public String signingAlgorithmId() {
+        return signingAlgorithmId;
+    }
+
+    public void setSigningAlgorithmId(final String signingAlgorithmId) {
+        this.signingAlgorithmId = signingAlgorithmId;
+    }
+
+    public boolean acceptTransportSecurity() {
+        return acceptTransportSecurity;
+    }
+
+    public void setAcceptTransportSecurity(final boolean acceptTransportSecurity) {
+        this.acceptTransportSecurity = acceptTransportSecurity;
+    }
+
+    public boolean supportsNotifications() {
+        return supportsNotifications;
+    }
+
+    public void setSupportsNotifications(final boolean supportsNotifications) {
+        this.supportsNotifications = supportsNotifications;
     }
 }

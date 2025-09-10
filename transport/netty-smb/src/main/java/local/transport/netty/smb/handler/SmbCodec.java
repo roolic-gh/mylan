@@ -28,22 +28,25 @@ import org.slf4j.LoggerFactory;
  * SMB transport handler. Addresses MS-SMB & MS-SMB2 (#2.1 Transport).
  */
 abstract class SmbCodec<I, O> extends ByteToMessageCodec<O> {
-
     private static final Logger LOG = LoggerFactory.getLogger(SmbCodec.class);
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx, final O outObj, final ByteBuf byteBuf)
+    protected void encode(final ChannelHandlerContext ctx, final O obj, final ByteBuf byteBuf)
         throws Exception {
 
         // 4 bytes lead starting with 0
         byteBuf.writeInt(0);
         // remember position, write message
-        final int msgStartIdx = byteBuf.writerIndex();
+        final int startIdx = byteBuf.writerIndex();
         // encode outbound
-        encode(outObj, byteBuf);
-        // write actual message leng into lead
-        final var msgLength = byteBuf.writerIndex() - msgStartIdx;
-        byteBuf.setBytes(msgStartIdx - 3, Utils.toByteArray(msgLength, 3));
+        try {
+            encode(obj, byteBuf);
+        } catch (Exception e) {
+            throw new SmbException("Exception encoding obj", e);
+        }
+        // write actual message length (3 bytes) into lead
+        final var msgLength = byteBuf.writerIndex() - startIdx;
+        byteBuf.setBytes(startIdx - 3, Utils.toByteArray(msgLength, 3));
     }
 
     abstract void encode(O outObj, ByteBuf byteBuf);
@@ -52,20 +55,27 @@ abstract class SmbCodec<I, O> extends ByteToMessageCodec<O> {
     protected void decode(final ChannelHandlerContext ctx, final ByteBuf byteBuf, final List<Object> list)
         throws Exception {
 
-        while (byteBuf.readableBytes() > 4) {
+        if (byteBuf.readableBytes() > 4) {
             final var type = byteBuf.readByte();
             if (type == 0) {
                 final var length = Utils.readToIntValue(byteBuf, 3);
+                if (length == 0) {
+                    return;
+                }
                 if (length > byteBuf.readableBytes()) {
                     throw new SmbException(
                         "Described SMB message length (%d) is greater then remaining packet size (%d)"
                             .formatted(length, byteBuf.readableBytes()));
                 }
+                final var pos = byteBuf.readerIndex();
                 list.add(decode(byteBuf));
-                continue;
+                // ensure reader pointer points to the end of message
+                byteBuf.readerIndex(pos + length);
+                return;
             }
             throw new SmbException("Unexpected packet lead type " + type);
         }
+        throw new SmbException("Inbound packet is too short");
     }
 
     abstract I decode(ByteBuf byteBuf);

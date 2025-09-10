@@ -46,11 +46,44 @@ public @interface SmbClientConf {
     @ConfProperty("smb.server.deault-port")
     int smbServerDefaultPort() default 445;
 
-    @ConfProperty("smb.dialect.min")
-    SmbDialect smbDialectMin() default SmbDialect.NTLM_012;
+    // Global Details
 
-    @ConfProperty("smb.dialect.max")
-    SmbDialect smbDialectMax() default SmbDialect.SMB3_1_1;
+    @ConfProperty("smb.client.require-signing")
+    boolean requireMessageSigning() default false;
 
+    @ConfProperty("smb.client.encryption-supported")
+    boolean encryptionSupported() default false;
+
+    @ConfProperty("smb.client.compression-supported")
+    boolean compressionSupported() default false;
+
+    @ConfProperty("smb.client.chained-compression-supported")
+    boolean chainedCompressionSupported() default false;
+
+    @ConfProperty("smb.client.rdma-transform-supported")
+    boolean rdmaTransformSupported() default false;
+
+    @ConfProperty("smb.client.disable-encryption-on-tls")
+    boolean disableEncryptionOverSecureTransport() default true;
+
+    @ConfProperty("smb.client.signing-capabilities-supported")
+    boolean signingCapabilitiesSupported() default false;
+
+    @ConfProperty("smb.client.transport-capabilities-supported")
+    boolean transportCapabilitiesSupported() default false;
+
+    @ConfProperty("smb.client.server-notifiaction-supported")
+    boolean serverToClientNotificationsSupported() default false;
+
+    // Connection Details
+
+    @ConfProperty("smb.client.request-credits")
+    int defaultCreditsRequest() default 128;
+
+    @ConfProperty("smb.client.dialect.min")
+    SmbDialect smbDialectMin() default SmbDialect.SMB2_0_2;
+
+    @ConfProperty("smb.client.dialect.max")
+    SmbDialect smbDialectMax() default SmbDialect.SMB3_0;
 
 }

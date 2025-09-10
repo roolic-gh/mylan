@@ -17,8 +17,12 @@ package local.transport.netty.smb.protocol.details;
 
 import java.net.InetAddress;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
+import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
 
 /**
  * Server Details. Addresses MS-SMB2 (#3.2.1.9 Per Server)
@@ -26,12 +30,86 @@ import local.transport.netty.smb.protocol.SmbDialect;
 public class ServerDetails {
     UUID serverGuid;
     SmbDialect dialectRevision;
-    Object capabilities;
-    Object securityMode;
-    List<InetAddress> addresses;
+    Flags<Smb2CapabilitiesFlags> capabilities;
+    Flags<Smb2NegotiateFlags> securityMode;
+    Set<InetAddress> addresses;
     String serverName;
-    Object cipherId;
+    String cipherId;
     // SMB 3.1.1 +
     List<Object> rdmaTransformIds;
-    Object signingAlgorithmId;
+    String signingAlgorithmId;
+
+    public UUID serverGuid() {
+        return serverGuid;
+    }
+
+    public void setServerGuid(final UUID serverGuid) {
+        this.serverGuid = serverGuid;
+    }
+
+    public SmbDialect dialectRevision() {
+        return dialectRevision;
+    }
+
+    public void setDialectRevision(final SmbDialect dialectRevision) {
+        this.dialectRevision = dialectRevision;
+    }
+
+    public Flags<Smb2CapabilitiesFlags> capabilities() {
+        return capabilities;
+    }
+
+    public void setCapabilities(
+        final Flags<Smb2CapabilitiesFlags> capabilities) {
+        this.capabilities = capabilities;
+    }
+
+    public Flags<Smb2NegotiateFlags> securityMode() {
+        return securityMode;
+    }
+
+    public void setSecurityMode(
+        final Flags<Smb2NegotiateFlags> securityMode) {
+        this.securityMode = securityMode;
+    }
+
+    public Set<InetAddress> addresses() {
+        return addresses;
+    }
+
+    public void setAddresses(final Set<InetAddress> addresses) {
+        this.addresses = addresses;
+    }
+
+    public String serverName() {
+        return serverName;
+    }
+
+    public void setServerName(final String serverName) {
+        this.serverName = serverName;
+    }
+
+    public String cipherId() {
+        return cipherId;
+    }
+
+    public void setCipherId(final String cipherId) {
+        this.cipherId = cipherId;
+    }
+
+    public List<Object> rdmaTransformIds() {
+        return rdmaTransformIds;
+    }
+
+    public void setRdmaTransformIds(final List<Object> rdmaTransformIds) {
+        this.rdmaTransformIds = rdmaTransformIds;
+    }
+
+    public String signingAlgorithmId() {
+        return signingAlgorithmId;
+    }
+
+    public void setSigningAlgorithmId(final String signingAlgorithmId) {
+        this.signingAlgorithmId = signingAlgorithmId;
+    }
 }
