@@ -28,9 +28,12 @@ import local.transport.netty.smb.protocol.SmbException;
 import local.transport.netty.smb.protocol.SmbHeader;
 import local.transport.netty.smb.protocol.SmbRequestMessage;
 import local.transport.netty.smb.protocol.SmbResponseMessage;
+import local.transport.netty.smb.protocol.smb2.Smb2Flags;
 import local.transport.netty.smb.protocol.smb2.Smb2Header;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateResponse;
+import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupResponse;
 
 final class Smb2CodecUtils {
 
@@ -64,6 +67,12 @@ final class Smb2CodecUtils {
             header.setCreditResponse(byteBuf.readUnsignedShortLE());
         }
         header.setFlags(new Flags<>(byteBuf.readIntLE()));
+        // validate direction
+        final boolean isResponse = header.flags().get(Smb2Flags.SMB2_FLAGS_SERVER_TO_REDIR);
+        if (isResponse ^ ctx.isResponse()) {
+            throw new SmbException("Unexpected message type: received " + (isResponse ?
+                " response (request expected)" : "request (response expected)"));
+        }
         header.setNextCommandOffset(byteBuf.readIntLE());
         header.setMessageId(byteBuf.readLongLE());
         if (header.isAsync()) {
@@ -109,6 +118,7 @@ final class Smb2CodecUtils {
 
         return switch (command) {
             case SMB2_NEGOTIATE -> decodeNegotiateRequest(byteBuf, ctx);
+            case SMB2_SESSION_SETUP -> decodeSessionSetupRequest(byteBuf, ctx);
 
             default -> throw new SmbException("no request decoder for command " + command);
         };
@@ -117,6 +127,7 @@ final class Smb2CodecUtils {
     static void encodeRequest(final ByteBuf byteBuf, final SmbRequestMessage message, final CodecContext ctx) {
         switch (message) {
             case Smb2NegotiateRequest req -> encodeNegotiateRequest(byteBuf, req, ctx);
+            case Smb2SessionSetupRequest req -> encodeSessionSetupRequest(byteBuf, req, ctx);
 
             default -> throw new SmbException("no request encoder for class " + message.getClass());
         }
@@ -127,6 +138,7 @@ final class Smb2CodecUtils {
 
         return switch (command) {
             case SMB2_NEGOTIATE -> decodeNegotiateResponse(byteBuf, ctx);
+            case SMB2_SESSION_SETUP -> decodeSessionSetupResponse(byteBuf, ctx);
 
             default -> throw new SmbException("no response decoder for command " + command);
         };
@@ -135,6 +147,7 @@ final class Smb2CodecUtils {
     static void encodeResponce(final ByteBuf byteBuf, final SmbResponseMessage message, final CodecContext ctx) {
         switch (message) {
             case Smb2NegotiateResponse resp -> encodeNegotiateResponse(byteBuf, resp, ctx);
+            case Smb2SessionSetupResponse resp -> encodeSessionSetupResponse(byteBuf, resp, ctx);
 
             default -> throw new SmbException("no response encoder for class " + message.getClass());
         }
@@ -229,4 +242,63 @@ final class Smb2CodecUtils {
     private static void encodeNegotiateResponse(final ByteBuf byteBuf, final Smb2NegotiateResponse response,
         final CodecContext ctx) {
     }
+
+    // SESSION_SETUP Request (MS-SMB2 #2.2.5)
+
+    private static SmbRequestMessage decodeSessionSetupRequest(final ByteBuf byteBuf, final CodecContext ctx) {
+        final var request = new Smb2SessionSetupRequest();
+        final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 25
+        request.setSessionFlags(new Flags<>(byteBuf.readUnsignedByte()));
+        request.setSecurityMode(new Flags<>(byteBuf.readUnsignedByte()));
+        request.setCapabilities(new Flags<>(byteBuf.readIntLE()));
+        byteBuf.skipBytes(4); // channel, reserved and must ignored by spec
+        final var bufferPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
+        final var bufferlength = byteBuf.readUnsignedShortLE();
+        request.setPreviousSessionId(byteBuf.readLongLE());
+        request.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(bufferPos, bufferlength)));
+        return request;
+    }
+
+    private static void encodeSessionSetupRequest(final ByteBuf byteBuf, final Smb2SessionSetupRequest request,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(25); // structure size, constant value
+        byteBuf.writeByte(request.sessionFlags().asIntValue());
+        byteBuf.writeByte(request.securityMode().asIntValue());
+        byteBuf.writeIntLE(request.capabilities().asIntValue());
+        byteBuf.writeIntLE(0); // channel, reserved
+        final var bufferRefPos = byteBuf.writerIndex();
+        byteBuf.writeIntLE(0); // reserve space for buffer reference data
+        byteBuf.writeLongLE(request.previousSessionId());
+        final var bufferPos = byteBuf.writerIndex();
+        SpnegoCodecUtils.encodeNegToken(byteBuf, request.token());
+        byteBuf.setShortLE(bufferRefPos, bufferPos - ctx.headerStartPosition()); // buffer offset
+        byteBuf.setShortLE(bufferRefPos + 2, byteBuf.writerIndex() - bufferPos); // buffer length
+    }
+
+    // SESSION_SETUP Response (MS-SMB2 #2.2.6)
+
+    private static SmbResponseMessage decodeSessionSetupResponse(final ByteBuf byteBuf, final CodecContext ctx) {
+        final var response = new Smb2SessionSetupResponse();
+        final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 9
+        response.setSessionFlags(new Flags<>(byteBuf.readUnsignedShortLE()));
+        final var bufferPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
+        final var bufferlength = byteBuf.readUnsignedShortLE();
+        response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(bufferPos, bufferlength)));
+        return response;
+    }
+
+    private static void encodeSessionSetupResponse(final ByteBuf byteBuf, final Smb2SessionSetupResponse response,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(9); // structure size, constant value
+        byteBuf.writeShortLE(response.sessionFlags().asIntValue());
+        final var bufferRefPos = byteBuf.writerIndex();
+        byteBuf.writeIntLE(0); // reserve space for buffer reference data
+        final var bufferPos = byteBuf.writerIndex();
+        SpnegoCodecUtils.encodeNegToken(byteBuf, response.token());
+        byteBuf.setShortLE(bufferRefPos, bufferPos - ctx.headerStartPosition()); // buffer offset
+        byteBuf.setShortLE(bufferRefPos + 2, byteBuf.writerIndex() - bufferPos); // buffer length
+    }
+
 }

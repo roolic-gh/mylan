@@ -69,7 +69,6 @@ public class ClientNegotiationFlow implements ClientFlow<Void> {
     @Override
     public void handleResponse(final SmbResponse response) {
         if (response.message() instanceof Smb2NegotiateResponse resp) {
-            connDetails.setDialect(resp.dialectRevision());
             connDetails.setMaxTransactSize(resp.maxTransactSize());
             connDetails.setMaxReadSize(resp.maxReadSize());
             connDetails.setMaxWriteSize(resp.maxWriteSize());
@@ -77,6 +76,7 @@ public class ClientNegotiationFlow implements ClientFlow<Void> {
 
             final var serverGuid = resp.serverGuid();
             final var server = clientDetails.servers().computeIfAbsent(serverGuid, key -> new ServerDetails());
+            server.setDialectRevision(resp.dialectRevision());
             server.setServerGuid(serverGuid);
             server.setSecurityMode(resp.securityMode());
             server.setCapabilities(resp.capabilities());

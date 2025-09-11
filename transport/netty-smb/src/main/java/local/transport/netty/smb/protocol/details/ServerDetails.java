@@ -59,8 +59,7 @@ public class ServerDetails {
         return capabilities;
     }
 
-    public void setCapabilities(
-        final Flags<Smb2CapabilitiesFlags> capabilities) {
+    public void setCapabilities(final Flags<Smb2CapabilitiesFlags> capabilities) {
         this.capabilities = capabilities;
     }
 
@@ -68,8 +67,7 @@ public class ServerDetails {
         return securityMode;
     }
 
-    public void setSecurityMode(
-        final Flags<Smb2NegotiateFlags> securityMode) {
+    public void setSecurityMode(final Flags<Smb2NegotiateFlags> securityMode) {
         this.securityMode = securityMode;
     }
 

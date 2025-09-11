@@ -46,7 +46,6 @@ public class ConnectionDetails {
     private int maxWriteSize;
 
     // SMB 2.1 +
-    SmbDialect dialect;
     boolean supportsFileLeasing;
     boolean supportsMultiCredit;
     private final UUID clientGuid;
@@ -157,17 +156,12 @@ public class ConnectionDetails {
     }
 
     public SmbDialect dialect() {
-        return dialect;
-    }
-
-    public void setDialect(final SmbDialect dialect) {
-        this.dialect = dialect;
+        return server == null ? SmbDialect.Unknown : server.dialectRevision();
     }
 
     public boolean supportsFileLeasing() {
         return serverCapability(Smb2CapabilitiesFlags.SMB2_GLOBAL_CAP_LEASING);
     }
-
 
     public boolean supportsMultiCredit() {
         return false;
