@@ -38,6 +38,7 @@ public class NegTokenInit implements NegToken {
         this.mechTypes = mechTypes;
     }
 
+    @Override
     public MechToken mechToken() {
         return mechToken;
     }
@@ -46,6 +47,7 @@ public class NegTokenInit implements NegToken {
         this.mechToken = mechToken;
     }
 
+    @Override
     public MechListMIC mechListMIC() {
         return mechListMIC;
     }

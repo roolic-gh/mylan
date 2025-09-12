@@ -41,6 +41,7 @@ public class NegTokenResp implements NegToken {
         this.supportedMech = supportedMech;
     }
 
+    @Override
     public MechToken mechToken() {
         return mechToken;
     }
@@ -49,6 +50,7 @@ public class NegTokenResp implements NegToken {
         this.mechToken = mechToken;
     }
 
+    @Override
     public MechListMIC mechListMIC() {
         return mechListMIC;
     }

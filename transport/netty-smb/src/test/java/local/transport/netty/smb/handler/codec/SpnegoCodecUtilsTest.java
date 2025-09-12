@@ -69,4 +69,15 @@ public class SpnegoCodecUtilsTest {
         final var msg = ((NegTokenResp)authToken).mechToken();
 
     }
+
+    @Test
+    void negoex(){
+
+        final var negBytes = Base64.getDecoder().decode(
+            "YIIBPAYGKwYBBQUCoIIBMDCCASygGjAYBgorBgEEAYI3AgIeBgorBgEEAYI3AgIKooIBDASCAQhORUdPRVhUUwEAAAAAAAAAYAAAAHAAAABmoqbU3wIqY4uvcviYiI+WV9ijr+VZaWWhRiFb8nXvN2cVNGDr7lL+j3QDrBLxTBEAAAAAAAAAAGAAAAABAAAAAAAAAAAAAABcM1MN6vkNTbLsSuN4bsMITkVHT0VYVFMDAAAAAQAAAEAAAACYAAAAZqKm1N8CKmOLr3L4mIiPllwzUw3q+Q1NsuxK43huwwhAAAAAWAAAADBWoFQwUjAngCUwIzEhMB8GA1UEAxMYVG9rZW4gU2lnbmluZyBQdWJsaWMgS2V5MCeAJTAjMSEwHwYDVQQDExhUb2tlbiBTaWduaW5nIFB1YmxpYyBLZXk="
+        );
+        final var negToken = SpnegoCodecUtils.decodeNegToken(Unpooled.wrappedBuffer(negBytes));
+        final var msg = negToken.mechToken();
+
+    }
 }

@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.spnego.negoex;
 
-public interface NegToken {
-
-    MechToken mechToken();
-
-    MechListMIC mechListMIC();
+public record NegoexChecksum(int checksumScheme, int checksumeType, byte[] value) {
 }
