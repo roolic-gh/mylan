@@ -13,31 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.flows;
 
-public enum NegState {
-    UNDEFINED(-1),
-    ACCEPT_COMPLETED(0),
-    ACCEPT_INCOMPLETE(1),
-    REJECT(2),
-    REQUEST_MIC(3);
+import java.util.function.Consumer;
+import local.transport.netty.smb.protocol.SmbRequest;
+import local.transport.netty.smb.protocol.SmbResponse;
 
-    private final int code;
+@FunctionalInterface
+public interface RequestSender {
 
-    NegState(final int code) {
-        this.code = code;
-    }
-
-    public int code() {
-        return code;
-    }
-
-    public static NegState fromCode(final int code) {
-        for (var ns : values()) {
-            if (ns.code == code) {
-                return ns;
-            }
-        }
-        return UNDEFINED;
-    }
+    void send(SmbRequest request, Consumer<SmbResponse> callback);
 }

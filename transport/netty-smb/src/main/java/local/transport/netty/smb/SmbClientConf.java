@@ -28,9 +28,6 @@ public @interface SmbClientConf {
     @ConfProperty("netty.group.max-threads")
     int groupThreads() default 0;
 
-    @ConfProperty("tcp.backlog.size")
-    int backlogSize() default 1024;
-
     @ConfProperty("tcp.keepalive.enabled")
     boolean tcpKeepAliveEnabled() default true;
 
@@ -67,7 +64,7 @@ public @interface SmbClientConf {
     boolean disableEncryptionOverSecureTransport() default true;
 
     @ConfProperty("smb.client.signing-capabilities-supported")
-    boolean signingCapabilitiesSupported() default false;
+    boolean signingCapabilitiesSupported() default true;
 
     @ConfProperty("smb.client.transport-capabilities-supported")
     boolean transportCapabilitiesSupported() default false;

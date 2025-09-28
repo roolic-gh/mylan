@@ -30,7 +30,11 @@ public class SmbClientCodec extends SmbCodec<SmbResponse, SmbRequest> {
 
     @Override
     void encode(final SmbRequest request, final ByteBuf byteBuf) {
-        CodecUtils.encodeRequest(request, byteBuf, details.dialect());
+        try {
+            CodecUtils.encodeRequest(request, byteBuf, details.dialect());
+        } catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override

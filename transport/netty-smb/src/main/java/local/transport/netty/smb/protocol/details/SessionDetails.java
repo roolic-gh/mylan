@@ -15,25 +15,28 @@
  */
 package local.transport.netty.smb.protocol.details;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Client Session Details. Addresses MS-SMB2 (#3.2.1.3 Per Session).
  */
 public class SessionDetails {
-    Long sessionId;
-    Map<String, TreeConnect> treeConnects;
-    byte[] sessionKey;
-    boolean signingRequired;
-    Connection connection;
-    String userCredentials;
-    Map<Long, OpenDetails> opens;
-    boolean anonymous;
-    boolean geurst;
+
+    private final Map<String, TreeConnect> treeConnects = new ConcurrentHashMap<>();
+    private final Map<Long, OpenDetails> opens = new ConcurrentHashMap<>();
+
+    private Long sessionId;
+    private byte[] sessionKey;
+    private boolean signingRequired;
+    private Connection connection;
+    private UserCredentials userCredentials;
+    private boolean anonymous;
+    private boolean guest;
 
     //SMB 3.x +
-    List<ChannelDetails> channels;
+    Set<ChannelDetails> channels;
     String channelSequence;
     boolean encryptData;
     byte[] encryptionKey;
@@ -44,4 +47,68 @@ public class SessionDetails {
     // SMB 3.1.1 +
     byte[] preauthIntegrityHashValue;
     byte[] fullSessionKey;
+
+    public Long sessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(final Long sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public Map<String, TreeConnect> treeConnects() {
+        return treeConnects;
+    }
+
+    public byte[] sessionKey() {
+        return sessionKey;
+    }
+
+    public void setSessionKey(final byte[] sessionKey) {
+        this.sessionKey = sessionKey;
+    }
+
+    public boolean signingRequired() {
+        return signingRequired;
+    }
+
+    public void setSigningRequired(final boolean signingRequired) {
+        this.signingRequired = signingRequired;
+    }
+
+    public Connection connection() {
+        return connection;
+    }
+
+    public void setConnection(final Connection connection) {
+        this.connection = connection;
+    }
+
+    public UserCredentials userCredentials() {
+        return userCredentials;
+    }
+
+    public void setUserCredentials(final UserCredentials userCredentials) {
+        this.userCredentials = userCredentials;
+    }
+
+    public Map<Long, OpenDetails> opens() {
+        return opens;
+    }
+
+    public boolean anonymous() {
+        return anonymous;
+    }
+
+    public void setAnonymous(final boolean anonymous) {
+        this.anonymous = anonymous;
+    }
+
+    public boolean guest() {
+        return guest;
+    }
+
+    public void setGuest(final boolean guest) {
+        this.guest = guest;
+    }
 }

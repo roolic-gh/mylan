@@ -25,4 +25,14 @@ public interface Connection {
     ListenableFuture<Void> closeFuture();
 
     ListenableFuture<Void> close();
+
+    ListenableFuture<Session> newAnonimousSession();
+
+    ListenableFuture<Session> newGuestSession();
+
+    ListenableFuture<Session> newSession(UserCredentials credentials);
+
+    ListenableFuture<Session> bindSession(Session session);
+
+
 }

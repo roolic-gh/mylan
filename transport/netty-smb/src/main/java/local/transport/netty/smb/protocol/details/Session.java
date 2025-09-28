@@ -16,5 +16,7 @@
 package local.transport.netty.smb.protocol.details;
 
 public interface Session {
+
     SessionDetails details();
+
 }

@@ -17,7 +17,10 @@ package local.transport.netty.smb.protocol.spnego.ntlm;
 
 import local.transport.netty.smb.protocol.Flags;
 
-public enum NtlmNegotiationFlags implements Flags.BitMaskProvider {
+/**
+ * NTLM Negotiate Flags. Addresses MS-NLMP (#2.2.2.5 NEGOTIATE).
+ */
+public enum NtlmNegotiateFlags implements Flags.BitMaskProvider {
     NTLMSSP_NEGOTIATE_56(0x80000000),
     NTLMSSP_NEGOTIATE_KEY_EXCHANGE(0x40000000),
     NTLMSSP_NEGOTIATE_128(0x20000000),
@@ -43,7 +46,7 @@ public enum NtlmNegotiationFlags implements Flags.BitMaskProvider {
 
     private final int mask;
 
-    NtlmNegotiationFlags(final int mask) {
+    NtlmNegotiateFlags(final int mask) {
         this.mask = mask;
     }
 

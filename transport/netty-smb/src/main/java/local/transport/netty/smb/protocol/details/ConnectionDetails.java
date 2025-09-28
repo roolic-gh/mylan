@@ -143,7 +143,7 @@ public class ConnectionDetails {
     }
 
     public UUID serverGuid() {
-        return server == null ? null : server.serverGuid;
+        return server == null ? null : server.serverGuid();
     }
 
     public boolean requireSigning() {
@@ -184,7 +184,7 @@ public class ConnectionDetails {
     }
 
     private boolean serverCapability(final Smb2CapabilitiesFlags flag) {
-        return server == null || server.capabilities() == null ? false : server.capabilities.get(flag);
+        return server == null || server.capabilities() == null ? false : server.capabilities().get(flag);
     }
 
     public Flags<Smb2CapabilitiesFlags> clientCapabilities() {

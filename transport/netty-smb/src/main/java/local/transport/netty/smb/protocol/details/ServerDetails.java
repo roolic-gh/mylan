@@ -15,10 +15,11 @@
  */
 package local.transport.netty.smb.protocol.details;
 
-import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.SmbDialect;
 import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
@@ -28,16 +29,16 @@ import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
  * Server Details. Addresses MS-SMB2 (#3.2.1.9 Per Server)
  */
 public class ServerDetails {
-    UUID serverGuid;
-    SmbDialect dialectRevision;
-    Flags<Smb2CapabilitiesFlags> capabilities;
-    Flags<Smb2NegotiateFlags> securityMode;
-    Set<InetAddress> addresses;
-    String serverName;
-    String cipherId;
+    private UUID serverGuid;
+    private SmbDialect dialectRevision;
+    private Flags<Smb2CapabilitiesFlags> capabilities;
+    private Flags<Smb2NegotiateFlags> securityMode;
+    private final Set<SocketAddress> addresses = ConcurrentHashMap.newKeySet();
+    private String serverName;
+    private String cipherId;
     // SMB 3.1.1 +
-    List<Object> rdmaTransformIds;
-    String signingAlgorithmId;
+    private List<Object> rdmaTransformIds;
+    private String signingAlgorithmId;
 
     public UUID serverGuid() {
         return serverGuid;
@@ -71,13 +72,10 @@ public class ServerDetails {
         this.securityMode = securityMode;
     }
 
-    public Set<InetAddress> addresses() {
+    public Set<SocketAddress> addresses() {
         return addresses;
     }
 
-    public void setAddresses(final Set<InetAddress> addresses) {
-        this.addresses = addresses;
-    }
 
     public String serverName() {
         return serverName;

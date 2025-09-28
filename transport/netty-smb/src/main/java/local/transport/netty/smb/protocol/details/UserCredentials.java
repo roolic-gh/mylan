@@ -13,31 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.details;
 
-public enum NegState {
-    UNDEFINED(-1),
-    ACCEPT_COMPLETED(0),
-    ACCEPT_INCOMPLETE(1),
-    REJECT(2),
-    REQUEST_MIC(3);
+public interface UserCredentials {
 
-    private final int code;
+    String username();
 
-    NegState(final int code) {
-        this.code = code;
+    String password();
+
+    default String domain() {
+        return null;
     }
 
-    public int code() {
-        return code;
+    static UserCredentials plaintext(final String username, final String password){
+        return new PlaintextUserCredentials(username, password);
     }
 
-    public static NegState fromCode(final int code) {
-        for (var ns : values()) {
-            if (ns.code == code) {
-                return ns;
-            }
-        }
-        return UNDEFINED;
+    record PlaintextUserCredentials(String username, String password) implements UserCredentials {
     }
 }

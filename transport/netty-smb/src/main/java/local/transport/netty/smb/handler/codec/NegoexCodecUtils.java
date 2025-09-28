@@ -63,7 +63,6 @@ final class NegoexCodecUtils {
 
     private static NegoexMessage decodeNextNegoexMessage(final ByteBuf byteBuf) {
         final var startPos = byteBuf.readerIndex();
-        System.out.printf("decode from pos %d, readable %d %n", startPos, byteBuf.readableBytes());
         final var signature = Utils.readToByteArray(byteBuf, 8);
         if (!Arrays.equals(signature, MechType.NEGOEX.signature())) {
             return null;

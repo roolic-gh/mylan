@@ -13,31 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.details;
 
-public enum NegState {
-    UNDEFINED(-1),
-    ACCEPT_COMPLETED(0),
-    ACCEPT_INCOMPLETE(1),
-    REJECT(2),
-    REQUEST_MIC(3);
+import com.google.common.util.concurrent.ListenableFuture;
+import java.net.InetAddress;
+import java.net.SocketAddress;
 
-    private final int code;
+public interface Client {
 
-    NegState(final int code) {
-        this.code = code;
-    }
+    ClientDetails details();
 
-    public int code() {
-        return code;
-    }
+    ListenableFuture<Connection> connect(InetAddress inetAddress);
 
-    public static NegState fromCode(final int code) {
-        for (var ns : values()) {
-            if (ns.code == code) {
-                return ns;
-            }
-        }
-        return UNDEFINED;
-    }
+    ListenableFuture<Connection> connect(SocketAddress socketAddress);
+
 }

@@ -17,6 +17,8 @@ package local.transport.netty.smb.protocol.spnego.ntlm;
 
 public interface LmChallengeResponse {
 
+    byte[] bytes();
+
     record EncodedLmChallengeResponse(byte[] bytes) implements LmChallengeResponse {
     }
 }

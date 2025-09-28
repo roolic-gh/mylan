@@ -28,7 +28,7 @@ public class SequenceWindow {
 
     public synchronized Optional<Long> nextMessageId() {
         if (nextMessageId.get() <= maxMessageId.get()) {
-            return Optional.of(maxMessageId.getAndIncrement());
+            return Optional.of(nextMessageId.getAndIncrement());
         }
         return Optional.empty();
     }

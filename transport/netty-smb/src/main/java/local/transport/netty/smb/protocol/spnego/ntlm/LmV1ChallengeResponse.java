@@ -15,12 +15,26 @@
  */
 package local.transport.netty.smb.protocol.spnego.ntlm;
 
-public interface NtlmChallenge {
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
 
-    static NtlmChallenge encoded(final byte[] bytes){
-        return new NtlmEncodedChallenge(bytes);
+/**
+ * Addresses MS-NLMP #2.2.2.3 LM_RESPONSE.
+ */
+public record LmV1ChallengeResponse(byte[] response) implements LmChallengeResponse {
+
+    public LmV1ChallengeResponse {
+        requireNonNull(response);
+        checkArgument(response.length == 24, "data lenght expected is 24");
     }
 
-    record NtlmEncodedChallenge(byte[] bytes) implements NtlmChallenge {
+
+    @Override
+    public byte[] bytes() {
+        return response();
+    }
+
+    public static LmV1ChallengeResponse empty(){
+        return new LmV1ChallengeResponse(new byte[24]);
     }
 }

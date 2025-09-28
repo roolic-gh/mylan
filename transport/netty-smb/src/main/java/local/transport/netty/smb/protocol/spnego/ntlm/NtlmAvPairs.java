@@ -15,6 +15,7 @@
  */
 package local.transport.netty.smb.protocol.spnego.ntlm;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import local.transport.netty.smb.protocol.Flags;
@@ -100,11 +101,11 @@ public class NtlmAvPairs {
         attributes.put(NtlmAvId.MsvAvFlags, flags);
     }
 
-    public Long serverTime() {
+    public Long timestamp() {
         return castOrNull(attributes.get(NtlmAvId.MsvAvTimestamp), Long.class);
     }
 
-    public void setServerTime(final Long serverTime) {
+    public void setTimestamp(final Long serverTime) {
         attributes.put(NtlmAvId.MsvAvTimestamp, serverTime);
     }
 
@@ -116,11 +117,11 @@ public class NtlmAvPairs {
         attributes.put(NtlmAvId.MsvAvSingleHost, singleHostData);
     }
 
-    public String targetServerName() {
+    public String targetName() {
         return castOrNull(attributes.get(NtlmAvId.MsvAvTargetName), String.class);
     }
 
-    public void setTargetServerName(final String targetServerName) {
+    public void setTargetName(final String targetServerName) {
         attributes.put(NtlmAvId.MsvAvTargetName, targetServerName);
     }
 
@@ -134,5 +135,27 @@ public class NtlmAvPairs {
 
     private static <T> T castOrNull(final Object obj, final Class<T> type) {
         return type.isInstance(obj) ? type.cast(obj) : null;
+    }
+
+    public static NtlmAvPairs copyOf(final NtlmAvPairs other) {
+        if (other == null) {
+            return null;
+        }
+        // ensure content is copied, not same objects
+        final var copy = new NtlmAvPairs(other.asMap());
+        if(other.flags() != null){
+            copy.setFlags(new Flags<>(other.flags().asIntValue()));
+        }
+        if(other.channelBinding() != null){
+            final var hash = other.channelBinding().hash();
+            copy.setChannelBinding(new NtlmChannelBindingHash(Arrays.copyOf(hash, hash.length)));
+        }
+        if(other.singleHostData() != null){
+            final var cd = other.singleHostData().customData();
+            final var mid = other.singleHostData().machineId();
+            copy.setSingleHostData(
+                new NtlmSingleHostData(Arrays.copyOf(cd, cd.length), Arrays.copyOf(mid, mid.length)));
+        }
+        return copy;
     }
 }

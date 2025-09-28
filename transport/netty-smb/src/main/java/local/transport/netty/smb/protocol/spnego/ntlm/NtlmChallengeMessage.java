@@ -16,30 +16,31 @@
 package local.transport.netty.smb.protocol.spnego.ntlm;
 
 import local.transport.netty.smb.protocol.Flags;
+import local.transport.netty.smb.protocol.spnego.ContainsSelfEncoded;
 
 /**
  * NTLM Challenge Message. Addresses MS-NLMP (#2.2.1.2 CHALLENGE_MESSAGE).
  */
-public class NtlmChallengeMessage implements NtlmMessage {
+public class NtlmChallengeMessage implements NtlmMessage, ContainsSelfEncoded {
 
-    private Flags<NtlmNegotiationFlags> negotiationFlags;
+    private Flags<NtlmNegotiateFlags> negotiateFlags;
     private String targetName;
     private NtlmAvPairs targetInfo;
-    private NtlmChallenge serverChallenge;
+    private byte[] serverChallenge;
     private NtlmVersion version;
+    private byte[] encoded;
 
     @Override
     public NtlmMessageType messageType() {
         return NtlmMessageType.NtLmChallenge;
     }
 
-    public Flags<NtlmNegotiationFlags> negotiationFlags() {
-        return negotiationFlags;
+    public Flags<NtlmNegotiateFlags> negotiateFlags() {
+        return negotiateFlags;
     }
 
-    public void setNegotiationFlags(
-        final Flags<NtlmNegotiationFlags> negotiationFlags) {
-        this.negotiationFlags = negotiationFlags;
+    public void setNegotiateFlags(final Flags<NtlmNegotiateFlags> negotiateFlags) {
+        this.negotiateFlags = negotiateFlags;
     }
 
     public String targetName() {
@@ -58,11 +59,11 @@ public class NtlmChallengeMessage implements NtlmMessage {
         this.targetInfo = targetInfo;
     }
 
-    public NtlmChallenge serverChallenge() {
+    public byte[] serverChallenge() {
         return serverChallenge;
     }
 
-    public void setServerChallenge(final NtlmChallenge serverChallenge) {
+    public void setServerChallenge(final byte[] serverChallenge) {
         this.serverChallenge = serverChallenge;
     }
 
@@ -72,5 +73,15 @@ public class NtlmChallengeMessage implements NtlmMessage {
 
     public void setVersion(final NtlmVersion version) {
         this.version = version;
+    }
+
+    @Override
+    public byte[] encoded() {
+        return encoded;
+    }
+
+    @Override
+    public void setEncoded(final byte[] encoded) {
+        this.encoded = encoded;
     }
 }

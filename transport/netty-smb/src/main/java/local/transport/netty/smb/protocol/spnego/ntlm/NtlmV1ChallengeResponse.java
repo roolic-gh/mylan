@@ -13,31 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.spnego.ntlm;
 
-public enum NegState {
-    UNDEFINED(-1),
-    ACCEPT_COMPLETED(0),
-    ACCEPT_INCOMPLETE(1),
-    REJECT(2),
-    REQUEST_MIC(3);
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
 
-    private final int code;
+/**
+ * Addresses MS-NLMP #2.2.2.6 NTLM v1 Response: NTLM_RESPONSE.
+ */
 
-    NegState(final int code) {
-        this.code = code;
-    }
+public record NtlmV1ChallengeResponse(byte[] response) implements NtChallengeResponse {
 
-    public int code() {
-        return code;
-    }
-
-    public static NegState fromCode(final int code) {
-        for (var ns : values()) {
-            if (ns.code == code) {
-                return ns;
-            }
-        }
-        return UNDEFINED;
+    public NtlmV1ChallengeResponse {
+        requireNonNull(response);
+        checkArgument(response.length == 24, "data lenght expected is 24");
     }
 }

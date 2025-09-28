@@ -22,7 +22,7 @@ import local.transport.netty.smb.protocol.Flags;
  */
 public class NtlmNegotiateMessage implements NtlmMessage {
 
-    private Flags<NtlmNegotiationFlags> negotiateFlags;
+    private Flags<NtlmNegotiateFlags> negotiateFlags;
     private String domainName;
     private String workstationName;
     private NtlmVersion version;
@@ -32,12 +32,12 @@ public class NtlmNegotiateMessage implements NtlmMessage {
         return NtlmMessageType.NtLmNegotiate;
     }
 
-    public Flags<NtlmNegotiationFlags> negotiateFlags() {
+    public Flags<NtlmNegotiateFlags> negotiateFlags() {
         return negotiateFlags;
     }
 
     public void setNegotiateFlags(
-        final Flags<NtlmNegotiationFlags> negotiateFlags) {
+        final Flags<NtlmNegotiateFlags> negotiateFlags) {
         this.negotiateFlags = negotiateFlags;
     }
 

@@ -20,15 +20,12 @@ import javax.annotation.Nonnull;
 
 public interface ClientFlow <T> {
 
-    @Nonnull
-    SmbRequest initialRequest();
-
-    @Nonnull
-    SmbRequest nextRequest();
+    void start();
 
     void handleResponse(@Nonnull SmbResponse response);
 
+    ListenableFuture<T> completeFuture();
+
     boolean isComplete();
 
-    ListenableFuture<T> completeFuture();
 }

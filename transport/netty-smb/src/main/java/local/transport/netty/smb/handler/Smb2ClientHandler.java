@@ -19,28 +19,37 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import java.util.concurrent.atomic.AtomicReference;
+import io.netty.channel.ChannelPromise;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import local.transport.netty.smb.protocol.ClientFlow;
 import local.transport.netty.smb.protocol.Flags;
+import local.transport.netty.smb.protocol.SmbDialect;
 import local.transport.netty.smb.protocol.SmbRequest;
 import local.transport.netty.smb.protocol.SmbResponse;
 import local.transport.netty.smb.protocol.details.ClientDetails;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
 import local.transport.netty.smb.protocol.flows.ClientNegotiationFlow;
+import local.transport.netty.smb.protocol.flows.RequestSender;
 import local.transport.netty.smb.protocol.smb2.Smb2Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SmbClientConnectionHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(SmbClientConnectionHandler.class);
+public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSender {
+    private static final Logger LOG = LoggerFactory.getLogger(Smb2ClientHandler.class);
 
     private final ConnectionDetails connDetails;
     private final ClientFlow<Void> negotiationFlow;
-    private final AtomicReference<ClientFlow<?>> currentFlow = new AtomicReference<>(null);
+    private final Map<Long, Consumer<SmbResponse>> callbacks = new ConcurrentHashMap<>();
+    private final Queue<PendingRequest> pendingRequests = new ConcurrentLinkedQueue<>();
+    private ChannelHandlerContext ctx;
 
-    public SmbClientConnectionHandler(final ClientDetails clientDetails, final ConnectionDetails connDetails) {
+    public Smb2ClientHandler(final ClientDetails clientDetails, final ConnectionDetails connDetails) {
         this.connDetails = connDetails;
-        negotiationFlow = new ClientNegotiationFlow(clientDetails, connDetails);
+        negotiationFlow = new ClientNegotiationFlow(clientDetails, connDetails, this);
     }
 
     public ListenableFuture<Void> negotiationFuture() {
@@ -49,29 +58,38 @@ public class SmbClientConnectionHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        currentFlow.set(negotiationFlow);
-        process(ctx, negotiationFlow.initialRequest());
+        this.ctx = ctx;
+        negotiationFlow.start();
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         if (msg instanceof SmbResponse response) {
-            process(response);
-            final var curFlow = currentFlow.get();
-            if (curFlow != null && !curFlow.isComplete()) {
-                curFlow.handleResponse(response);
-                if (curFlow.isComplete()) {
-                    currentFlow.set(null);
-                } else {
-                    process(ctx, curFlow.nextRequest());
+            processInbound(response);
+            if (response.header() instanceof Smb2Header header) {
+                final var callback = callbacks.remove(header.messageId());
+                if (callback != null) {
+                    callback.accept(response);
+                    return;
                 }
-                return;
             }
         }
         super.channelRead(ctx, msg);
     }
 
-    private void process(final ChannelHandlerContext ctx, final SmbRequest request) {
+    @Override
+    public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
+        throws Exception {
+        if (msg instanceof SmbRequest request) {
+            processOutbound(ctx, request, null);
+        } else {
+            super.write(ctx, msg, promise);
+        }
+    }
+
+    private void processOutbound(final ChannelHandlerContext ctx, final SmbRequest request,
+        final Consumer<SmbResponse> callback) {
+
         if (request.header() instanceof Smb2Header header) {
             if (header.command() == null) {
                 header.setCommand(request.message().command());
@@ -79,24 +97,30 @@ public class SmbClientConnectionHandler extends ChannelDuplexHandler {
             if (header.flags() == null) {
                 header.setFlags(new Flags<>());
             }
-            if(header.signature() == null){
+            if (header.signature() == null) {
                 header.setSignature(new byte[16]);
             }
-            header.setCreditRequest(connDetails.defaultCreditsRequest());
+            if (connDetails.dialect().sameOrAfter(SmbDialect.SMB2_1)) {
+                header.setCreditRequest(connDetails.defaultCreditsRequest());
+            }
             final var messageIdOpt = connDetails.sequenceWindow().nextMessageId();
             if (messageIdOpt.isEmpty()) {
                 LOG.warn("Message {} wasn't sent and moved to pending state due to luck of credits", header.command());
-                connDetails.pendingRequests().add(request); // TODO add timestamp
+                connDetails.pendingRequests().add(request);
+                pendingRequests.add(new PendingRequest(request, callback, System.currentTimeMillis()));
+                // TODO process pending requests
                 return;
             }
             header.setMessageId(messageIdOpt.get());
+            callbacks.put(header.messageId(), callback);
         }
         ctx.writeAndFlush(request);
     }
 
-    private SmbResponse process(SmbResponse response) {
+    private SmbResponse processInbound(final SmbResponse response) {
         if (response.header() instanceof Smb2Header header) {
             connDetails.sequenceWindow().acceptGranted(header.creditResponse());
+            // TODO check pending
         }
         return response;
     }
@@ -104,5 +128,13 @@ public class SmbClientConnectionHandler extends ChannelDuplexHandler {
     public ListenableFuture<Void> finish() {
         // TODO check pending actions
         return Futures.immediateFuture(null);
+    }
+
+    @Override
+    public void send(final SmbRequest request, final Consumer<SmbResponse> callback) {
+        processOutbound(ctx, request, callback);
+    }
+
+    private record PendingRequest(SmbRequest request, Consumer<SmbResponse> callback, long timestamp) {
     }
 }

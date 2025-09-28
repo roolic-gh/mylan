@@ -13,31 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.spnego;
+package local.transport.netty.smb.protocol.flows;
 
-public enum NegState {
-    UNDEFINED(-1),
-    ACCEPT_COMPLETED(0),
-    ACCEPT_INCOMPLETE(1),
-    REJECT(2),
-    REQUEST_MIC(3);
+import local.transport.netty.smb.protocol.spnego.MechType;
+import local.transport.netty.smb.protocol.spnego.NegToken;
+import local.transport.netty.smb.protocol.spnego.NegTokenInit;
+import local.transport.netty.smb.protocol.spnego.NegTokenResp;
 
-    private final int code;
+public interface AuthMechanism {
 
-    NegState(final int code) {
-        this.code = code;
-    }
+    MechType mechType();
 
-    public int code() {
-        return code;
-    }
+    NegTokenInit init();
 
-    public static NegState fromCode(final int code) {
-        for (var ns : values()) {
-            if (ns.code == code) {
-                return ns;
-            }
-        }
-        return UNDEFINED;
-    }
+    NegTokenResp next(NegToken response);
+
+    boolean verify(NegToken response);
 }
