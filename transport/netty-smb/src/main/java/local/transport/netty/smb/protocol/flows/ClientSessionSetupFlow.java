@@ -75,7 +75,10 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
 
     protected void process(final Smb2Header header, final Smb2SessionSetupResponse message) {
 
-        if (header.status() == SmbError.STATUS_SUCCESS && authMech.verify(message.token())) {
+        if (header.status() == SmbError.STATUS_SUCCESS) {
+            if (!authMech.verify(message.token())) {
+                throw new SmbException("Session setup completed but token verification failed.");
+            }
             connDetails.preauthSessions().remove(sessDetails.sessionId());
             connDetails.sessions().put(sessDetails.sessionId(), session);
             completeFuture.set(session);
@@ -95,9 +98,6 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
         final var msg = new Smb2SessionSetupRequest();
         msg.setCapabilities(connDetails.clientCapabilities());
         msg.setSecurityMode(connDetails.clientSecurityMode());
-//        if (token instanceof NegTokenResp ntr && ntr.mechListMIC() != null) {
-//            msg.securityMode().set(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED, true);
-//        }
         msg.setSessionFlags(new Flags<Smb2SessionRequestFlags>());
 //        if (sessDetails.sessionId() != null) {
 //            msg.setPreviousSessionId(sessDetails.sessionId());

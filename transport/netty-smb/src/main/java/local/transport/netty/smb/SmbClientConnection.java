@@ -77,7 +77,7 @@ public class SmbClientConnection implements Connection {
     }
 
     private void configure() {
-        connDetails.setDefaultCreditsRequest(client.conf().defaultCreditsRequest());
+        connDetails.setSetupCreditsRequest(client.conf().setupCreditsRequest());
         connDetails.setClientSecurityMode(new Flags<Smb2NegotiateFlags>()
             .set(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_ENABLED, client.details().signingCapabilitiesSupported())
             .set(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED, client.details().requireMessageSigning())
@@ -242,7 +242,6 @@ public class SmbClientConnection implements Connection {
         ntlmDetails.setClientVersion(new NtlmVersion(7, 0, 0, 15));
         ntlmDetails.setNtlmV2(true);
         ntlmDetails.setClientRequire128bitEncryption(true);
-//        ntlmDetails.setSuppliedTargetName("MyLAN-SMB-Client");
         // TODO make configurable via smb client config
         return new NtlmAuthMechanism(sessDetails, ntlmDetails, NtlmCodecUtils.AUTH_ENCODER);
     }

@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.details;
+package local.transport.netty.smb.protocol.smb2;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import local.transport.netty.smb.protocol.SmbCommand;
+import local.transport.netty.smb.protocol.SmbResponseMessage;
 
-public interface Session {
+public class Smb2LogoffResponse implements SmbResponseMessage {
 
-    SessionDetails details();
-
-    ListenableFuture<Void> close();
-
+    @Override
+    public SmbCommand command() {
+        return SmbCommand.SMB2_LOGOFF;
+    }
 }

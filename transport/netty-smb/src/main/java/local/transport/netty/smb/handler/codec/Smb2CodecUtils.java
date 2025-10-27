@@ -30,6 +30,8 @@ import local.transport.netty.smb.protocol.SmbRequestMessage;
 import local.transport.netty.smb.protocol.SmbResponseMessage;
 import local.transport.netty.smb.protocol.smb2.Smb2Flags;
 import local.transport.netty.smb.protocol.smb2.Smb2Header;
+import local.transport.netty.smb.protocol.smb2.Smb2LogoffRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2LogoffResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
@@ -119,6 +121,7 @@ final class Smb2CodecUtils {
         return switch (command) {
             case SMB2_NEGOTIATE -> decodeNegotiateRequest(byteBuf, ctx);
             case SMB2_SESSION_SETUP -> decodeSessionSetupRequest(byteBuf, ctx);
+            case SMB2_LOGOFF -> new Smb2LogoffRequest(); // constant cotent
 
             default -> throw new SmbException("no request decoder for command " + command);
         };
@@ -128,6 +131,7 @@ final class Smb2CodecUtils {
         switch (message) {
             case Smb2NegotiateRequest req -> encodeNegotiateRequest(byteBuf, req, ctx);
             case Smb2SessionSetupRequest req -> encodeSessionSetupRequest(byteBuf, req, ctx);
+            case Smb2LogoffRequest req -> byteBuf.writeIntLE(4); // 2 byte length + 2 byte zeroes
 
             default -> throw new SmbException("no request encoder for class " + message.getClass());
         }
@@ -139,6 +143,7 @@ final class Smb2CodecUtils {
         return switch (command) {
             case SMB2_NEGOTIATE -> decodeNegotiateResponse(byteBuf, ctx);
             case SMB2_SESSION_SETUP -> decodeSessionSetupResponse(byteBuf, ctx);
+            case SMB2_LOGOFF -> new Smb2LogoffResponse(); // ignore constant content
 
             default -> throw new SmbException("no response decoder for command " + command);
         };
@@ -148,6 +153,7 @@ final class Smb2CodecUtils {
         switch (message) {
             case Smb2NegotiateResponse resp -> encodeNegotiateResponse(byteBuf, resp, ctx);
             case Smb2SessionSetupResponse resp -> encodeSessionSetupResponse(byteBuf, resp, ctx);
+            case Smb2LogoffResponse resp -> byteBuf.writeIntLE(4); //  2 bytes length + 2 bytes zeroes
 
             default -> throw new SmbException("no response encoder for class " + message.getClass());
         }

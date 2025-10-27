@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import local.transport.netty.smb.protocol.ClientFlow;
 import local.transport.netty.smb.protocol.Flags;
+import local.transport.netty.smb.protocol.SmbCommand;
 import local.transport.netty.smb.protocol.SmbDialect;
 import local.transport.netty.smb.protocol.SmbRequest;
 import local.transport.netty.smb.protocol.SmbResponse;
@@ -101,14 +102,15 @@ public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSe
                 header.setSignature(new byte[16]);
             }
             if (connDetails.dialect().sameOrAfter(SmbDialect.SMB2_1)) {
-                header.setCreditRequest(connDetails.defaultCreditsRequest());
+                header.setCreditRequest(header.command() == SmbCommand.SMB2_SESSION_SETUP
+                    ? connDetails.setupCreditsRequest() : 1);
             }
             final var messageIdOpt = connDetails.sequenceWindow().nextMessageId();
             if (messageIdOpt.isEmpty()) {
                 LOG.warn("Message {} wasn't sent and moved to pending state due to luck of credits", header.command());
                 connDetails.pendingRequests().add(request);
                 pendingRequests.add(new PendingRequest(request, callback, System.currentTimeMillis()));
-                // TODO process pending requests
+                // TODO schedule processing pending requests
                 return;
             }
             header.setMessageId(messageIdOpt.get());

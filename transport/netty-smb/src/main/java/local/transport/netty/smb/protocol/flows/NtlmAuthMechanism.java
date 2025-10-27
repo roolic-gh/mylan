@@ -520,7 +520,6 @@ public class NtlmAuthMechanism implements AuthMechanism {
             return Arrays.equals(expected.checksum(), checksum);
         }
         return true;
-
     }
 
     private enum Mode {Client, Server}

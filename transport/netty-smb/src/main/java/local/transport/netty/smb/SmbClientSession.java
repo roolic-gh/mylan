@@ -17,6 +17,7 @@ package local.transport.netty.smb;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.function.Consumer;
 import local.transport.netty.smb.protocol.SmbRequest;
@@ -24,6 +25,7 @@ import local.transport.netty.smb.protocol.SmbResponse;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
 import local.transport.netty.smb.protocol.flows.AuthMechanism;
+import local.transport.netty.smb.protocol.flows.ClientLogoffFlow;
 import local.transport.netty.smb.protocol.flows.ClientSessionSetupFlow;
 import local.transport.netty.smb.protocol.flows.RequestSender;
 import local.transport.netty.smb.protocol.smb2.Smb2Header;
@@ -57,5 +59,16 @@ public class SmbClientSession implements Session, RequestSender {
             head.setSessionId(sessionId == null ? 0 : sessionId);
         }
         requestSender.send(request, callback);
+    }
+
+    @Override
+    public ListenableFuture<Void> close() {
+        if (sessDetails.sessionId() != null && sessDetails.connection() != null) {
+            final var logoffFlow = new ClientLogoffFlow(sessDetails.sessionId(), sessDetails.connection().details(),
+                this);
+            logoffFlow.start();
+            return logoffFlow.completeFuture();
+        }
+        return Futures.immediateFuture(null);
     }
 }

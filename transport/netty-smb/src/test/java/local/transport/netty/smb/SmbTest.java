@@ -16,7 +16,9 @@
 package local.transport.netty.smb;
 
 import java.net.InetAddress;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import local.transport.netty.smb.protocol.details.UserCredentials;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,22 @@ class SmbTest {
         final var conn = client.connect(InetAddress.getByName("192.168.1.69")).get(5, TimeUnit.SECONDS);
         final var creds = UserCredentials.plaintext("test","test");
         final var sess = conn.newSession(creds).get(5, TimeUnit.SECONDS);
-        conn.close();
+        sess.close().get();
+        conn.close().get();
     }
 
+    @Test
+    @Disabled
+    void serverName() throws Exception {
+        final var client = new SmbClient();
+        final var conn = client.connect(InetAddress.getByName("192.168.1.69")).get(5, TimeUnit.SECONDS);
+        try {
+            final var sess = conn.newAnonimousSession().get(5, TimeUnit.SECONDS);
+            sess.close().get();
+        } catch(ExecutionException | TimeoutException | InterruptedException e){
+            // ignore
+        }
+        System.out.println("Server name: " + conn.details().serverName());
+        conn.close();
+    }
 }

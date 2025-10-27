@@ -71,7 +71,7 @@ public class ConnectionDetails {
     boolean supportsNotifications;
 
     // non-spec
-    private int defaultCreditsRequest = 1;
+    private int setupCreditsRequest = 1;
 
     public ConnectionDetails(final UUID clientGuid, final int connectionId) {
         this.connectionId = connectionId;
@@ -102,12 +102,12 @@ public class ConnectionDetails {
         return sequenceWindow;
     }
 
-    public int defaultCreditsRequest() {
-        return defaultCreditsRequest;
+    public int setupCreditsRequest() {
+        return setupCreditsRequest;
     }
 
-    public void setDefaultCreditsRequest(final int defaultCreditsRequest) {
-        this.defaultCreditsRequest = defaultCreditsRequest;
+    public void setSetupCreditsRequest(final int setupCreditsRequest) {
+        this.setupCreditsRequest = setupCreditsRequest;
     }
 
     public NegToken negotiateToken() {

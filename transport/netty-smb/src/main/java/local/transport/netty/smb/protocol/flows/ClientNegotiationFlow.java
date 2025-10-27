@@ -72,10 +72,10 @@ public class ClientNegotiationFlow extends AbstractClientFlow<Void> {
 
     @Override
     public void handleResponse(@Nonnull final SmbResponse response) {
-        if (response.header() instanceof Smb2Header head && response.message() instanceof Smb2NegotiateResponse resp){
+        if (response.header() instanceof Smb2Header head && response.message() instanceof Smb2NegotiateResponse resp) {
             try {
                 process(head, resp);
-            } catch(Exception e){
+            } catch (Exception e) {
                 completeFuture.setException(e);
             }
         }
