@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.smb2;
+package local.transport.netty.smb.protocol;
 
-import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.ProtocolVersion;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbError;
-import local.transport.netty.smb.protocol.SmbHeader;
+import local.transport.netty.smb.protocol.smb2.Smb2Flags;
 
-public class Smb2Header implements SmbHeader {
+/**
+ * Addresses MS-SMB2 (#2.2.1 SMB2 Packet Header).
+ */
+public class Smb2Header {
 
-    private SmbCommand command;
+    private Smb2Command command;
     private SmbError status;
     private int channelSequence;
     private int creditCharge;
@@ -37,17 +36,11 @@ public class Smb2Header implements SmbHeader {
     private long sessionId;
     private byte[] signature;
 
-    @Override
-    public ProtocolVersion protocolVersion() {
-        return ProtocolVersion.SMB2;
-    }
-
-    @Override
-    public SmbCommand command() {
+    public Smb2Command command() {
         return command;
     }
 
-    public void setCommand(final SmbCommand command) {
+    public void setCommand(final Smb2Command command) {
         this.command = command;
     }
 

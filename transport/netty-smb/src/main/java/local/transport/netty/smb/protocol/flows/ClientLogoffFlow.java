@@ -17,12 +17,11 @@ package local.transport.netty.smb.protocol.flows;
 
 import static java.util.Objects.requireNonNull;
 
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.SmbError;
 import local.transport.netty.smb.protocol.SmbException;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
-import local.transport.netty.smb.protocol.smb2.Smb2Header;
 import local.transport.netty.smb.protocol.smb2.Smb2LogoffRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2LogoffResponse;
 
@@ -40,22 +39,26 @@ public class ClientLogoffFlow extends AbstractClientFlow<Void> {
     }
 
     @Override
-    protected SmbRequest initialRequest() {
-        return new SmbRequest(new Smb2Header(), new Smb2LogoffRequest());
+    protected Smb2Request initialRequest() {
+        return new Smb2LogoffRequest();
     }
 
     @Override
-    public void handleResponse(final SmbResponse response) {
-        if (response.header() instanceof Smb2Header header
-            && header.status() == SmbError.STATUS_SUCCESS
-            && response.message() instanceof Smb2LogoffResponse) {
+    public void handleResponse(final Smb2Response response) {
+        try {
+            if (response instanceof Smb2LogoffResponse
+                && response.header().status() == SmbError.STATUS_SUCCESS) {
 
-            connDetails.sessions().remove(sessionId);
-            connDetails.preauthSessions().remove(sessionId);
-            completeFuture.set(null);
-            return;
+                connDetails.sessions().remove(sessionId);
+                connDetails.preauthSessions().remove(sessionId);
+                completeFuture.set(null);
+                return;
+
+            }
+            throw new SmbException("Unexpected Logoff response" + response);
+        } catch (SmbException e) {
+            completeFuture.setException(e);
         }
-        throw new SmbException("Unexpected Logoff response" + response);
     }
 }
 

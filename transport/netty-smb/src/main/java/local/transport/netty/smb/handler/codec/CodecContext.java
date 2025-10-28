@@ -15,9 +15,9 @@
  */
 package local.transport.netty.smb.handler.codec;
 
-import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.Smb2Dialect;
 
-public record CodecContext(SmbDialect dialect, boolean isResponse, int headerStartPosition) {
+public record CodecContext(Smb2Dialect dialect, boolean isResponse, int headerStartPosition) {
 
     boolean isRequest() {
         return !isResponse;

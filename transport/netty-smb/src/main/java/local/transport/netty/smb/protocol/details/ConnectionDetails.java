@@ -22,8 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbDialect;
-import local.transport.netty.smb.protocol.SmbRequest;
+import local.transport.netty.smb.protocol.Smb2Dialect;
+import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
 import local.transport.netty.smb.protocol.spnego.NegToken;
@@ -37,7 +37,7 @@ public class ConnectionDetails {
 
     final Map<Long, Session> sessions = new ConcurrentHashMap<>();
     final Map<Long, Session> preauthSessions = new ConcurrentHashMap<>();
-    final Queue<SmbRequest> pendingRequests = new ConcurrentLinkedDeque<>();
+    final Queue<Smb2Request> pendingRequests = new ConcurrentLinkedDeque<>();
     final SequenceWindow sequenceWindow = new SequenceWindow(); // messageId sequencer
 
     private NegToken negotiateToken;
@@ -58,7 +58,7 @@ public class ConnectionDetails {
     Flags<Smb2CapabilitiesFlags> clientCapabilities;
     Flags<Smb2NegotiateFlags> clientSecurityMode;
     ServerDetails server;
-    List<SmbDialect> offeredDialects;
+    List<Smb2Dialect> offeredDialects;
 
     // SMB 3.1.1+
     String preauthIntegrityHashId;
@@ -94,7 +94,7 @@ public class ConnectionDetails {
         return preauthSessions;
     }
 
-    public Queue<SmbRequest> pendingRequests() {
+    public Queue<Smb2Request> pendingRequests() {
         return pendingRequests;
     }
 
@@ -155,8 +155,8 @@ public class ConnectionDetails {
         return server == null ? null : server.serverName();
     }
 
-    public SmbDialect dialect() {
-        return server == null ? SmbDialect.Unknown : server.dialectRevision();
+    public Smb2Dialect dialect() {
+        return server == null ? Smb2Dialect.Unknown : server.dialectRevision();
     }
 
     public boolean supportsFileLeasing() {
@@ -213,11 +213,11 @@ public class ConnectionDetails {
         this.server = server;
     }
 
-    public List<SmbDialect> offeredDialects() {
+    public List<Smb2Dialect> offeredDialects() {
         return offeredDialects;
     }
 
-    public void setOfferedDialects(final List<SmbDialect> offeredDialects) {
+    public void setOfferedDialects(final List<Smb2Dialect> offeredDialects) {
         this.offeredDialects = offeredDialects;
     }
 

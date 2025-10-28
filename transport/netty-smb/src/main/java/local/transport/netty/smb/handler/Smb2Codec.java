@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 /**
  * SMB transport handler. Addresses MS-SMB & MS-SMB2 (#2.1 Transport).
  */
-abstract class SmbCodec<I, O> extends ByteToMessageCodec<O> {
-    private static final Logger LOG = LoggerFactory.getLogger(SmbCodec.class);
+abstract class Smb2Codec<I, O> extends ByteToMessageCodec<O> {
+    private static final Logger LOG = LoggerFactory.getLogger(Smb2Codec.class);
 
     @Override
     protected void encode(final ChannelHandlerContext ctx, final O obj, final ByteBuf byteBuf)

@@ -16,29 +16,29 @@
 package local.transport.netty.smb.handler;
 
 import io.netty.buffer.ByteBuf;
-import local.transport.netty.smb.handler.codec.CodecUtils;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
+import local.transport.netty.smb.handler.codec.Smb2CodecUtils;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
 
-public class SmbClientCodec extends SmbCodec<SmbResponse, SmbRequest> {
+public class Smb2ClientCodec extends Smb2Codec<Smb2Response, Smb2Request> {
     final ConnectionDetails details;
 
-    public SmbClientCodec(final ConnectionDetails details) {
+    public Smb2ClientCodec(final ConnectionDetails details) {
         this.details = details;
     }
 
     @Override
-    void encode(final SmbRequest request, final ByteBuf byteBuf) {
+    void encode(final Smb2Request request, final ByteBuf byteBuf) {
         try {
-            CodecUtils.encodeRequest(request, byteBuf, details.dialect());
+            Smb2CodecUtils.encodeRequest(request, byteBuf, details.dialect());
         } catch(Exception e){
             e.printStackTrace();
         }
     }
 
     @Override
-    SmbResponse decode(final ByteBuf byteBuf) {
-        return CodecUtils.decodeResponse(byteBuf, details.dialect());
+    Smb2Response decode(final ByteBuf byteBuf) {
+        return Smb2CodecUtils.decodeResponse(byteBuf, details.dialect());
     }
 }

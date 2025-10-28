@@ -18,7 +18,7 @@ package local.transport.netty.smb.protocol.details;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.Smb2Dialect;
 
 /**
  * Client Details. Addresses MS_SMB2 (#3.2.1.1 Global).
@@ -33,7 +33,7 @@ public class ClientDetails extends GlobalDetails {
     private final Map<Object, FileDetails> globalFiles = new ConcurrentHashMap<>();
     private final UUID clientGuid = UUID.randomUUID();
     // SMB 3.x +
-    private SmbDialect maxDialect;
+    private Smb2Dialect maxDialect;
     boolean requireSecureNegotiate;
     private final Map<UUID, ServerDetails> servers = new ConcurrentHashMap<>();
     private final Map<Object, ShareDetails> shares = new ConcurrentHashMap<>();
@@ -42,7 +42,7 @@ public class ClientDetails extends GlobalDetails {
     boolean mutualAuthOverQUICSupported;
     final Map<Object, Object> clientCertificateMapping = new ConcurrentHashMap<>();
     // non-spec
-    private SmbDialect minDialect;
+    private Smb2Dialect minDialect;
 
     public UUID clientGuid() {
         return clientGuid;
@@ -85,19 +85,19 @@ public class ClientDetails extends GlobalDetails {
         this.allowInsecureGuestAccess = allowInsecureGuestAccess;
     }
 
-    public SmbDialect minDialect() {
+    public Smb2Dialect minDialect() {
         return minDialect;
     }
 
-    public void setMinDialect(final SmbDialect minDialect) {
+    public void setMinDialect(final Smb2Dialect minDialect) {
         this.minDialect = minDialect;
     }
 
-    public SmbDialect maxDialect() {
+    public Smb2Dialect maxDialect() {
         return maxDialect;
     }
 
-    public void setMaxDialect(final SmbDialect maxDialect) {
+    public void setMaxDialect(final Smb2Dialect maxDialect) {
         this.maxDialect = maxDialect;
     }
 

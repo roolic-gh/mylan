@@ -13,30 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.cifs;
+package local.transport.netty.smb.handler;
 
-import local.transport.netty.smb.protocol.Flags;
+import io.netty.buffer.ByteBuf;
+import local.transport.netty.smb.handler.codec.Smb2CodecUtils;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 
-/**
- * Addresses MS-CIFS (#2.2.3.1 The SMB Header)
- */
-public enum SmbFlags implements Flags.BitMaskProvider {
-    SMB_FLAGS_LOCK_AND_READ_OK(0x01),
-    SMB_FLAGS_BUF_AVAIL(0x02), // obsolete
-    SMB_FLAGS_CASE_INSENSITIVE(0x08), // obolete
-    SMB_FLAGS_CANONICALIZED_PATHS(0x10), // obsolete
-    SMB_FLAGS_OPLOCK(0x20), // obsolete
-    SMB_FLAGS_OPBATCH(0x40), // obsolete
-    SMB_FLAGS_REPLY(0x80);
+public class Smb2ServerCodec extends Smb2Codec<Smb2Request, Smb2Response> {
 
-    private final int mask;
-
-    SmbFlags(int mask) {
-        this.mask = mask;
+    @Override
+    void encode(final Smb2Response outObj, final ByteBuf byteBuf) {
+        Smb2CodecUtils.encodeResponse(outObj, byteBuf, null);
     }
 
     @Override
-    public int mask() {
-        return mask;
+    Smb2Request decode(final ByteBuf byteBuf) {
+        return Smb2CodecUtils.decodeRequest(byteBuf, null);
     }
 }

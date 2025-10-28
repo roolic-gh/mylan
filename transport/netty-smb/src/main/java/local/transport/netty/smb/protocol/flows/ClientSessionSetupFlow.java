@@ -17,16 +17,14 @@ package local.transport.netty.smb.protocol.flows;
 
 import static java.util.Objects.requireNonNull;
 
-import javax.annotation.Nonnull;
 import local.transport.netty.smb.protocol.Flags;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.SmbError;
 import local.transport.netty.smb.protocol.SmbException;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
-import local.transport.netty.smb.protocol.smb2.Smb2Header;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionRequestFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupResponse;
@@ -57,26 +55,29 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
     }
 
     @Override
-    protected SmbRequest initialRequest() {
+    protected Smb2Request initialRequest() {
         return sessionSetupRequest(authMech.init());
     }
 
     @Override
-    public void handleResponse(@Nonnull final SmbResponse response) {
-        if (response.header() instanceof Smb2Header head
-            && response.message() instanceof Smb2SessionSetupResponse resp) {
-            try {
-                process(head, resp);
-            } catch (Exception e) {
-                completeFuture.setException(e);
+    public void handleResponse(final Smb2Response response) {
+
+        try {
+            if (response instanceof Smb2SessionSetupResponse sessionSetupResponse) {
+                process(sessionSetupResponse);
+            } else {
+                throw new SmbException("Unexpected Session Setup response: " + response);
             }
+        } catch (Exception e) {
+            completeFuture.setException(e);
         }
+
     }
 
-    protected void process(final Smb2Header header, final Smb2SessionSetupResponse message) {
+    private void process(final Smb2SessionSetupResponse response) {
 
-        if (header.status() == SmbError.STATUS_SUCCESS) {
-            if (!authMech.verify(message.token())) {
+        if (response.header().status() == SmbError.STATUS_SUCCESS) {
+            if (!authMech.verify(response.token())) {
                 throw new SmbException("Session setup completed but token verification failed.");
             }
             connDetails.preauthSessions().remove(sessDetails.sessionId());
@@ -84,26 +85,26 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
             completeFuture.set(session);
             return;
         }
-        if (header.status() == SmbError.STATUS_MORE_PROCESSING_REQUIRED) {
-            sessDetails.setSessionId(header.sessionId());
+        if (response.header().status() == SmbError.STATUS_MORE_PROCESSING_REQUIRED) {
+            sessDetails.setSessionId(response.header().sessionId());
             connDetails.preauthSessions().put(sessDetails.sessionId(), session);
-            final var token = authMech.next(message.token());
+            final var token = authMech.next(response.token());
             requestSender.send(sessionSetupRequest(token), this::handleResponse);
             return;
         }
-        throw new SmbException("Error unexpected message status: " + header.status());
+        throw new SmbException("Error unexpected message status: " + response.header().status());
     }
 
-    private SmbRequest sessionSetupRequest(NegToken token) {
-        final var msg = new Smb2SessionSetupRequest();
-        msg.setCapabilities(connDetails.clientCapabilities());
-        msg.setSecurityMode(connDetails.clientSecurityMode());
-        msg.setSessionFlags(new Flags<Smb2SessionRequestFlags>());
+    private Smb2Request sessionSetupRequest(final NegToken token) {
+        final var request = new Smb2SessionSetupRequest();
+        request.setCapabilities(connDetails.clientCapabilities());
+        request.setSecurityMode(connDetails.clientSecurityMode());
+        request.setSessionFlags(new Flags<Smb2SessionRequestFlags>());
 //        if (sessDetails.sessionId() != null) {
-//            msg.setPreviousSessionId(sessDetails.sessionId());
-//            msg.sessionFlags().set(Smb2SessionRequestFlags.SMB2_SESSION_FLAG_BINDING, true);
+//            request.setPreviousSessionId(sessDetails.sessionId());
+//            request.sessionFlags().set(Smb2SessionRequestFlags.SMB2_SESSION_FLAG_BINDING, true);
 //        }
-        msg.setToken(token);
-        return new SmbRequest(new Smb2Header(), msg);
+        request.setToken(token);
+        return request;
     }
 }

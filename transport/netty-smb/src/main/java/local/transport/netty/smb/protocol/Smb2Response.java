@@ -13,22 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.handler;
+package local.transport.netty.smb.protocol;
 
-import io.netty.buffer.ByteBuf;
-import local.transport.netty.smb.handler.codec.CodecUtils;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
+import static java.util.Objects.requireNonNull;
 
-public class SmbServerCodec extends SmbCodec<SmbRequest, SmbResponse> {
+public abstract class Smb2Response {
+    protected final Smb2Header header;
 
-    @Override
-    void encode(final SmbResponse outObj, final ByteBuf byteBuf) {
-        CodecUtils.encodeResponse(outObj, byteBuf, null);
+    protected Smb2Response() {
+        this(new Smb2Header());
     }
 
-    @Override
-    SmbRequest decode(final ByteBuf byteBuf) {
-        return CodecUtils.decodeRequest(byteBuf, null);
+    protected Smb2Response(final Smb2Header header) {
+        this.header = requireNonNull(header);
+        header.setCommand(command());
+    }
+
+    protected abstract Smb2Command command();
+
+    public final Smb2Header header() {
+        return header;
     }
 }

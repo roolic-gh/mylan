@@ -15,13 +15,21 @@
  */
 package local.transport.netty.smb.protocol.smb2;
 
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbRequestMessage;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Request;
 
-public class Smb2LogoffRequest implements SmbRequestMessage {
+public class Smb2LogoffRequest extends Smb2Request {
+
+    public Smb2LogoffRequest() {
+    }
+
+    public Smb2LogoffRequest(final Smb2Header header) {
+        super(header);
+    }
 
     @Override
-    public SmbCommand command() {
-        return SmbCommand.SMB2_LOGOFF;
+    protected Smb2Command command() {
+        return Smb2Command.SMB2_LOGOFF;
     }
 }

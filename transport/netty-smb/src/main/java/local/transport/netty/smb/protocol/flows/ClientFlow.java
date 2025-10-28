@@ -13,8 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol;
+package local.transport.netty.smb.protocol.flows;
 
-public interface SmbHeader extends HasSmbCommand {
-    ProtocolVersion protocolVersion();
+import com.google.common.util.concurrent.ListenableFuture;
+import javax.annotation.Nonnull;
+import local.transport.netty.smb.protocol.Smb2Response;
+
+public interface ClientFlow <T> {
+
+    void start();
+
+    void handleResponse(@Nonnull Smb2Response response);
+
+    ListenableFuture<T> completeFuture();
+
+    boolean isComplete();
+
 }

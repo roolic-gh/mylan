@@ -15,5 +15,23 @@
  */
 package local.transport.netty.smb.protocol;
 
-public interface SmbRequestMessage extends HasSmbCommand {
+import static java.util.Objects.requireNonNull;
+
+public abstract class Smb2Request {
+    protected final Smb2Header header;
+
+    protected Smb2Request() {
+        this(new Smb2Header());
+    }
+
+    protected Smb2Request(final Smb2Header header) {
+        this.header = requireNonNull(header);
+        header.setCommand(command());
+    }
+
+    protected abstract Smb2Command command();
+
+    public final Smb2Header header() {
+        return header;
+    }
 }

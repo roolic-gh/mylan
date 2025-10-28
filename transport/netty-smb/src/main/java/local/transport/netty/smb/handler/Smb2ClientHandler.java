@@ -25,17 +25,17 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
-import local.transport.netty.smb.protocol.ClientFlow;
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbDialect;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Dialect;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.details.ClientDetails;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
+import local.transport.netty.smb.protocol.flows.ClientFlow;
 import local.transport.netty.smb.protocol.flows.ClientNegotiationFlow;
 import local.transport.netty.smb.protocol.flows.RequestSender;
-import local.transport.netty.smb.protocol.smb2.Smb2Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSe
 
     private final ConnectionDetails connDetails;
     private final ClientFlow<Void> negotiationFlow;
-    private final Map<Long, Consumer<SmbResponse>> callbacks = new ConcurrentHashMap<>();
+    private final Map<Long, Consumer<Smb2Response>> callbacks = new ConcurrentHashMap<>();
     private final Queue<PendingRequest> pendingRequests = new ConcurrentLinkedQueue<>();
     private ChannelHandlerContext ctx;
 
@@ -65,7 +65,7 @@ public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSe
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-        if (msg instanceof SmbResponse response) {
+        if (msg instanceof Smb2Response response) {
             processInbound(response);
             if (response.header() instanceof Smb2Header header) {
                 final var callback = callbacks.remove(header.messageId());
@@ -81,45 +81,38 @@ public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSe
     @Override
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
         throws Exception {
-        if (msg instanceof SmbRequest request) {
+        if (msg instanceof Smb2Request request) {
             processOutbound(ctx, request, null);
         } else {
             super.write(ctx, msg, promise);
         }
     }
 
-    private void processOutbound(final ChannelHandlerContext ctx, final SmbRequest request,
-        final Consumer<SmbResponse> callback) {
+    private void processOutbound(final ChannelHandlerContext ctx, final Smb2Request request,
+        final Consumer<Smb2Response> callback) {
 
-        if (request.header() instanceof Smb2Header header) {
-            if (header.command() == null) {
-                header.setCommand(request.message().command());
-            }
-            if (header.flags() == null) {
-                header.setFlags(new Flags<>());
-            }
-            if (header.signature() == null) {
-                header.setSignature(new byte[16]);
-            }
-            if (connDetails.dialect().sameOrAfter(SmbDialect.SMB2_1)) {
-                header.setCreditRequest(header.command() == SmbCommand.SMB2_SESSION_SETUP
-                    ? connDetails.setupCreditsRequest() : 1);
-            }
-            final var messageIdOpt = connDetails.sequenceWindow().nextMessageId();
-            if (messageIdOpt.isEmpty()) {
-                LOG.warn("Message {} wasn't sent and moved to pending state due to luck of credits", header.command());
-                connDetails.pendingRequests().add(request);
-                pendingRequests.add(new PendingRequest(request, callback, System.currentTimeMillis()));
-                // TODO schedule processing pending requests
-                return;
-            }
-            header.setMessageId(messageIdOpt.get());
-            callbacks.put(header.messageId(), callback);
+        final var header = request.header();
+        if (header.flags() == null) {
+            header.setFlags(new Flags<>());
         }
+        if (connDetails.dialect().equalsOrHigher(Smb2Dialect.SMB2_1)) {
+            header.setCreditRequest(header.command() == Smb2Command.SMB2_SESSION_SETUP
+                ? connDetails.setupCreditsRequest() : 1);
+        }
+        final var messageIdOpt = connDetails.sequenceWindow().nextMessageId();
+        if (messageIdOpt.isEmpty()) {
+            LOG.warn("Message {} wasn't sent and moved to pending state due to luck of credits", header.command());
+            connDetails.pendingRequests().add(request);
+            pendingRequests.add(new PendingRequest(request, callback, System.currentTimeMillis()));
+            // TODO schedule processing pending requests
+            return;
+        }
+        header.setMessageId(messageIdOpt.get());
+        callbacks.put(header.messageId(), callback);
         ctx.writeAndFlush(request);
     }
 
-    private SmbResponse processInbound(final SmbResponse response) {
+    private Smb2Response processInbound(final Smb2Response response) {
         if (response.header() instanceof Smb2Header header) {
             connDetails.sequenceWindow().acceptGranted(header.creditResponse());
             // TODO check pending
@@ -133,10 +126,10 @@ public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSe
     }
 
     @Override
-    public void send(final SmbRequest request, final Consumer<SmbResponse> callback) {
+    public void send(final Smb2Request request, final Consumer<Smb2Response> callback) {
         processOutbound(ctx, request, callback);
     }
 
-    private record PendingRequest(SmbRequest request, Consumer<SmbResponse> callback, long timestamp) {
+    private record PendingRequest(Smb2Request request, Consumer<Smb2Response> callback, long timestamp) {
     }
 }

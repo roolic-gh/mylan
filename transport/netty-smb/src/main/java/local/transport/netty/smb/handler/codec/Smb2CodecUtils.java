@@ -15,21 +15,22 @@
  */
 package local.transport.netty.smb.handler.codec;
 
+import static java.util.Objects.requireNonNull;
+
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 import local.transport.netty.smb.Utils;
 import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.ProtocolVersion;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Dialect;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.SmbError;
 import local.transport.netty.smb.protocol.SmbException;
-import local.transport.netty.smb.protocol.SmbHeader;
-import local.transport.netty.smb.protocol.SmbRequestMessage;
-import local.transport.netty.smb.protocol.SmbResponseMessage;
 import local.transport.netty.smb.protocol.smb2.Smb2Flags;
-import local.transport.netty.smb.protocol.smb2.Smb2Header;
 import local.transport.netty.smb.protocol.smb2.Smb2LogoffRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2LogoffResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateRequest;
@@ -37,24 +38,86 @@ import local.transport.netty.smb.protocol.smb2.Smb2NegotiateResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupResponse;
 
-final class Smb2CodecUtils {
+public final class Smb2CodecUtils {
 
     private Smb2CodecUtils() {
         //utility class
     }
 
+    public static Smb2Request decodeRequest(final ByteBuf byteBuf, final Smb2Dialect dialect) {
+        requireNonNull(byteBuf);
+        final var ctx = new CodecContext(nonNullDialect(dialect), false, byteBuf.readerIndex());
+        final var header = decodeHeader(byteBuf, ctx);
+        // todo validate the message is request
+
+        return switch (header.command()) {
+            case SMB2_NEGOTIATE -> decodeNegotiateRequest(byteBuf, header, ctx);
+            case SMB2_SESSION_SETUP -> decodeSessionSetupRequest(byteBuf, header, ctx);
+            case SMB2_LOGOFF -> new Smb2LogoffRequest(header); // constant cotent
+
+            default -> throw new SmbException("no request decoder for command " + header.command());
+        };
+    }
+
+    public static void encodeRequest(final Smb2Request request, final ByteBuf byteBuf, final Smb2Dialect dialect) {
+        requireNonNull(request);
+        requireNonNull(byteBuf);
+        final var ctx = new CodecContext(nonNullDialect(dialect), false, byteBuf.writerIndex());
+        encodeHeader(byteBuf, request.header(), ctx);
+        switch (request) {
+            case Smb2NegotiateRequest req -> encodeNegotiateRequest(byteBuf, req, ctx);
+            case Smb2SessionSetupRequest req -> encodeSessionSetupRequest(byteBuf, req, ctx);
+            case Smb2LogoffRequest req -> byteBuf.writeIntLE(4); // 2 byte length + 2 byte zeroes
+
+            default -> throw new SmbException("no request encoder for class " + request.getClass());
+        }
+    }
+
+    public static Smb2Response decodeResponse(final ByteBuf byteBuf, final Smb2Dialect dialect) {
+        requireNonNull(byteBuf);
+        final var ctx = new CodecContext(nonNullDialect(dialect), true, byteBuf.readerIndex());
+        final var header = decodeHeader(byteBuf, ctx);
+        // todo validate the message is request
+
+        return switch (header.command()) {
+            case SMB2_NEGOTIATE -> decodeNegotiateResponse(byteBuf, header, ctx);
+            case SMB2_SESSION_SETUP -> decodeSessionSetupResponse(byteBuf, header, ctx);
+            case SMB2_LOGOFF -> new Smb2LogoffResponse(header); // ignore constant content
+
+            default -> throw new SmbException("no response decoder for command " + header.command());
+        };
+    }
+
+    public static void encodeResponse(Smb2Response response, final ByteBuf byteBuf, final Smb2Dialect dialect) {
+        requireNonNull(response);
+        requireNonNull(byteBuf);
+        final var ctx = new CodecContext(nonNullDialect(dialect), true, byteBuf.writerIndex());
+        encodeHeader(byteBuf, response.header(), ctx);
+        switch (response) {
+            case Smb2NegotiateResponse resp -> encodeNegotiateResponse(byteBuf, resp, ctx);
+            case Smb2SessionSetupResponse resp -> encodeSessionSetupResponse(byteBuf, resp, ctx);
+            case Smb2LogoffResponse resp -> byteBuf.writeIntLE(4); //  2 bytes length + 2 bytes zeroes
+
+            default -> throw new SmbException("no response encoder for class " + response.getClass());
+        }
+    }
+
+    private static Smb2Dialect nonNullDialect(final Smb2Dialect dialect) {
+        return dialect == null ? Smb2Dialect.Unknown : dialect;
+    }
+
     // Header (MS-SMB2 2.2.1 SMB2 Packet Header)
 
-    static SmbHeader decodeHeader(final ByteBuf byteBuf, final CodecContext ctx) {
+    private static Smb2Header decodeHeader(final ByteBuf byteBuf, final CodecContext ctx) {
         final var header = new Smb2Header();
         // protocol version is already read
         final var length = byteBuf.readUnsignedShortLE(); // todo check expected constant is 64 always
-        if (ctx.dialect().sameOrAfter(SmbDialect.SMB2_1)) {
+        if (ctx.dialect().equalsOrHigher(Smb2Dialect.SMB2_1)) {
             header.setCreditCharge(byteBuf.readUnsignedShortLE());
         } else {
             byteBuf.skipBytes(2);
         }
-        if (ctx.isRequest() && ctx.dialect().sameOrAfter(SmbDialect.SMB3_0)) {
+        if (ctx.isRequest() && ctx.dialect().equalsOrHigher(Smb2Dialect.SMB3_0)) {
             header.setChannelSequence(byteBuf.readUnsignedShortLE());
             byteBuf.skipBytes(2);
         } else if (ctx.isResponse()) {
@@ -62,7 +125,7 @@ final class Smb2CodecUtils {
         } else {
             byteBuf.skipBytes(4);
         }
-        header.setCommand(SmbCommand.fromCode(byteBuf.readUnsignedShortLE(), ProtocolVersion.SMB2));
+        header.setCommand(Smb2Command.fromCode(byteBuf.readUnsignedShortLE()));
         if (ctx.isRequest()) {
             header.setCreditRequest(byteBuf.readUnsignedShortLE());
         } else {
@@ -88,11 +151,11 @@ final class Smb2CodecUtils {
         return header;
     }
 
-    static void encodeHeader(final ByteBuf byteBuf, final Smb2Header header, final CodecContext ctx) {
-        byteBuf.writeIntLE(header.protocolVersion().code());
+    private static void encodeHeader(final ByteBuf byteBuf, final Smb2Header header, final CodecContext ctx) {
+        byteBuf.writeIntLE(ProtocolVersion.SMB2.code());
         byteBuf.writeShortLE(64); // fixed header length
-        byteBuf.writeShortLE(ctx.dialect().sameOrAfter(SmbDialect.SMB2_1) ? header.creditCharge() : 0);
-        if (ctx.isRequest() && ctx.dialect().sameOrAfter(SmbDialect.SMB3_0)) {
+        byteBuf.writeShortLE(ctx.dialect().equalsOrHigher(Smb2Dialect.SMB2_1) ? header.creditCharge() : 0);
+        if (ctx.isRequest() && ctx.dialect().equalsOrHigher(Smb2Dialect.SMB3_0)) {
             byteBuf.writeShortLE(header.channelSequence());
             byteBuf.writeShortLE(0);
         } else {
@@ -110,59 +173,15 @@ final class Smb2CodecUtils {
             byteBuf.writeIntLE(header.treeId());
         }
         byteBuf.writeLongLE(header.sessionId());
-        byteBuf.writeBytes(header.signature());
-    }
-
-    // Message bodies
-
-    static SmbRequestMessage decodeRequestMessage(final ByteBuf byteBuf, final SmbCommand command,
-        final CodecContext ctx) {
-
-        return switch (command) {
-            case SMB2_NEGOTIATE -> decodeNegotiateRequest(byteBuf, ctx);
-            case SMB2_SESSION_SETUP -> decodeSessionSetupRequest(byteBuf, ctx);
-            case SMB2_LOGOFF -> new Smb2LogoffRequest(); // constant cotent
-
-            default -> throw new SmbException("no request decoder for command " + command);
-        };
-    }
-
-    static void encodeRequest(final ByteBuf byteBuf, final SmbRequestMessage message, final CodecContext ctx) {
-        switch (message) {
-            case Smb2NegotiateRequest req -> encodeNegotiateRequest(byteBuf, req, ctx);
-            case Smb2SessionSetupRequest req -> encodeSessionSetupRequest(byteBuf, req, ctx);
-            case Smb2LogoffRequest req -> byteBuf.writeIntLE(4); // 2 byte length + 2 byte zeroes
-
-            default -> throw new SmbException("no request encoder for class " + message.getClass());
-        }
-    }
-
-    static SmbResponseMessage decodeResponseMessage(final ByteBuf byteBuf, final SmbCommand command,
-        final CodecContext ctx) {
-
-        return switch (command) {
-            case SMB2_NEGOTIATE -> decodeNegotiateResponse(byteBuf, ctx);
-            case SMB2_SESSION_SETUP -> decodeSessionSetupResponse(byteBuf, ctx);
-            case SMB2_LOGOFF -> new Smb2LogoffResponse(); // ignore constant content
-
-            default -> throw new SmbException("no response decoder for command " + command);
-        };
-    }
-
-    static void encodeResponce(final ByteBuf byteBuf, final SmbResponseMessage message, final CodecContext ctx) {
-        switch (message) {
-            case Smb2NegotiateResponse resp -> encodeNegotiateResponse(byteBuf, resp, ctx);
-            case Smb2SessionSetupResponse resp -> encodeSessionSetupResponse(byteBuf, resp, ctx);
-            case Smb2LogoffResponse resp -> byteBuf.writeIntLE(4); //  2 bytes length + 2 bytes zeroes
-
-            default -> throw new SmbException("no response encoder for class " + message.getClass());
-        }
+        byteBuf.writeZero(16); // actual signature is calculated after whole message is in buffer
     }
 
     // SMB2 NEGOTIATE Request (MS-SMB2 #2.2.3)
 
-    private static SmbRequestMessage decodeNegotiateRequest(final ByteBuf byteBuf, final CodecContext ctx) {
-        final var request = new Smb2NegotiateRequest();
+    private static Smb2Request decodeNegotiateRequest(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var request = new Smb2NegotiateRequest(header);
         final var structureSize = byteBuf.readShortLE(); // TODO validate expected const value = 36
         final var dialectCount = byteBuf.readShortLE();
         request.setSecurityMode(new Flags<>(byteBuf.readUnsignedShortLE()));
@@ -170,15 +189,15 @@ final class Smb2CodecUtils {
         request.setCapabilities(new Flags<>(byteBuf.readIntLE()));
         request.setClientGuid(Utils.readGuid(byteBuf));
         final var tempBuf = byteBuf.readBytes(8);
-        final var dialects = new ArrayList<SmbDialect>(dialectCount);
+        final var dialects = new ArrayList<Smb2Dialect>(dialectCount);
         for (int i = 0; i < dialectCount; i++) {
-            final var dialect = SmbDialect.fromCode(byteBuf.readUnsignedShortLE());
-            if (dialect != SmbDialect.Unknown) {
+            final var dialect = Smb2Dialect.fromCode(byteBuf.readUnsignedShortLE());
+            if (dialect != Smb2Dialect.Unknown) {
                 dialects.add(dialect);
             }
         }
         request.setDialects(List.copyOf(dialects));
-        if (byteBuf.readableBytes() > 0 && dialects.contains(SmbDialect.SMB3_1_1)) {
+        if (byteBuf.readableBytes() > 0 && dialects.contains(Smb2Dialect.SMB3_1_1)) {
             // check negotiation contexts if dialects contains SMB 3.1.1
             final int negCtxOffset = tempBuf.readIntLE();
             final int negCtxCount = tempBuf.readUnsignedShortLE();
@@ -204,7 +223,7 @@ final class Smb2CodecUtils {
         byteBuf.writeLong(0);
         request.dialects().forEach(dialect -> byteBuf.writeShortLE(dialect.code()));
 
-        if (request.dialects().contains(SmbDialect.SMB3_1_1)) {
+        if (request.dialects().contains(Smb2Dialect.SMB3_1_1)) {
             // write negotiation contexts if dialects contains SMB 3.1.1
             final var negCtxs = request.negotiateContexts();
             if (negCtxs != null && !negCtxs.isEmpty()) {
@@ -222,11 +241,13 @@ final class Smb2CodecUtils {
 
     // SMB2 NEGOTIATE Response (MS-SMB2 #2.2.4)
 
-    private static SmbResponseMessage decodeNegotiateResponse(final ByteBuf byteBuf, final CodecContext ctx) {
-        final var response = new Smb2NegotiateResponse();
+    private static Smb2Response decodeNegotiateResponse(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var response = new Smb2NegotiateResponse(header);
         final var structureSize = byteBuf.readUnsignedShortLE(); // todo validate expected const value = 65
         response.setSecurityMode(new Flags<>(byteBuf.readUnsignedShortLE()));
-        response.setDialectRevision(SmbDialect.fromCode(byteBuf.readUnsignedShortLE()));
+        response.setDialectRevision(Smb2Dialect.fromCode(byteBuf.readUnsignedShortLE()));
         final var negCtxsCount = byteBuf.readUnsignedShortLE();
         response.setServerGuid(Utils.readGuid(byteBuf));
         response.setCapabilities(new Flags<>(byteBuf.readIntLE()));
@@ -238,7 +259,7 @@ final class Smb2CodecUtils {
         final var securityBufPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
         final var securityBuflength = byteBuf.readUnsignedShortLE();
         response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(securityBufPos, securityBuflength)));
-        if (response.dialectRevision().sameOrAfter(SmbDialect.SMB3_1_1)) {
+        if (response.dialectRevision().equalsOrHigher(Smb2Dialect.SMB3_1_1)) {
             final var negCtxsPos = ctx.headerStartPosition() + byteBuf.readIntLE();
             // todo read contexts
         }
@@ -251,8 +272,10 @@ final class Smb2CodecUtils {
 
     // SESSION_SETUP Request (MS-SMB2 #2.2.5)
 
-    private static SmbRequestMessage decodeSessionSetupRequest(final ByteBuf byteBuf, final CodecContext ctx) {
-        final var request = new Smb2SessionSetupRequest();
+    private static Smb2Request decodeSessionSetupRequest(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var request = new Smb2SessionSetupRequest(header);
         final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 25
         request.setSessionFlags(new Flags<>(byteBuf.readUnsignedByte()));
         request.setSecurityMode(new Flags<>(byteBuf.readUnsignedByte()));
@@ -284,8 +307,10 @@ final class Smb2CodecUtils {
 
     // SESSION_SETUP Response (MS-SMB2 #2.2.6)
 
-    private static SmbResponseMessage decodeSessionSetupResponse(final ByteBuf byteBuf, final CodecContext ctx) {
-        final var response = new Smb2SessionSetupResponse();
+    private static Smb2Response decodeSessionSetupResponse(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var response = new Smb2SessionSetupResponse(header);
         final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 9
         response.setSessionFlags(new Flags<>(byteBuf.readUnsignedShortLE()));
         final var bufferPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
@@ -306,5 +331,4 @@ final class Smb2CodecUtils {
         byteBuf.setShortLE(bufferRefPos, bufferPos - ctx.headerStartPosition()); // buffer offset
         byteBuf.setShortLE(bufferRefPos + 2, byteBuf.writerIndex() - bufferPos); // buffer length
     }
-
 }

@@ -19,31 +19,39 @@ import com.google.common.base.Objects;
 import java.util.List;
 import java.util.UUID;
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbDialect;
-import local.transport.netty.smb.protocol.SmbRequestMessage;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Dialect;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Request;
 
 /**
  * SMB2 Negotiate request. Addresses MS-SMB2 (#2.2.3 SMB2 NEGOTIATE Request).
  */
-public class Smb2NegotiateRequest implements SmbRequestMessage {
+public class Smb2NegotiateRequest extends Smb2Request {
 
-    private List<SmbDialect> dialects;
+    private List<Smb2Dialect> dialects;
     private Flags<Smb2NegotiateFlags> securityMode;
     private Flags<Smb2CapabilitiesFlags> capabilities;
     private UUID clientGuid;
     private List<Smb2NegotiateContext> negotiateContexts;
 
-    @Override
-    public SmbCommand command() {
-        return SmbCommand.SMB2_NEGOTIATE;
+    public Smb2NegotiateRequest() {
     }
 
-    public List<SmbDialect> dialects() {
+    public Smb2NegotiateRequest(final Smb2Header header) {
+        super(header);
+    }
+
+    @Override
+    protected Smb2Command command() {
+        return Smb2Command.SMB2_NEGOTIATE;
+    }
+
+    public List<Smb2Dialect> dialects() {
         return dialects;
     }
 
-    public void setDialects(final List<SmbDialect> dialects) {
+    public void setDialects(final List<Smb2Dialect> dialects) {
         this.dialects = dialects;
     }
 

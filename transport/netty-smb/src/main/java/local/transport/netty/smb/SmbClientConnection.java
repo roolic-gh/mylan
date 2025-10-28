@@ -41,8 +41,8 @@ import java.net.SocketAddress;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import jdk.net.ExtendedSocketOptions;
+import local.transport.netty.smb.handler.Smb2ClientCodec;
 import local.transport.netty.smb.handler.Smb2ClientHandler;
-import local.transport.netty.smb.handler.SmbClientCodec;
 import local.transport.netty.smb.handler.codec.NtlmCodecUtils;
 import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.details.Connection;
@@ -136,7 +136,7 @@ public class SmbClientConnection implements Connection {
 
             @Override
             protected void initChannel(final Channel channel) throws Exception {
-                channel.pipeline().addLast(new SmbClientCodec(connDetails), handler, errorHandler);
+                channel.pipeline().addLast(new Smb2ClientCodec(connDetails), handler, errorHandler);
                 channel.closeFuture().addListener(cf -> onClose());
                 channel.config().setMessageSizeEstimator(new MessageSizeEstimator() {
                     @Override

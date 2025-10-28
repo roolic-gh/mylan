@@ -16,11 +16,12 @@
 package local.transport.netty.smb.protocol.smb2;
 
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbRequestMessage;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.spnego.NegToken;
 
-public class Smb2SessionSetupRequest implements SmbRequestMessage {
+public class Smb2SessionSetupRequest extends Smb2Request {
 
     private Flags<Smb2SessionRequestFlags> sessionFlags;
     private Flags<Smb2NegotiateFlags> securityMode;
@@ -28,9 +29,16 @@ public class Smb2SessionSetupRequest implements SmbRequestMessage {
     private long previousSessionId;
     private NegToken token;
 
+    public Smb2SessionSetupRequest() {
+    }
+
+    public Smb2SessionSetupRequest(final Smb2Header header) {
+        super(header);
+    }
+
     @Override
-    public SmbCommand command() {
-        return SmbCommand.SMB2_SESSION_SETUP;
+    protected Smb2Command command() {
+        return Smb2Command.SMB2_SESSION_SETUP;
     }
 
     public Flags<Smb2SessionRequestFlags> sessionFlags() {

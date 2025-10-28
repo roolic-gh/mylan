@@ -16,11 +16,11 @@
 package local.transport.netty.smb.protocol.flows;
 
 import java.util.function.Consumer;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 
 @FunctionalInterface
 public interface RequestSender {
 
-    void send(SmbRequest request, Consumer<SmbResponse> callback);
+    void send(Smb2Request request, Consumer<Smb2Response> callback);
 }

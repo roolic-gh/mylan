@@ -20,15 +20,15 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.function.Consumer;
-import local.transport.netty.smb.protocol.SmbRequest;
-import local.transport.netty.smb.protocol.SmbResponse;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
 import local.transport.netty.smb.protocol.flows.AuthMechanism;
 import local.transport.netty.smb.protocol.flows.ClientLogoffFlow;
 import local.transport.netty.smb.protocol.flows.ClientSessionSetupFlow;
 import local.transport.netty.smb.protocol.flows.RequestSender;
-import local.transport.netty.smb.protocol.smb2.Smb2Header;
 
 public class SmbClientSession implements Session, RequestSender {
 
@@ -53,7 +53,7 @@ public class SmbClientSession implements Session, RequestSender {
     }
 
     @Override
-    public void send(final SmbRequest request, final Consumer<SmbResponse> callback) {
+    public void send(final Smb2Request request, final Consumer<Smb2Response> callback) {
         if (request.header() instanceof Smb2Header head) {
             final var sessionId = sessDetails.sessionId();
             head.setSessionId(sessionId == null ? 0 : sessionId);

@@ -17,8 +17,7 @@ package local.transport.netty.smb.protocol.flows;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import local.transport.netty.smb.protocol.ClientFlow;
-import local.transport.netty.smb.protocol.SmbRequest;
+import local.transport.netty.smb.protocol.Smb2Request;
 
 abstract class AbstractClientFlow<T> implements ClientFlow<T> {
 
@@ -34,11 +33,11 @@ abstract class AbstractClientFlow<T> implements ClientFlow<T> {
         sendRequest(initialRequest());
     }
 
-    protected void sendRequest(SmbRequest request){
+    protected void sendRequest(Smb2Request request){
         requestSender.send(initialRequest(), this::handleResponse);
     }
 
-    protected abstract SmbRequest initialRequest();
+    protected abstract Smb2Request initialRequest();
 
     @Override
     public boolean isComplete() {

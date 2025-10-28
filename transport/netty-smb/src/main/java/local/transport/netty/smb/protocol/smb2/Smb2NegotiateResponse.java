@@ -17,17 +17,18 @@ package local.transport.netty.smb.protocol.smb2;
 
 import java.util.UUID;
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbDialect;
-import local.transport.netty.smb.protocol.SmbResponseMessage;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Dialect;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.spnego.NegToken;
 
 /**
  *  SMB2 Negotiate response. Addresses MS-SMB2 (#2.2.4 SMB2 NEGOTIATE Response).
  */
-public class Smb2NegotiateResponse implements SmbResponseMessage {
+public class Smb2NegotiateResponse extends Smb2Response {
 
-    private SmbDialect dialectRevision;
+    private Smb2Dialect dialectRevision;
     private Flags<Smb2NegotiateFlags> securityMode;
     private Flags<Smb2CapabilitiesFlags> capabilities;
     private int maxTransactSize;
@@ -39,16 +40,23 @@ public class Smb2NegotiateResponse implements SmbResponseMessage {
 
     private NegToken token;
 
-    @Override
-    public SmbCommand command() {
-        return SmbCommand.SMB2_NEGOTIATE;
+    public Smb2NegotiateResponse() {
     }
 
-    public SmbDialect dialectRevision() {
+    public Smb2NegotiateResponse(final Smb2Header header) {
+        super(header);
+    }
+
+    @Override
+    protected Smb2Command command() {
+        return Smb2Command.SMB2_NEGOTIATE;
+    }
+
+    public Smb2Dialect dialectRevision() {
         return dialectRevision;
     }
 
-    public void setDialectRevision(final SmbDialect dialectRevision) {
+    public void setDialectRevision(final Smb2Dialect dialectRevision) {
         this.dialectRevision = dialectRevision;
     }
 

@@ -16,17 +16,25 @@
 package local.transport.netty.smb.protocol.smb2;
 
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbCommand;
-import local.transport.netty.smb.protocol.SmbResponseMessage;
+import local.transport.netty.smb.protocol.Smb2Command;
+import local.transport.netty.smb.protocol.Smb2Header;
+import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.spnego.NegToken;
 
-public class Smb2SessionSetupResponse implements SmbResponseMessage {
+public class Smb2SessionSetupResponse extends Smb2Response {
     private Flags<Smb2SessionResponseFlags> sessionFlags;
     private NegToken token;
 
+    public Smb2SessionSetupResponse() {
+    }
+
+    public Smb2SessionSetupResponse(final Smb2Header header) {
+        super(header);
+    }
+
     @Override
-    public SmbCommand command() {
-        return SmbCommand.SMB2_SESSION_SETUP;
+    protected Smb2Command command() {
+        return Smb2Command.SMB2_SESSION_SETUP;
     }
 
     public Flags<Smb2SessionResponseFlags> sessionFlags() {

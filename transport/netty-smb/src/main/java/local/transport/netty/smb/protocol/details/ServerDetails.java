@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import local.transport.netty.smb.protocol.Flags;
-import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.Smb2Dialect;
 import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
 
@@ -30,7 +30,7 @@ import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
  */
 public class ServerDetails {
     private UUID serverGuid;
-    private SmbDialect dialectRevision;
+    private Smb2Dialect dialectRevision;
     private Flags<Smb2CapabilitiesFlags> capabilities;
     private Flags<Smb2NegotiateFlags> securityMode;
     private final Set<SocketAddress> addresses = ConcurrentHashMap.newKeySet();
@@ -48,11 +48,11 @@ public class ServerDetails {
         this.serverGuid = serverGuid;
     }
 
-    public SmbDialect dialectRevision() {
+    public Smb2Dialect dialectRevision() {
         return dialectRevision;
     }
 
-    public void setDialectRevision(final SmbDialect dialectRevision) {
+    public void setDialectRevision(final Smb2Dialect dialectRevision) {
         this.dialectRevision = dialectRevision;
     }
 

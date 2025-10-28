@@ -17,7 +17,7 @@ package local.transport.netty.smb;
 
 import local.mylan.common.annotations.conf.ConfFile;
 import local.mylan.common.annotations.conf.ConfProperty;
-import local.transport.netty.smb.protocol.SmbDialect;
+import local.transport.netty.smb.protocol.Smb2Dialect;
 
 @ConfFile("smb-client.conf")
 public @interface SmbClientConf {
@@ -78,9 +78,9 @@ public @interface SmbClientConf {
     int setupCreditsRequest() default 128;
 
     @ConfProperty("smb.client.dialect.min")
-    SmbDialect smbDialectMin() default SmbDialect.SMB2_0_2;
+    Smb2Dialect smbDialectMin() default Smb2Dialect.SMB2_0_2;
 
     @ConfProperty("smb.client.dialect.max")
-    SmbDialect smbDialectMax() default SmbDialect.SMB3_0;
+    Smb2Dialect smbDialectMax() default Smb2Dialect.SMB3_0;
 
 }
