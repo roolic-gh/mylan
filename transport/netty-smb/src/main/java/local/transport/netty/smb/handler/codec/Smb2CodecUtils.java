@@ -110,7 +110,10 @@ public final class Smb2CodecUtils {
 
     private static Smb2Header decodeHeader(final ByteBuf byteBuf, final CodecContext ctx) {
         final var header = new Smb2Header();
-        // protocol version is already read
+        final var protocolVer = ProtocolVersion.fromCode(byteBuf.readIntLE());
+        if (protocolVer != ProtocolVersion.SMB2) {
+            throw new SmbException("Unsupported protocol version: " + protocolVer);
+        }
         final var length = byteBuf.readUnsignedShortLE(); // todo check expected constant is 64 always
         if (ctx.dialect().equalsOrHigher(Smb2Dialect.SMB2_1)) {
             header.setCreditCharge(byteBuf.readUnsignedShortLE());
