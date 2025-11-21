@@ -17,11 +17,13 @@ package local.mylan.common.utils;
 
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -43,11 +45,26 @@ public final class ConfUtils {
         // utility class
     }
 
+    public static <T extends Annotation> T loadConfiguration(final Class<T> confClass) {
+        LOG.debug("Using default configuration of type {}", confClass);
+        return loadConfiguration(confClass, new Properties());
+    }
+
     public static <T extends Annotation> T loadConfiguration(final Class<T> confClass, final Path confPath) {
         LOG.info("Loading configuration of type {} from {}", confClass, confPath);
         final var filename = confClass.getAnnotation(ConfFile.class);
         final var props = confPath != null && Files.isDirectory(confPath) && filename != null
             ? loadProperties(confPath.resolve(filename.value())) : loadProperties(confPath);
+        return loadConfiguration(confClass, props);
+    }
+
+    public static <T extends Annotation> T loadConfiguration(final Class<T> confClass, final String propsAsString) {
+        final var props = new Properties();
+        try (var in = new ByteArrayInputStream(propsAsString.getBytes(StandardCharsets.UTF_8))) {
+            props.load(in);
+        } catch (IOException e) {
+            LOG.warn("Error loading properties from string input", e);
+        }
         return loadConfiguration(confClass, props);
     }
 

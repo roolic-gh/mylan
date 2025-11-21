@@ -53,19 +53,29 @@ class ConfUtilsTest {
     private static final String ENUM_PROP_KEY = "test.prop.enum";
     private static final String CUSTOM_PROP_FILENAME = "custom.properties";
 
+    private static final String PARTIAL_CONTENT =  """
+            test.prop.int = 202
+            test.prop.float = 2.2""";
+
+    private static final String CUSTOM_CONTENT = """
+            test.prop.str = str-custom
+            test.prop.int = 202
+            test.prop.float = 2.2
+            test.prop.bool = true
+            test.prop.enum = CUSTOM""";
+
     @TempDir
     static Path confDir;
+
+    @Test
+    void confDefaults() {
+        assertAllDefaults(ConfUtils.loadConfiguration(TestConfig.class));
+    }
 
     @ParameterizedTest
     @MethodSource
     void loadConfDefaults(final Path filePath) {
-        final var conf = ConfUtils.loadConfiguration(TestConfig.class, filePath);
-        assertNotNull(conf);
-        assertEquals(STR_PROP_DEFAULT, conf.stingProp());
-        assertEquals(INT_PROP_DEFAULT, conf.intProp());
-        assertEquals(FLOAT_PROP_DEFAULT, conf.floatProp());
-        assertEquals(BOOL_PROP_DEFAULT, conf.booleanProp());
-        assertEquals(TestEnum.DEFAULT, conf.enumProp());
+        assertAllDefaults(ConfUtils.loadConfiguration(TestConfig.class, filePath));
     }
 
     private static Stream<Path> loadConfDefaults() throws IOException {
@@ -74,16 +84,32 @@ class ConfUtilsTest {
         return Stream.of(null, noFile, emptyFile);
     }
 
+    private static void assertAllDefaults(final TestConfig conf) {
+        assertNotNull(conf);
+        assertEquals(STR_PROP_DEFAULT, conf.stingProp());
+        assertEquals(INT_PROP_DEFAULT, conf.intProp());
+        assertEquals(FLOAT_PROP_DEFAULT, conf.floatProp());
+        assertEquals(BOOL_PROP_DEFAULT, conf.booleanProp());
+        assertEquals(TestEnum.DEFAULT, conf.enumProp());
+    }
+
+    @Test
+    void readConfCustom() throws IOException {
+        assertAllCustom(ConfUtils.loadConfiguration(TestConfig.class, CUSTOM_CONTENT));
+    }
+
     @ParameterizedTest
     @MethodSource
     void loadConfCustom(final Path confPath) throws IOException {
-        createConfFile(CUSTOM_PROP_FILENAME, """
-            test.prop.str = str-custom
-            test.prop.int = 202
-            test.prop.float = 2.2
-            test.prop.bool = true
-            test.prop.enum = CUSTOM""");
-        final var conf = ConfUtils.loadConfiguration(TestConfig.class, confPath);
+        createConfFile(CUSTOM_PROP_FILENAME, CUSTOM_CONTENT);
+        assertAllCustom(ConfUtils.loadConfiguration(TestConfig.class, confPath));
+    }
+
+    private static Stream<Path> loadConfCustom(){
+        return Stream.of(confDir, confDir.resolve(CUSTOM_PROP_FILENAME));
+    }
+
+    private static void assertAllCustom(final TestConfig conf) {
         assertNotNull(conf);
         assertEquals(STR_PROP_CUSTOM, conf.stingProp());
         assertEquals(INT_PROP_CUSTOM, conf.intProp());
@@ -92,16 +118,18 @@ class ConfUtilsTest {
         assertEquals(TestEnum.CUSTOM, conf.enumProp());
     }
 
-    private static Stream<Path> loadConfCustom(){
-        return Stream.of(confDir, confDir.resolve(CUSTOM_PROP_FILENAME));
+    @Test
+    void readConfPartialOverride() throws IOException {
+        assertPartial(ConfUtils.loadConfiguration(TestConfig.class, PARTIAL_CONTENT));
     }
 
     @Test
     void loadConfPartialOverride() throws IOException {
-        final var confPath = createConfFile("partial.properties", """
-            test.prop.int = 202
-            test.prop.float = 2.2""");
-        final var conf = ConfUtils.loadConfiguration(TestConfig.class, confPath);
+        final var confPath = createConfFile("partial.properties", PARTIAL_CONTENT);
+        assertPartial(ConfUtils.loadConfiguration(TestConfig.class, confPath));
+    }
+
+    private static void assertPartial(final TestConfig conf) {
         assertNotNull(conf);
         assertEquals(STR_PROP_DEFAULT, conf.stingProp());
         assertEquals(INT_PROP_CUSTOM, conf.intProp());
