@@ -19,12 +19,19 @@ import io.netty.buffer.ByteBuf;
 import local.transport.netty.smb.handler.codec.Smb2CodecUtils;
 import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.Smb2Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Smb2ServerCodec extends Smb2Codec<Smb2Request, Smb2Response> {
+    private static final Logger LOG = LoggerFactory.getLogger(Smb2ServerCodec.class);
 
     @Override
-    void encode(final Smb2Response outObj, final ByteBuf byteBuf) {
-        Smb2CodecUtils.encodeResponse(outObj, byteBuf, null);
+    void encode(final Smb2Response response, final ByteBuf byteBuf) {
+        try {
+            Smb2CodecUtils.encodeResponse(response, byteBuf, null);
+        } catch(Exception e){
+            LOG.error("Exception on encoding response {}", response, e);
+        }
     }
 
     @Override

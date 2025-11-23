@@ -19,13 +19,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
-import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import local.mylan.common.utils.ConfUtils;
 import local.transport.netty.smb.protocol.details.Client;
 import local.transport.netty.smb.protocol.details.ClientDetails;
@@ -35,9 +34,6 @@ public class SmbClient implements Client {
     private final ClientDetails clientDetails = new ClientDetails();
     private final SmbClientConf clientConf;
     private final AtomicInteger nextConnectionId = new AtomicInteger(1);
-
-    @VisibleForTesting
-    Supplier<Bootstrap> bootstrapFactory;
 
     public SmbClient() {
         this((Path) null);
@@ -85,8 +81,12 @@ public class SmbClient implements Client {
     public ListenableFuture<Connection> connect(final SocketAddress address) {
         // TODO check existing connection in connections map by server address
         final var connection = new SmbClientConnection(nextConnectionId.incrementAndGet(), this);
-        connection.bootstrapFactory = bootstrapFactory;
         return connection.connect(address);
     }
 
+    @VisibleForTesting
+    ListenableFuture<Connection> connect(final Channel channel) {
+        final var connection = new SmbClientConnection(nextConnectionId.incrementAndGet(), this);
+        return connection.connect(channel);
+    }
 }

@@ -15,7 +15,6 @@
  */
 package local.transport.netty.smb;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,7 +38,6 @@ import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.SocketAddress;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import jdk.net.ExtendedSocketOptions;
 import local.transport.netty.smb.handler.Smb2ClientCodec;
 import local.transport.netty.smb.handler.Smb2ClientHandler;
@@ -56,8 +54,11 @@ import local.transport.netty.smb.protocol.flows.NtlmAuthMechanism;
 import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
 import local.transport.netty.smb.protocol.spnego.ntlm.NtlmVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SmbClientConnection implements Connection {
+    private static final Logger LOG = LoggerFactory.getLogger(SmbClientConnection.class);
     private final SmbClient client;
     private final ConnectionDetails connDetails;
     private final Smb2ClientHandler handler;
@@ -65,9 +66,6 @@ public class SmbClientConnection implements Connection {
 
     private EventLoopGroup group;
     private Channel nettyChannel;
-
-    @VisibleForTesting
-    Supplier<Bootstrap> bootstrapFactory;
 
     SmbClientConnection(final int connectionId, final SmbClient client) {
         this.client = client;
@@ -95,7 +93,29 @@ public class SmbClientConnection implements Connection {
                 client.details().serverToClientNotificationsSupported()));
     }
 
+    ListenableFuture<Connection> connect(final Channel channel) {
+        final var future = newConnectionFuture();
+        channel.pipeline().addLast(newChannelInitializer());
+        if (channel.isActive()) {
+            // trigger channel activation related logic if it's already active (EmbeddedChannel case)
+            channel.pipeline().fireChannelActive();
+        }
+        return future;
+    }
+
     ListenableFuture<Connection> connect(final SocketAddress address) {
+        final var future = newConnectionFuture();
+        newBootstrap()
+            .handler(newChannelInitializer())
+            .connect(address).addListener(result -> {
+                if (result.cause() != null) {
+                    future.setException(result.cause());
+                }
+            });
+        return future;
+    }
+
+    private SettableFuture<Connection> newConnectionFuture() {
         final var future = SettableFuture.<Connection>create();
         // on completion put active connection to map
         Futures.addCallback(future, new FutureCallback<Connection>() {
@@ -123,16 +143,19 @@ public class SmbClientConnection implements Connection {
                 future.setException(cause);
             }
         }, MoreExecutors.directExecutor());
+        return future;
+    }
 
+    private ChannelInitializer<Channel> newChannelInitializer() {
         final var errorHandler = new ChannelInboundHandlerAdapter() {
             @Override
             public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
                 super.exceptionCaught(ctx, cause);
+                // TODO proper exception handler
                 cause.printStackTrace(System.err);
             }
         };
-        final var bootstrap = bootstrapFactory == null ? newBootstrap() : bootstrapFactory.get();
-        bootstrap.handler(new ChannelInitializer<>() {
+        return new ChannelInitializer<>() {
 
             @Override
             protected void initChannel(final Channel channel) throws Exception {
@@ -150,14 +173,9 @@ public class SmbClientConnection implements Connection {
                     }
                 });
                 nettyChannel = channel;
+                LOG.debug("Channel {} initialized", channel);
             }
-        });
-        bootstrap.connect(address).addListener(result -> {
-            if (result.cause() != null) {
-                future.setException(result.cause());
-            }
-        });
-        return future;
+        };
     }
 
     private Bootstrap newBootstrap() {

@@ -20,9 +20,12 @@ import local.transport.netty.smb.handler.codec.Smb2CodecUtils;
 import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Smb2ClientCodec extends Smb2Codec<Smb2Response, Smb2Request> {
-    final ConnectionDetails details;
+    private static final Logger LOG = LoggerFactory.getLogger(Smb2ClientCodec.class);
+    private final ConnectionDetails details;
 
     public Smb2ClientCodec(final ConnectionDetails details) {
         this.details = details;
@@ -33,7 +36,7 @@ public class Smb2ClientCodec extends Smb2Codec<Smb2Response, Smb2Request> {
         try {
             Smb2CodecUtils.encodeRequest(request, byteBuf, details.dialect());
         } catch(Exception e){
-            e.printStackTrace();
+            LOG.error("Error encoding request {}", request, e);
         }
     }
 

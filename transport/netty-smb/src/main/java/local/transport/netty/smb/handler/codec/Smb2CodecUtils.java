@@ -257,11 +257,11 @@ public final class Smb2CodecUtils {
         response.setMaxTransactSize(byteBuf.readIntLE());
         response.setMaxReadSize(byteBuf.readIntLE());
         response.setMaxWriteSize(byteBuf.readIntLE());
-        response.setSystemTime(Utils.unixMillisFromFiletime(byteBuf.readLongLE()));
-        response.setServerStartTime(Utils.unixMillisFromFiletime(byteBuf.readLongLE()));
-        final var securityBufPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
-        final var securityBuflength = byteBuf.readUnsignedShortLE();
-        response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(securityBufPos, securityBuflength)));
+        response.setSystemTime(byteBuf.readLongLE());
+        response.setServerStartTime(byteBuf.readLongLE());
+        final var tokenDataPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
+        final var tokenDatalength = byteBuf.readUnsignedShortLE();
+        response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(tokenDataPos, tokenDatalength)));
         if (response.dialectRevision().equalsOrHigher(Smb2Dialect.SMB3_1_1)) {
             final var negCtxsPos = ctx.headerStartPosition() + byteBuf.readIntLE();
             // todo read contexts
@@ -271,6 +271,25 @@ public final class Smb2CodecUtils {
 
     private static void encodeNegotiateResponse(final ByteBuf byteBuf, final Smb2NegotiateResponse response,
         final CodecContext ctx) {
+
+        byteBuf.writeShortLE(65); // struct size constant
+        byteBuf.writeShortLE(response.securityMode().asIntValue());
+        byteBuf.writeShortLE(response.dialectRevision().code());
+        byteBuf.writeZero(2); // todo set context count for SMB 3.1.1
+        Utils.writeGuid(byteBuf, response.serverGuid());
+        byteBuf.writeIntLE(response.capabilities().asIntValue());
+        byteBuf.writeIntLE(response.maxTransactSize());
+        byteBuf.writeIntLE(response.maxReadSize());
+        byteBuf.writeIntLE(response.maxWriteSize());
+        byteBuf.writeLongLE(response.systemTime());
+        byteBuf.writeLongLE(response.serverStartTime());
+
+        final var tokenRefPos = prepareFieldRef(byteBuf);
+        final var negCtxRefPos = prepareFieldRef(byteBuf);
+        writeField(byteBuf, tokenRefPos, ctx, () -> SpnegoCodecUtils.encodeNegToken(byteBuf, response.token()));
+        if (response.dialectRevision().equalsOrHigher(Smb2Dialect.SMB3_1_1)) {
+            // todo write negotiate contexts
+        }
     }
 
     // SESSION_SETUP Request (MS-SMB2 #2.2.5)
@@ -284,10 +303,10 @@ public final class Smb2CodecUtils {
         request.setSecurityMode(new Flags<>(byteBuf.readUnsignedByte()));
         request.setCapabilities(new Flags<>(byteBuf.readIntLE()));
         byteBuf.skipBytes(4); // channel, reserved and must ignored by spec
-        final var bufferPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
-        final var bufferlength = byteBuf.readUnsignedShortLE();
+        final var tokenPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
+        final var tokenLength = byteBuf.readUnsignedShortLE();
         request.setPreviousSessionId(byteBuf.readLongLE());
-        request.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(bufferPos, bufferlength)));
+        request.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(tokenPos, tokenLength)));
         return request;
     }
 
@@ -299,13 +318,9 @@ public final class Smb2CodecUtils {
         byteBuf.writeByte(request.securityMode().asIntValue());
         byteBuf.writeIntLE(request.capabilities().asIntValue());
         byteBuf.writeIntLE(0); // channel, reserved
-        final var bufferRefPos = byteBuf.writerIndex();
-        byteBuf.writeIntLE(0); // reserve space for buffer reference data
+        final var tokenRefPos = prepareFieldRef(byteBuf);
         byteBuf.writeLongLE(request.previousSessionId());
-        final var bufferPos = byteBuf.writerIndex();
-        SpnegoCodecUtils.encodeNegToken(byteBuf, request.token());
-        byteBuf.setShortLE(bufferRefPos, bufferPos - ctx.headerStartPosition()); // buffer offset
-        byteBuf.setShortLE(bufferRefPos + 2, byteBuf.writerIndex() - bufferPos); // buffer length
+        writeField(byteBuf, tokenRefPos, ctx, () -> SpnegoCodecUtils.encodeNegToken(byteBuf, request.token()));
     }
 
     // SESSION_SETUP Response (MS-SMB2 #2.2.6)
@@ -316,9 +331,9 @@ public final class Smb2CodecUtils {
         final var response = new Smb2SessionSetupResponse(header);
         final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 9
         response.setSessionFlags(new Flags<>(byteBuf.readUnsignedShortLE()));
-        final var bufferPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
-        final var bufferlength = byteBuf.readUnsignedShortLE();
-        response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(bufferPos, bufferlength)));
+        final var tokenPos = ctx.headerStartPosition() + byteBuf.readUnsignedShortLE();
+        final var tokenLength = byteBuf.readUnsignedShortLE();
+        response.setToken(SpnegoCodecUtils.decodeNegToken(byteBuf.slice(tokenPos, tokenLength)));
         return response;
     }
 
@@ -327,11 +342,23 @@ public final class Smb2CodecUtils {
 
         byteBuf.writeShortLE(9); // structure size, constant value
         byteBuf.writeShortLE(response.sessionFlags().asIntValue());
-        final var bufferRefPos = byteBuf.writerIndex();
-        byteBuf.writeIntLE(0); // reserve space for buffer reference data
-        final var bufferPos = byteBuf.writerIndex();
-        SpnegoCodecUtils.encodeNegToken(byteBuf, response.token());
-        byteBuf.setShortLE(bufferRefPos, bufferPos - ctx.headerStartPosition()); // buffer offset
-        byteBuf.setShortLE(bufferRefPos + 2, byteBuf.writerIndex() - bufferPos); // buffer length
+        final var tokenRefPos = prepareFieldRef(byteBuf);
+        writeField(byteBuf, tokenRefPos, ctx, () -> SpnegoCodecUtils.encodeNegToken(byteBuf, response.token()));
     }
+
+    private static int prepareFieldRef(final ByteBuf byteBuf){
+        final var refPos = byteBuf.writerIndex();
+        byteBuf.writeZero(4); // reserve space for reference
+        return refPos;
+    }
+
+    private static void writeField(final ByteBuf byteBuf, final int refPos, final CodecContext ctx,
+        final Runnable dataEncoder) {
+
+        final var startPos = byteBuf.writerIndex();
+        dataEncoder.run();
+        byteBuf.setShortLE(refPos, startPos - ctx.headerStartPosition()); // data offset
+        byteBuf.setShortLE(refPos + 2, byteBuf.writerIndex() - startPos); // data length
+    }
+
 }
