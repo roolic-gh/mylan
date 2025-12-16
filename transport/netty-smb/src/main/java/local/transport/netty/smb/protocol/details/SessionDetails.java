@@ -36,17 +36,20 @@ public class SessionDetails {
     private boolean guest;
 
     //SMB 3.x +
-    Set<ChannelDetails> channels;
-    String channelSequence;
-    boolean encryptData;
-    byte[] encryptionKey;
-    byte[] decryptionKey;
-    byte[] signingKey;
-    byte[] applicationKey;
+    private Set<ChannelDetails> channels;
+    private String channelSequence;
+    private boolean encryptData;
+    private byte[] encryptionKey;
+    private byte[] decryptionKey;
+    private byte[] signingKey;
+    private byte[] applicationKey;
 
     // SMB 3.1.1 +
-    byte[] preauthIntegrityHashValue;
-    byte[] fullSessionKey;
+    private byte[] preauthIntegrityHashValue;
+    private byte[] fullSessionKey;
+
+    // Non-spec
+    private Long previousSessionId;
 
     public Long sessionId() {
         return sessionId;
@@ -54,6 +57,14 @@ public class SessionDetails {
 
     public void setSessionId(final Long sessionId) {
         this.sessionId = sessionId;
+    }
+
+    public Long previousSessionId() {
+        return previousSessionId;
+    }
+
+    public void setPreviousSessionId(final Long previousSessionId) {
+        this.previousSessionId = previousSessionId;
     }
 
     public Map<String, TreeConnect> treeConnects() {
@@ -68,12 +79,68 @@ public class SessionDetails {
         this.sessionKey = sessionKey;
     }
 
+    public byte[] signingKey() {
+        return signingKey;
+    }
+
+    public void setSigningKey(final byte[] signingKey) {
+        this.signingKey = signingKey;
+    }
+
     public boolean signingRequired() {
         return signingRequired;
     }
 
     public void setSigningRequired(final boolean signingRequired) {
         this.signingRequired = signingRequired;
+    }
+
+    public boolean encryptData() {
+        return encryptData;
+    }
+
+    public void setEncryptData(final boolean encryptData) {
+        this.encryptData = encryptData;
+    }
+
+    public byte[] encryptionKey() {
+        return encryptionKey;
+    }
+
+    public void setEncryptionKey(final byte[] encryptionKey) {
+        this.encryptionKey = encryptionKey;
+    }
+
+    public byte[] decryptionKey() {
+        return decryptionKey;
+    }
+
+    public void setDecryptionKey(final byte[] decryptionKey) {
+        this.decryptionKey = decryptionKey;
+    }
+
+    public byte[] applicationKey() {
+        return applicationKey;
+    }
+
+    public void setApplicationKey(final byte[] applicationKey) {
+        this.applicationKey = applicationKey;
+    }
+
+    public byte[] preauthIntegrityHashValue() {
+        return preauthIntegrityHashValue;
+    }
+
+    public void setPreauthIntegrityHashValue(final byte[] preauthIntegrityHashValue) {
+        this.preauthIntegrityHashValue = preauthIntegrityHashValue;
+    }
+
+    public byte[] fullSessionKey() {
+        return fullSessionKey;
+    }
+
+    public void setFullSessionKey(final byte[] fullSessionKey) {
+        this.fullSessionKey = fullSessionKey;
     }
 
     public Connection connection() {

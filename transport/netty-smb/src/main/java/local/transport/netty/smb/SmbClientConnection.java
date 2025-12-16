@@ -240,12 +240,18 @@ public class SmbClientConnection implements Connection {
 
     @Override
     public ListenableFuture<Session> bindSession(final Session session) {
+        // FIXME set session id to previousSessionId
         return setupSession(session.details());
     }
 
     private SessionDetails newSessionDetails(final Consumer<SessionDetails> configurator) {
         final var sessDetails = new SessionDetails();
         sessDetails.setConnection(this);
+        // FIXME should be part of SessionSetupFlow
+        final var serverSec = connDetails.server().securityMode();
+        sessDetails.setSigningRequired(
+            connDetails.clientSecurityMode().get(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED)
+                || serverSec != null && serverSec.get(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED));
         configurator.accept(sessDetails);
         return sessDetails;
     }

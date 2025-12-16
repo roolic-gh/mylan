@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.Smb2Dialect;
+import local.transport.netty.smb.protocol.Smb2PacketSigner;
 import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.smb2.Smb2CapabilitiesFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
@@ -37,6 +38,7 @@ public class ConnectionDetails {
 
     final Map<Long, Session> sessions = new ConcurrentHashMap<>();
     final Map<Long, Session> preauthSessions = new ConcurrentHashMap<>();
+    final Map<Long, Smb2PacketSigner> packetSigners = new ConcurrentHashMap<>();
     final Queue<Smb2Request> pendingRequests = new ConcurrentLinkedDeque<>();
     final SequenceWindow sequenceWindow = new SequenceWindow(); // messageId sequencer
 
@@ -92,6 +94,10 @@ public class ConnectionDetails {
 
     public Map<Long, Session> preauthSessions() {
         return preauthSessions;
+    }
+
+    public Map<Long, Smb2PacketSigner> packetSigners() {
+        return packetSigners;
     }
 
     public Queue<Smb2Request> pendingRequests() {

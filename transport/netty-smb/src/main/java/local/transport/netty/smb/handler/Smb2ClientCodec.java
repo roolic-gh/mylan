@@ -34,14 +34,27 @@ public class Smb2ClientCodec extends Smb2Codec<Smb2Response, Smb2Request> {
     @Override
     void encode(final Smb2Request request, final ByteBuf byteBuf) {
         try {
+            final var startPos = byteBuf.writerIndex();
             Smb2CodecUtils.encodeRequest(request, byteBuf, details.dialect());
-        } catch(Exception e){
+            final var signer = details.packetSigners().get(request.header().sessionId());
+            if (signer != null) {
+                signer.signOutbound(byteBuf.slice(startPos, byteBuf.writerIndex() - startPos));
+            }
+        } catch (Exception e) {
             LOG.error("Error encoding request {}", request, e);
         }
     }
 
     @Override
     Smb2Response decode(final ByteBuf byteBuf) {
-        return Smb2CodecUtils.decodeResponse(byteBuf, details.dialect());
+        final var startPos = byteBuf.readerIndex();
+        final var length = byteBuf.readableBytes();
+        final var response = Smb2CodecUtils.decodeResponse(byteBuf, details.dialect());
+        final var signer = details.packetSigners().get(response.header().sessionId());
+        if (signer != null) {
+            // TODO handle verification result
+            signer.verifyInboundSignature(byteBuf.slice(startPos, length));
+        }
+        return response;
     }
 }

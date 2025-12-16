@@ -29,12 +29,18 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
 import local.transport.netty.smb.protocol.SmbException;
+import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.KDFCounterParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public final class SecurityUtils {
 
     private static final Provider BC = new BouncyCastleProvider();
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int R = 32;
+    private static final int L_ENC_BYTES = 4;
 
     private SecurityUtils() {
         // utility class
@@ -127,10 +133,14 @@ public final class SecurityUtils {
         }
     }
 
-    private static Mac macInstance(final String algorithm, final byte[] key) {
+    public static Mac macInstance(final String algorithm, final byte[] key) {
+        return macInstance(algorithm, algorithm, key);
+    }
+
+    public static Mac macInstance(final String algorithm, final String keyAlgotithm, final byte[] key) {
         try {
             final var mac = Mac.getInstance(algorithm, BC);
-            mac.init(new SecretKeySpec(key, algorithm));
+            mac.init(new SecretKeySpec(key, keyAlgotithm));
             return mac;
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new SmbException("Invalid mac algorithm", e);
@@ -174,5 +184,28 @@ public final class SecurityUtils {
             }
             default -> throw new IllegalArgumentException("DES key has invalid length");
         };
+    }
+
+    /**
+     * Key Deriviation Function (KDF) in Counter Mode.
+     * Addresses MS-SMB2 (#3.1.4.2 Generating Cryptographic Keys), referencing NIST SP 800-108.
+     */
+    public static byte[] kdfcm(final byte[] key, final byte[] label, final byte[] context, final int l) {
+        // R = 32 bits (4 bytes)
+        // fixed input is "Label || 0x00 || Context || [L]_2",
+        // where [L]_2 is binary representation of L (R bytes encoded hi-ended)
+
+        final var fixedInput = new byte[label.length + 1 + context.length + 4];
+        final var fixedInputBuf = Unpooled.wrappedBuffer(fixedInput);
+        System.arraycopy(label, 0, fixedInput, 0, label.length);
+        System.arraycopy(context, 0, fixedInput, label.length + 1, context.length);
+        fixedInput[fixedInput.length - 1] = (byte) l;
+
+        final var kdfGen = new KDFCounterBytesGenerator(new HMac(new SHA256Digest()));
+        kdfGen.init(new KDFCounterParameters(key, fixedInput, 32));
+
+        final var output = new byte[l / 8];
+        kdfGen.generateBytes(output, 0, output.length);
+        return output;
     }
 }

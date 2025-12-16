@@ -160,6 +160,11 @@ public class NtlmAuthMechanism implements AuthMechanism {
         return true;
     }
 
+    @Override
+    public byte[] sessionKey() {
+        return details.exportedSessionKey();
+    }
+
     private void extractServerName(final NtlmChallengeMessage challengeMsg) {
         final var serverDetails = sessDetails.connection() != null && sessDetails.connection().details() != null
             ? sessDetails.connection().details().server() : null;

@@ -29,4 +29,6 @@ public interface AuthMechanism {
     NegTokenResp next(NegToken response);
 
     boolean verify(NegToken response);
+
+    byte[] sessionKey();
 }
