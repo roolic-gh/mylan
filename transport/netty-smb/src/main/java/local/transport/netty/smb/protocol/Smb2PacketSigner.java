@@ -72,13 +72,13 @@ public final class Smb2PacketSigner {
     public boolean verifyInboundSignature(final ByteBuf byteBuf) {
         final var flags = new Flags<Smb2Flags>(byteBuf.getIntLE(FLAGS_OFFSET));
         if (!flags.get(Smb2Flags.SMB2_FLAGS_SIGNED)) {
-            LOG.warn("Inbound message is not signed.");
+            LOG.warn("Inbound message has no 'signed' flag expected.");
             return false;
         }
         final var signature = Utils.getByteArray(byteBuf, SIGNATURE_OFFSET, SIGNATURE_LENGTH);
         final var expected = getSignature(byteBuf, mac);
         if (!Arrays.equals(signature, expected)) {
-            LOG.warn("Invalid inbound signature");
+            LOG.warn("Invalid inbound message signature.");
             return false;
         }
         return true;
@@ -86,7 +86,6 @@ public final class Smb2PacketSigner {
 
     private static byte[] getSignature(final ByteBuf byteBuf, final Mac mac) {
         final var bytes = ByteBufUtil.getBytes(byteBuf);
-        LOG.info("packet.length {}", bytes.length);
         // ensure signature placeholder is empty
         System.arraycopy(EMPTY_SIGNATURE, 0, bytes, SIGNATURE_OFFSET, SIGNATURE_LENGTH);
         synchronized (mac) {

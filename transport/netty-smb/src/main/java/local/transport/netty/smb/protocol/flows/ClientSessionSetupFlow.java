@@ -30,7 +30,9 @@ import local.transport.netty.smb.protocol.SmbException;
 import local.transport.netty.smb.protocol.details.ConnectionDetails;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
+import local.transport.netty.smb.protocol.smb2.Smb2NegotiateFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionRequestFlags;
+import local.transport.netty.smb.protocol.smb2.Smb2SessionResponseFlags;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupResponse;
 import local.transport.netty.smb.protocol.spnego.NegToken;
@@ -91,7 +93,6 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
             sessDetails.setSessionId(response.header().sessionId());
             connDetails.preauthSessions().put(sessDetails.sessionId(), session);
             final var token = authMech.next(response.token());
-            setSessionKeys();
             requestSender.send(sessionSetupRequest(token), this::handleResponse);
             return;
         }
@@ -100,12 +101,37 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
             if (!authMech.verify(response.token())) {
                 throw new SmbException("Session setup completed but token verification failed.");
             }
+            // set session as authenticated
             connDetails.preauthSessions().remove(sessDetails.sessionId());
             connDetails.sessions().put(sessDetails.sessionId(), session);
+            // session keys
+            setSessionKeys();
+            // packet signing if required
+            final var serverSec = connDetails.server().securityMode();
+            sessDetails.setSigningRequired(
+                connDetails.clientSecurityMode().get(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED)
+                    || serverSec != null && serverSec.get(Smb2NegotiateFlags.SMB2_NEGOTIATE_SIGNING_REQUIRED));
+            if (response.sessionFlags().get(Smb2SessionResponseFlags.SMB2_SESSION_FLAG_IS_NULL)) {
+                sessDetails.setAnonymous(true);
+                sessDetails.setSigningRequired(false);
+            }
+            if (response.sessionFlags().get(Smb2SessionResponseFlags.SMB2_SESSION_FLAG_IS_GUEST)) {
+                sessDetails.setAnonymous(true);
+                sessDetails.setSigningRequired(false);
+            }
+            // encryption
+            if (connDetails.dialect().equalsOrHigher(Smb2Dialect.SMB3_0)
+                && response.sessionFlags().get(Smb2SessionResponseFlags.SMB2_SESSION_FLAG_ENCRYPT_DATA)) {
+                sessDetails.setEncryptData(true);
+                sessDetails.setSigningRequired(false);
+                // TODO encryption keys etc
+            }
+            // assign packet signer for session
             if (sessDetails.signingRequired()) {
                 final var signer = new Smb2PacketSigner(connDetails.dialect(), sessDetails);
                 connDetails.packetSigners().put(sessDetails.sessionId(), signer);
             }
+            sessDetails.opens().clear();
             completeFuture.set(session);
             return;
         }
