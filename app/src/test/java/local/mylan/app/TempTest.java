@@ -33,8 +33,10 @@ class SmbTest {
         final var conn = client.connect(InetAddress.getByName("192.168.1.69")).get(5, TimeUnit.SECONDS);
         final var creds = UserCredentials.plaintext("test","test");
         final var sess = conn.newSession(creds).get(5, TimeUnit.SECONDS);
-        sess.close().get();
-        conn.close().get();
+        final var tree = sess.connectShare("IPC$").get(5, TimeUnit.SECONDS);
+        tree.disconnect().get(5, TimeUnit.SECONDS);
+        sess.close().get(5, TimeUnit.SECONDS);
+        conn.close().get(5, TimeUnit.SECONDS);
     }
 
     @Test

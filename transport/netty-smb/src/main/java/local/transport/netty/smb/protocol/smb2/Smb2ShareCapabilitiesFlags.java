@@ -15,24 +15,28 @@
  */
 package local.transport.netty.smb.protocol.smb2;
 
-import local.transport.netty.smb.protocol.Smb2Command;
-import local.transport.netty.smb.protocol.Smb2Header;
-import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Flags;
 
 /**
- * SMB2 Logoff Request. Addresses MS-SMB2 (#2.2.7 SMB2 LOGOFF Request).
+ * Share Capabilities Enum. Addresses MS-SMB2 (#2.2.10 SMB2 TREE_CONNECT Response).
  */
-public class Smb2LogoffRequest extends Smb2Request {
+public enum Smb2ShareCapabilitiesFlags implements Flags.BitMaskProvider {
 
-    public Smb2LogoffRequest() {
-    }
+    SMB2_SHARE_CAP_DFS(0x00000008),
+    SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY(0x00000010),
+    SMB2_SHARE_CAP_SCALEOUT(0x00000020),
+    SMB2_SHARE_CAP_CLUSTER(0x00000040),
+    SMB2_SHARE_CAP_ASYMMETRIC(0x00000080),
+    SMB2_SHARE_CAP_REDIRECT_TO_OWNER(0x00000100);
 
-    public Smb2LogoffRequest(final Smb2Header header) {
-        super(header);
+    private final int mask;
+
+    Smb2ShareCapabilitiesFlags(int mask) {
+        this.mask = mask;
     }
 
     @Override
-    protected Smb2Command command() {
-        return Smb2Command.SMB2_LOGOFF;
+    public int mask() {
+        return mask;
     }
 }

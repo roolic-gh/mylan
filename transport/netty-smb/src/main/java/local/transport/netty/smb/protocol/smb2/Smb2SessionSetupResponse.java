@@ -21,6 +21,9 @@ import local.transport.netty.smb.protocol.Smb2Header;
 import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.spnego.NegToken;
 
+/**
+ * SMB2 Session Setup Request. Addresses MS-SMB2 (#2.2.6 SMB2 SESSION_SETUP Response).
+ */
 public class Smb2SessionSetupResponse extends Smb2Response {
     private Flags<Smb2SessionResponseFlags> sessionFlags;
     private NegToken token;

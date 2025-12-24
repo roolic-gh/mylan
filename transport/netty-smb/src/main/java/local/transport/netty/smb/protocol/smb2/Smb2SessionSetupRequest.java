@@ -21,6 +21,9 @@ import local.transport.netty.smb.protocol.Smb2Header;
 import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.spnego.NegToken;
 
+/**
+ * SMB2 Session Setup Request. Addresses MS-SMB2 (#2.2.5 SMB2 SESSION_SETUP Request).
+ */
 public class Smb2SessionSetupRequest extends Smb2Request {
 
     private Flags<Smb2SessionRequestFlags> sessionFlags;

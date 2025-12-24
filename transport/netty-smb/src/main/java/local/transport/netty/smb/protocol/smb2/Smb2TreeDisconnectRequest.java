@@ -20,19 +20,19 @@ import local.transport.netty.smb.protocol.Smb2Header;
 import local.transport.netty.smb.protocol.Smb2Request;
 
 /**
- * SMB2 Logoff Request. Addresses MS-SMB2 (#2.2.7 SMB2 LOGOFF Request).
+ * SMB2 Tree Disconnect Request. Addresses MS-SMB2 (#2.2.11 SMB2 TREE_DISCONNECT Request).
  */
-public class Smb2LogoffRequest extends Smb2Request {
+public final class Smb2TreeDisconnectRequest extends Smb2Request {
 
-    public Smb2LogoffRequest() {
+    public Smb2TreeDisconnectRequest() {
     }
 
-    public Smb2LogoffRequest(final Smb2Header header) {
+    public Smb2TreeDisconnectRequest(final Smb2Header header) {
         super(header);
     }
 
     @Override
-    protected Smb2Command command() {
-        return Smb2Command.SMB2_LOGOFF;
+    public Smb2Command command() {
+        return Smb2Command.SMB2_TREE_DISCONNECT;
     }
 }

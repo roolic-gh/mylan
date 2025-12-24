@@ -15,24 +15,30 @@
  */
 package local.transport.netty.smb.protocol.smb2;
 
-import local.transport.netty.smb.protocol.Smb2Command;
-import local.transport.netty.smb.protocol.Smb2Header;
-import local.transport.netty.smb.protocol.Smb2Request;
-
 /**
- * SMB2 Logoff Request. Addresses MS-SMB2 (#2.2.7 SMB2 LOGOFF Request).
+ * Share Types Enum. Addresses MS-SMB2 (#2.2.10 SMB2 TREE_CONNECT Response).
  */
-public class Smb2LogoffRequest extends Smb2Request {
+public enum Smb2ShareType {
+    SMB2_SHARE_TYPE_DISK(0x01),
+    SMB2_SHARE_TYPE_PIPE(0x02),
+    SMB2_SHARE_TYPE_PRINT(0x03);
 
-    public Smb2LogoffRequest() {
+    private int code;
+
+    Smb2ShareType(final int code) {
+        this.code = code;
     }
 
-    public Smb2LogoffRequest(final Smb2Header header) {
-        super(header);
+    public int code() {
+        return code;
     }
 
-    @Override
-    protected Smb2Command command() {
-        return Smb2Command.SMB2_LOGOFF;
+    public static Smb2ShareType fromCode(final int code) {
+        for (var st : values()) {
+            if (st.code == code) {
+                return st;
+            }
+        }
+        throw new IllegalArgumentException("Invalid code value " + code);
     }
 }

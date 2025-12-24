@@ -15,9 +15,15 @@
  */
 package local.transport.netty.smb.protocol.details;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 /**
  * Tree Connect Details. Addresses MS_SMB2 (3.2.1.4 Per Tree Connect).
  */
-public class TreeConnect {
+public interface TreeConnect {
+
+    TreeConnectDetails details();
+
+    ListenableFuture<Void> disconnect();
 
 }

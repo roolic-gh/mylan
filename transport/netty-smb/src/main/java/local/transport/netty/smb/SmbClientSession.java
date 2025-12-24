@@ -19,18 +19,19 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import java.util.List;
 import java.util.function.Consumer;
-import local.transport.netty.smb.protocol.Smb2Header;
 import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
+import local.transport.netty.smb.protocol.details.TreeConnect;
 import local.transport.netty.smb.protocol.flows.AuthMechanism;
 import local.transport.netty.smb.protocol.flows.ClientLogoffFlow;
 import local.transport.netty.smb.protocol.flows.ClientSessionSetupFlow;
 import local.transport.netty.smb.protocol.flows.RequestSender;
 
-public class SmbClientSession implements Session, RequestSender {
+public final class SmbClientSession implements Session, RequestSender {
 
     private final SessionDetails sessDetails;
     private final RequestSender requestSender;
@@ -46,7 +47,7 @@ public class SmbClientSession implements Session, RequestSender {
         return sessDetails;
     }
 
-    public ListenableFuture<Session> setup(final AuthMechanism authMech) {
+    ListenableFuture<Session> setup(final AuthMechanism authMech) {
         final var setupFlow = new ClientSessionSetupFlow(this, this, authMech);
         setupFlow.start();
         return setupFlow.completeFuture();
@@ -54,11 +55,24 @@ public class SmbClientSession implements Session, RequestSender {
 
     @Override
     public void send(final Smb2Request request, final Consumer<Smb2Response> callback) {
-        if (request.header() instanceof Smb2Header head) {
-            final var sessionId = sessDetails.sessionId();
-            head.setSessionId(sessionId == null ? 0 : sessionId);
-        }
+        final var sessionId = sessDetails.sessionId();
+        request.header().setSessionId(sessionId == null ? 0 : sessionId);
         requestSender.send(request, callback);
+    }
+
+    @Override
+    public ListenableFuture<List<String>> fetchShareNames(final boolean omitCached) {
+        // FIXME implement
+        return null;
+    }
+
+    @Override
+    public ListenableFuture<TreeConnect> connectShare(final String shareName) {
+        final var cached = sessDetails.treeConnects().get(shareName);
+        if(cached != null){
+            return Futures.immediateFuture(cached);
+        }
+        return new SmbClientTreeConnect(shareName, this, this).connect();
     }
 
     @Override

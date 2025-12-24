@@ -15,24 +15,44 @@
  */
 package local.transport.netty.smb.protocol.smb2;
 
+import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.Smb2Command;
 import local.transport.netty.smb.protocol.Smb2Header;
 import local.transport.netty.smb.protocol.Smb2Request;
 
 /**
- * SMB2 Logoff Request. Addresses MS-SMB2 (#2.2.7 SMB2 LOGOFF Request).
+ * SMB2 Tree Connect Request. Addresses MS-SMB2 (#2.2.9 SMB2 TREE_CONNECT Request).
  */
-public class Smb2LogoffRequest extends Smb2Request {
+public final class Smb2TreeConnectRequest  extends Smb2Request {
 
-    public Smb2LogoffRequest() {
+    private Flags<Smb2TreeConnectFlags> flags;
+    private String path;
+
+    public Smb2TreeConnectRequest() {
     }
 
-    public Smb2LogoffRequest(final Smb2Header header) {
+    public Smb2TreeConnectRequest(final Smb2Header header) {
         super(header);
     }
 
     @Override
-    protected Smb2Command command() {
-        return Smb2Command.SMB2_LOGOFF;
+    public Smb2Command command() {
+        return Smb2Command.SMB2_TREE_CONNECT;
+    }
+
+    public Flags<Smb2TreeConnectFlags> flags() {
+        return flags;
+    }
+
+    public void setFlags(final Flags<Smb2TreeConnectFlags> flags) {
+        this.flags = flags;
+    }
+
+    public String path() {
+        return path;
+    }
+
+    public void setPath(final String path) {
+        this.path = path;
     }
 }

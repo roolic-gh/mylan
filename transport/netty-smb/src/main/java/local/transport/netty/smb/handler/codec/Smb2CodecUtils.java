@@ -18,6 +18,7 @@ package local.transport.netty.smb.handler.codec;
 import static java.util.Objects.requireNonNull;
 
 import io.netty.buffer.ByteBuf;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import local.transport.netty.smb.Utils;
@@ -37,6 +38,12 @@ import local.transport.netty.smb.protocol.smb2.Smb2NegotiateRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupResponse;
+import local.transport.netty.smb.protocol.smb2.Smb2ShareType;
+import local.transport.netty.smb.protocol.smb2.Smb2TreeConnectFlags;
+import local.transport.netty.smb.protocol.smb2.Smb2TreeConnectRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2TreeConnectResponse;
+import local.transport.netty.smb.protocol.smb2.Smb2TreeDisconnectRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2TreeDisconnectResponse;
 
 public final class Smb2CodecUtils {
 
@@ -53,7 +60,9 @@ public final class Smb2CodecUtils {
         return switch (header.command()) {
             case SMB2_NEGOTIATE -> decodeNegotiateRequest(byteBuf, header, ctx);
             case SMB2_SESSION_SETUP -> decodeSessionSetupRequest(byteBuf, header, ctx);
-            case SMB2_LOGOFF -> new Smb2LogoffRequest(header); // constant cotent
+            case SMB2_LOGOFF -> new Smb2LogoffRequest(header); // no content
+            case SMB2_TREE_CONNECT -> decodeTreeConnectRequest(byteBuf, header, ctx);
+            case SMB2_TREE_DISCONNECT -> new Smb2TreeDisconnectRequest(header); // no content
 
             default -> throw new SmbException("no request decoder for command " + header.command());
         };
@@ -67,7 +76,9 @@ public final class Smb2CodecUtils {
         switch (request) {
             case Smb2NegotiateRequest req -> encodeNegotiateRequest(byteBuf, req, ctx);
             case Smb2SessionSetupRequest req -> encodeSessionSetupRequest(byteBuf, req, ctx);
-            case Smb2LogoffRequest req -> byteBuf.writeIntLE(4); // 2 byte length + 2 byte zeroes
+            case Smb2LogoffRequest req -> encodeEmpty(byteBuf);
+            case Smb2TreeConnectRequest req -> encodeTreeConnectRequest(byteBuf, req, ctx);
+            case Smb2TreeDisconnectRequest req -> encodeEmpty(byteBuf);
 
             default -> throw new SmbException("no request encoder for class " + request.getClass());
         }
@@ -77,12 +88,14 @@ public final class Smb2CodecUtils {
         requireNonNull(byteBuf);
         final var ctx = new CodecContext(nonNullDialect(dialect), true, byteBuf.readerIndex());
         final var header = decodeHeader(byteBuf, ctx);
-        // todo validate the message is request
+        // todo validate the message is response
 
         return switch (header.command()) {
             case SMB2_NEGOTIATE -> decodeNegotiateResponse(byteBuf, header, ctx);
             case SMB2_SESSION_SETUP -> decodeSessionSetupResponse(byteBuf, header, ctx);
-            case SMB2_LOGOFF -> new Smb2LogoffResponse(header); // ignore constant content
+            case SMB2_LOGOFF -> new Smb2LogoffResponse(header);
+            case SMB2_TREE_CONNECT -> decodeTreeConnectResponse(byteBuf, header, ctx);
+            case SMB2_TREE_DISCONNECT -> new Smb2TreeDisconnectResponse(header);
 
             default -> throw new SmbException("no response decoder for command " + header.command());
         };
@@ -96,7 +109,9 @@ public final class Smb2CodecUtils {
         switch (response) {
             case Smb2NegotiateResponse resp -> encodeNegotiateResponse(byteBuf, resp, ctx);
             case Smb2SessionSetupResponse resp -> encodeSessionSetupResponse(byteBuf, resp, ctx);
-            case Smb2LogoffResponse resp -> byteBuf.writeIntLE(4); //  2 bytes length + 2 bytes zeroes
+            case Smb2LogoffResponse resp -> encodeEmpty(byteBuf);
+            case Smb2TreeConnectResponse resp -> encodeTreeConnectResponse(byteBuf, resp, ctx);
+            case Smb2TreeDisconnectResponse resp -> encodeEmpty(byteBuf);
 
             default -> throw new SmbException("no response encoder for class " + response.getClass());
         }
@@ -346,7 +361,69 @@ public final class Smb2CodecUtils {
         writeField(byteBuf, tokenRefPos, ctx, () -> SpnegoCodecUtils.encodeNegToken(byteBuf, response.token()));
     }
 
-    private static int prepareFieldRef(final ByteBuf byteBuf){
+    // SMB2 TREE_CONNECT Request (MS-SMB2 #2.2.9)
+
+    private static Smb2Request decodeTreeConnectRequest(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var request = new Smb2TreeConnectRequest(header);
+        final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 9
+        request.setFlags(new Flags<>(byteBuf.readUnsignedShortLE()));
+        if (request.flags().get(Smb2TreeConnectFlags.SMB2_TREE_CONNECT_FLAG_EXTENSION_PRESENT)) {
+            // TODO get ext content incl path value
+        } else {
+            request.setPath(readUnicodeStringField(byteBuf, ctx));
+        }
+        return request;
+    }
+
+    private static void encodeTreeConnectRequest(final ByteBuf byteBuf, final Smb2TreeConnectRequest request,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(9); // const length
+        byteBuf.writeShortLE(request.flags().asIntValue());
+        final var pathPos = prepareFieldRef(byteBuf);
+        if (request.flags().get(Smb2TreeConnectFlags.SMB2_TREE_CONNECT_FLAG_EXTENSION_PRESENT)) {
+            // TODO write ext content incl path name
+        } else {
+            writeUnicodeStringField(byteBuf, pathPos, ctx, request.path());
+        }
+    }
+
+    // SMB2 TREE_CONNECT Response (MS-SMB2 #2.2.10)
+
+    private static Smb2Response decodeTreeConnectResponse(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var response = new Smb2TreeConnectResponse(header);
+        final var structureSize = byteBuf.readShortLE(); // TODO validate expected constant = 16
+        response.setShareType(Smb2ShareType.fromCode(byteBuf.readByte()));
+        byteBuf.skipBytes(1);
+        response.setShareFlags(new Flags<>(byteBuf.readIntLE()));
+        response.setCapabilities(new Flags<>(byteBuf.readIntLE()));
+        response.setMaxAccess(new Flags<>(byteBuf.readIntLE()));
+        return response;
+    }
+
+    private static void encodeTreeConnectResponse(final ByteBuf byteBuf, final Smb2TreeConnectResponse response,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(16); // const size
+        byteBuf.writeByte(response.shareType().code());
+        byteBuf.writeZero(1);
+        byteBuf.writeIntLE(response.shareFlags().asIntValue());
+        byteBuf.writeIntLE(response.capabilities().asIntValue());
+        byteBuf.writeIntLE(response.maxAccess().asIntValue());
+    }
+
+    // SHARED
+
+    private static void encodeEmpty(final ByteBuf byteBuf) {
+        //  04 00 00 00 - first 2 bytes is structure size, last 2 bytes are reserved
+        byteBuf.writeIntLE(4);
+    }
+
+    private static int prepareFieldRef(final ByteBuf byteBuf) {
         final var refPos = byteBuf.writerIndex();
         byteBuf.writeZero(4); // reserve space for reference
         return refPos;
@@ -359,6 +436,17 @@ public final class Smb2CodecUtils {
         dataEncoder.run();
         byteBuf.setShortLE(refPos, startPos - ctx.headerStartPosition()); // data offset
         byteBuf.setShortLE(refPos + 2, byteBuf.writerIndex() - startPos); // data length
+    }
+
+    private static void writeUnicodeStringField(final ByteBuf byteBuf, final int refPos, final CodecContext ctx,
+        final String value) {
+        writeField(byteBuf, refPos, ctx, () -> byteBuf.writeCharSequence(value, StandardCharsets.UTF_16LE));
+    }
+
+    private static String readUnicodeStringField(final ByteBuf byteBuf, final CodecContext ctx) {
+        final var pos = byteBuf.readUnsignedShortLE() + ctx.headerStartPosition();
+        final var length = byteBuf.readUnsignedShortLE();
+        return length > 0 ? byteBuf.getCharSequence(pos, length, StandardCharsets.UTF_16LE).toString() : "";
     }
 
 }

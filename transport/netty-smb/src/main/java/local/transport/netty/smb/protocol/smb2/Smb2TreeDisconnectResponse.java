@@ -17,22 +17,22 @@ package local.transport.netty.smb.protocol.smb2;
 
 import local.transport.netty.smb.protocol.Smb2Command;
 import local.transport.netty.smb.protocol.Smb2Header;
-import local.transport.netty.smb.protocol.Smb2Request;
+import local.transport.netty.smb.protocol.Smb2Response;
 
 /**
- * SMB2 Logoff Request. Addresses MS-SMB2 (#2.2.7 SMB2 LOGOFF Request).
+ * SMB2 Tree Disconnect Response. Addresses MS-SMB2 (#2.2.12 SMB2 TREE_DISCONNECT Response).
  */
-public class Smb2LogoffRequest extends Smb2Request {
+public final class Smb2TreeDisconnectResponse extends Smb2Response {
 
-    public Smb2LogoffRequest() {
+    public Smb2TreeDisconnectResponse() {
     }
 
-    public Smb2LogoffRequest(final Smb2Header header) {
+    public Smb2TreeDisconnectResponse(final Smb2Header header) {
         super(header);
     }
 
     @Override
-    protected Smb2Command command() {
-        return Smb2Command.SMB2_LOGOFF;
+    public Smb2Command command() {
+        return Smb2Command.SMB2_TREE_DISCONNECT;
     }
 }

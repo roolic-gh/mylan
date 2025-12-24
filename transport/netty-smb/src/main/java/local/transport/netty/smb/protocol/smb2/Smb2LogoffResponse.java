@@ -19,6 +19,9 @@ import local.transport.netty.smb.protocol.Smb2Command;
 import local.transport.netty.smb.protocol.Smb2Header;
 import local.transport.netty.smb.protocol.Smb2Response;
 
+/**
+ * SMB2 Logoff Response. Addresses MS-SMB2 (#2.2.8 SMB2 LOGOFF Response).
+ */
 public class Smb2LogoffResponse extends Smb2Response {
 
     public Smb2LogoffResponse() {

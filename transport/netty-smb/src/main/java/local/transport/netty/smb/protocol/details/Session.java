@@ -16,6 +16,7 @@
 package local.transport.netty.smb.protocol.details;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import java.util.List;
 
 public interface Session {
 
@@ -23,4 +24,7 @@ public interface Session {
 
     ListenableFuture<Void> close();
 
+    ListenableFuture<List<String>> fetchShareNames(boolean omitCached);
+
+    ListenableFuture<TreeConnect> connectShare(String path);
 }
