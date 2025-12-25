@@ -25,5 +25,9 @@ replay_pid*.log
 *.hprof.xz
 *.threads
 
+# omit temp files
+**/Tmp*.*
+**/Temp*.*
+
 dependency-reduced-pom.xml
 
