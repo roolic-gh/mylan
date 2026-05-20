@@ -21,4 +21,28 @@ package local.transport.netty.smb.protocol.details;
 public class ShareDetails {
     String pathName;
     boolean encryptData;
+
+    public ShareDetails() {
+        // default
+    }
+
+    public ShareDetails(final String pathName) {
+        this.pathName = pathName;
+    }
+
+    public String pathName() {
+        return pathName;
+    }
+
+    public void setPathName(final String pathName) {
+        this.pathName = pathName;
+    }
+
+    public boolean encryptData() {
+        return encryptData;
+    }
+
+    public void setEncryptData(final boolean encryptData) {
+        this.encryptData = encryptData;
+    }
 }

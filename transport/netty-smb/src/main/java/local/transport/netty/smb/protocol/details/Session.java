@@ -24,7 +24,7 @@ public interface Session {
 
     ListenableFuture<Void> close();
 
-    ListenableFuture<List<String>> fetchShareNames(boolean omitCached);
+    ListenableFuture<List<String>> shareNames(boolean forceFetch);
 
-    ListenableFuture<TreeConnect> connectShare(String path);
+    ListenableFuture<TreeConnect> connectShare(String name);
 }

@@ -40,6 +40,9 @@ public class ServerDetails {
     private List<Object> rdmaTransformIds;
     private String signingAlgorithmId;
 
+    // Non-spec
+    private List<ShareDetails> shares;
+
     public UUID serverGuid() {
         return serverGuid;
     }
@@ -76,7 +79,6 @@ public class ServerDetails {
         return addresses;
     }
 
-
     public String serverName() {
         return serverName;
     }
@@ -107,5 +109,13 @@ public class ServerDetails {
 
     public void setSigningAlgorithmId(final String signingAlgorithmId) {
         this.signingAlgorithmId = signingAlgorithmId;
+    }
+
+    public List<ShareDetails> shares() {
+        return shares == null ? List.of() : List.copyOf(shares);
+    }
+
+    public void setShares(final List<ShareDetails> shares) {
+        this.shares = shares;
     }
 }

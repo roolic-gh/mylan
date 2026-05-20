@@ -28,6 +28,7 @@ import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
+import local.transport.netty.smb.protocol.details.ShareDetails;
 import local.transport.netty.smb.protocol.details.TreeConnect;
 import local.transport.netty.smb.protocol.flows.AuthMechanism;
 import local.transport.netty.smb.protocol.flows.ClientEnumerateSharesFlow;
@@ -67,47 +68,59 @@ public final class SmbClientSession implements Session, RequestSender {
     }
 
     @Override
-    public ListenableFuture<List<String>> fetchShareNames(final boolean omitCached) {
-        final var result = SettableFuture.<List<String>>create();
-        Futures.addCallback(connectShare("IPC$"), new FutureCallback<TreeConnect>() {
-            @Override
-            public void onSuccess(final TreeConnect treeConnect) {
-                final var enumSharesFlow = new ClientEnumerateSharesFlow(
-                    sessDetails.connection().details().serverName(), (RequestSender) treeConnect);
-                Futures.addCallback(enumSharesFlow.completeFuture(), new FutureCallback<List<SrvsShareInfo>>() {
-                    @Override
-                    public void onSuccess(final List<SrvsShareInfo> infos) {
-                        final var shareNames = infos.stream().filter(
-                            info -> info.type().type() == SrvsShareType.SType.STYPE_DISKTREE
-                                && !info.type().special() && !info.type().temporary()
-                        ).map(SrvsShareInfo::netName).toList();
-                        result.set(shareNames);
-                        treeConnect.disconnect();
-                    }
+    public ListenableFuture<List<String>> shareNames(final boolean forceFetch) {
+        final var serverShares = sessDetails.connection().details().server().shares();
+        System.out.println("Server shares: " + serverShares);
+        if (!forceFetch && !serverShares.isEmpty()) {
+            return Futures.immediateFuture(serverShares.stream().map(ShareDetails::pathName).toList());
+        }
 
-                    @Override
-                    public void onFailure(final Throwable failure) {
-                        result.setException(failure);
-                    }
-                }, MoreExecutors.directExecutor());
-                enumSharesFlow.start();
-            }
+        final var resultFuture = SettableFuture.<List<String>>create();
+        Futures.addCallback(
+            new SmbClientTreeConnect("IPC$", this, this).connect(),
+            new FutureCallback<TreeConnect>() {
+                @Override
+                public void onSuccess(final TreeConnect treeConnect) {
+                    final var enumSharesFlow = new ClientEnumerateSharesFlow(
+                        sessDetails.connection().details().serverName(), (RequestSender) treeConnect);
+                    Futures.addCallback(enumSharesFlow.completeFuture(), new FutureCallback<List<SrvsShareInfo>>() {
+                        @Override
+                        public void onSuccess(final List<SrvsShareInfo> infos) {
+                            final var shareNames = infos.stream().filter(
+                                info -> info.type().type() == SrvsShareType.SType.STYPE_DISKTREE
+                                    && !info.type().special() && !info.type().temporary()
+                            ).map(SrvsShareInfo::netName).toList();
+                            sessDetails.connection().details().server().setShares(
+                                shareNames.stream().map(ShareDetails::new).toList());
+                            treeConnect.disconnect().addListener(
+                                () -> resultFuture.set(List.copyOf(shareNames)),
+                                MoreExecutors.directExecutor()
+                            );
+                        }
 
-            @Override
-            public void onFailure(final Throwable failure) {
-                result.setException(failure);
-            }
-        }, MoreExecutors.directExecutor());
-        return result;
+                        @Override
+                        public void onFailure(final Throwable failure) {
+                            resultFuture.setException(failure);
+                        }
+                    }, MoreExecutors.directExecutor());
+                    enumSharesFlow.start();
+                }
+
+                @Override
+                public void onFailure(final Throwable failure) {
+                    resultFuture.setException(failure);
+                }
+            }, MoreExecutors.directExecutor());
+        return resultFuture;
     }
 
     @Override
-    public ListenableFuture<TreeConnect> connectShare(final String shareName) {
-        final var cached = sessDetails.treeConnects().get(shareName);
+    public ListenableFuture<TreeConnect> connectShare(final String name) {
+        final var cached = sessDetails.treeConnects().get(name);
         if (cached != null) {
             return Futures.immediateFuture(cached);
         }
-        return new SmbClientTreeConnect(shareName, this, this).connect();
+        return new SmbClientTreeConnect(name, this, this).connect();
     }
 
     @Override
