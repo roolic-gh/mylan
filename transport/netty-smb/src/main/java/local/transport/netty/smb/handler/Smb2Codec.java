@@ -19,6 +19,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import local.transport.netty.smb.Utils;
 import local.transport.netty.smb.protocol.SmbException;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 abstract class Smb2Codec<I, O> extends ByteToMessageCodec<O> {
     private static final Logger LOG = LoggerFactory.getLogger(Smb2Codec.class);
+    private final AtomicReference<ByteBuf> aggregateRef = new AtomicReference<>();
 
     @Override
     protected void encode(final ChannelHandlerContext ctx, final O obj, final ByteBuf byteBuf)
@@ -55,6 +57,24 @@ abstract class Smb2Codec<I, O> extends ByteToMessageCodec<O> {
     protected void decode(final ChannelHandlerContext ctx, final ByteBuf byteBuf, final List<Object> list)
         throws Exception {
 
+        if (aggregateRef.get() != null) {
+            final var aggregateBuf = aggregateRef.get();
+            if (byteBuf.readableBytes() <= aggregateBuf.writableBytes()) {
+                aggregateBuf.writeBytes(byteBuf);
+                if (aggregateBuf.writableBytes() == 0) {
+                    // aggregation completed
+                    list.add(decode(aggregateBuf));
+                    aggregateBuf.release();
+                    aggregateRef.set(null);
+                }
+                return;
+            }
+            LOG.warn("Inbound packet size {} is greater then expected remaining packet fragment {} -> " +
+                "DROPPING aggregate buffer", byteBuf.readableBytes(), aggregateBuf.writableBytes());
+            aggregateBuf.release();
+            aggregateRef.set(null);
+        }
+
         if (byteBuf.readableBytes() > 4) {
             final var type = byteBuf.readByte();
             if (type == 0) {
@@ -63,10 +83,12 @@ abstract class Smb2Codec<I, O> extends ByteToMessageCodec<O> {
                     return;
                 }
                 if (length > byteBuf.readableBytes()) {
-                    throw new SmbException(
-                        "Described SMB message length (%d) is greater then remaining packet size (%d)"
-                            .formatted(length, byteBuf.readableBytes()));
+                    // packet fragment, starting aggregation in heap
+                    aggregateRef.set(ctx.alloc().heapBuffer(length));
+                    aggregateRef.get().writeBytes(byteBuf);
+                    return;
                 }
+
                 final var pos = byteBuf.readerIndex();
                 list.add(decode(byteBuf));
                 // ensure reader pointer points to the end of message

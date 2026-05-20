@@ -34,7 +34,7 @@ abstract class AbstractClientFlow<T> implements ClientFlow<T> {
     }
 
     protected void sendRequest(Smb2Request request){
-        requestSender.send(initialRequest(), this::handleResponse);
+        requestSender.send(request, this::handleResponse);
     }
 
     protected abstract Smb2Request initialRequest();

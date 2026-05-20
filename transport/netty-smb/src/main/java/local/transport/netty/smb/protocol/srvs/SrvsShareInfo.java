@@ -19,7 +19,7 @@ package local.transport.netty.smb.protocol.srvs;
  * Share info entry aggregate object holdaing data for all the levels.
  * Addressing MS-SRVS ## 2.2.4.22 SHARE_INFO_0 .. 2.2.4.27 SHARE_INFO_503_I.
  */
-public class SrvsShareInfo {
+public final class SrvsShareInfo {
     private String netName;
     private SrvsShareType type;
     private String remark;
