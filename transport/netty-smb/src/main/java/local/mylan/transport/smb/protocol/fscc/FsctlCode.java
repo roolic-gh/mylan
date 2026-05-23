@@ -1,0 +1,102 @@
+/*
+ * Copyright 2026 Ruslan Kashapov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package local.mylan.transport.smb.protocol.fscc;
+
+/**
+ * FSCTL/IOCTL Function Code. Addresses MS-FSCC (#2.3 FSCTL Structures)
+ * and MS-SMB2 (#2.2.31 SMB2 IOCTL Request)
+ */
+public enum FsctlCode {
+
+    // MS-FSCC #2.3 FSCTL Structures
+    FSCTL_CREATE_OR_GET_OBJECT_ID(0x000900C0),
+    FSCTL_DELETE_OBJECT_ID(0x000900A0),
+    FSCTL_DELETE_REPARSE_POINT(0x000900AC),
+    FSCTL_DUPLICATE_EXTENTS_TO_FILE(0x00098344),
+    FSCTL_DUPLICATE_EXTENTS_TO_FILE_EX(0x000983E8),
+    FSCTL_FILESYSTEM_GET_STATISTICS(0x00090060),
+    FSCTL_FILE_LEVEL_TRIM(0x00098208),
+    FSCTL_FIND_FILES_BY_SID(0x0009008F),
+    FSCTL_GET_COMPRESSION(0x0009003C),
+    FSCTL_GET_INTEGRITY_INFORMATION(0x0009027C),
+    FSCTL_GET_NTFS_VOLUME_DATA(0x00090064),
+    FSCTL_GET_REFS_VOLUME_DATA(0x000902D8),
+    FSCTL_GET_OBJECT_ID(0x0009009C),
+    FSCTL_GET_REPARSE_POINT(0x000900A8),
+    FSCTL_GET_RETRIEVAL_POINTER_COUNT(0x0009042B),
+    FSCTL_GET_RETRIEVAL_POINTERS(0x00090073),
+    FSCTL_GET_RETRIEVAL_POINTERS_AND_REFCOUNT(0x000903D3),
+    FSCTL_IS_PATHNAME_VALID(0x0009002C),
+    FSCTL_LMR_SET_LINK_TRACKING_INFORMATION(0X1400EC),
+    FSCTL_MARK_HANDLE(0x000900FC),
+    FSCTL_OFFLOAD_READ(0x00094264),
+    FSCTL_OFFLOAD_WRITE(0x00098268),
+    FSCTL_PIPE_PEEK(0x0011400C),
+    FSCTL_PIPE_TRANSCEIVE(0x0011C017),
+    FSCTL_PIPE_WAIT(0x00110018),
+    FSCTL_QUERY_ALLOCATED_RANGES(0x000940CF),
+    FSCTL_QUERY_FAT_BPB(0x00090058),
+    FSCTL_QUERY_FILE_REGIONS(0x00090284),
+    FSCTL_QUERY_ON_DISK_VOLUME_INFO(0x0009013C),
+    FSCTL_QUERY_SPARING_INFO(0x00090138),
+    FSCTL_READ_FILE_USN_DATA(0x000900EB),
+    FSCTL_RECALL_FILE(0x00090117),
+    FSCTL_REFS_STREAM_SNAPSHOT_MANAGEMENT(0x00090440),
+    FSCTL_SET_COMPRESSION(0x0009C040),
+    FSCTL_SET_DEFECT_MANAGEMENT(0x00098134),
+    FSCTL_SET_ENCRYPTION(0x000900D7),
+    FSCTL_SET_INTEGRITY_INFORMATION(0x0009C280),
+    FSCTL_SET_INTEGRITY_INFORMATION_EX(0x00090380),
+    FSCTL_SET_OBJECT_ID(0x00090098),
+    FSCTL_SET_OBJECT_ID_EXTENDED(0x000900BC),
+    FSCTL_SET_REPARSE_POINT(0x000900A4),
+    FSCTL_SET_SPARSE(0x000900C4),
+    FSCTL_SET_ZERO_DATA(0x000980C8),
+    FSCTL_SET_ZERO_ON_DEALLOCATION(0x00090194),
+    FSCTL_SIS_COPYFILE(0x00090100),
+    FSCTL_WRITE_USN_CLOSE_RECORD(0x000900EF),
+
+    // MS-SMB2 #2.2.31 SMB2 IOCTL Request (duplicates omitted)
+    FSCTL_DFS_GET_REFERRALS(0x00060194),
+    FSCTL_SRV_COPYCHUNK(0x001440F2),
+    FSCTL_SRV_ENUMERATE_SNAPSHOTS(0x00144064),
+    FSCTL_SRV_REQUEST_RESUME_KEY(0x00140078),
+    FSCTL_SRV_READ_HASH(0x001441bb),
+    FSCTL_SRV_COPYCHUNK_WRITE(0x001480F2),
+    FSCTL_LMR_REQUEST_RESILIENCY(0x001401D4),
+    FSCTL_QUERY_NETWORK_INTERFACE_INFO(0x001401FC),
+    FSCTL_DFS_GET_REFERRALS_EX(0x000601B0),
+    FSCTL_VALIDATE_NEGOTIATE_INFO(0x00140204);
+
+    private final int code;
+
+    FsctlCode(final int code) {
+        this.code = code;
+    }
+
+    public int code() {
+        return code;
+    }
+
+    public static FsctlCode fromCode(final int code){
+        for(var cc: values()){
+            if( cc.code == code){
+                return cc;
+            }
+        }
+        throw new IllegalArgumentException("Unknown FSCTL/IOCTL code " + code);
+    }
+}
