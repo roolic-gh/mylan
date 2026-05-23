@@ -99,7 +99,14 @@ public class Smb2ClientHandler extends ChannelDuplexHandler implements RequestSe
             header.setCreditRequest(header.command() == Smb2Command.SMB2_SESSION_SETUP
                 ? connDetails.setupCreditsRequest() : 1);
         }
-        final var messageIdOpt = connDetails.sequenceWindow().nextMessageId();
+        if (header.creditCharge() > 0) {
+            if (connDetails.dialect() == Smb2Dialect.SMB2_0_2) {
+                header.setCreditCharge(0); // should not be used in SMB 2.0.2
+            } else {
+                header.setCreditRequest(header.creditCharge());
+            }
+        }
+        final var messageIdOpt = connDetails.sequenceWindow().nextMessageId(header.creditCharge());
         if (messageIdOpt.isEmpty()) {
             LOG.warn("Message {} wasn't sent and moved to pending state due to luck of credits", header.command());
             connDetails.pendingRequests().add(request);

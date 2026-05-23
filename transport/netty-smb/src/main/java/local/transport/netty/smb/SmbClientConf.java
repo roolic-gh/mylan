@@ -75,7 +75,7 @@ public @interface SmbClientConf {
     // Connection Details
 
     @ConfProperty("smb.client.setup-request-credits")
-    int setupCreditsRequest() default 128;
+    int setupCreditsRequest() default 512;
 
     @ConfProperty("smb.client.dialect.min")
     Smb2Dialect smbDialectMin() default Smb2Dialect.SMB2_0_2;

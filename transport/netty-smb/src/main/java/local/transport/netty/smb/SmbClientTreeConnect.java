@@ -17,10 +17,14 @@ package local.transport.netty.smb;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.function.Consumer;
+import local.transport.netty.smb.protocol.Flags;
 import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.Smb2Response;
+import local.transport.netty.smb.protocol.details.OpenDetails;
+import local.transport.netty.smb.protocol.details.OpenFile;
 import local.transport.netty.smb.protocol.details.Session;
 import local.transport.netty.smb.protocol.details.SessionDetails;
 import local.transport.netty.smb.protocol.details.TreeConnect;
@@ -28,6 +32,10 @@ import local.transport.netty.smb.protocol.details.TreeConnectDetails;
 import local.transport.netty.smb.protocol.flows.ClientTreeConnectFlow;
 import local.transport.netty.smb.protocol.flows.ClientTreeDisconnectFlow;
 import local.transport.netty.smb.protocol.flows.RequestSender;
+import local.transport.netty.smb.protocol.smb2.Smb2AccessMask;
+import local.transport.netty.smb.protocol.smb2.Smb2CreateDisposition;
+import local.transport.netty.smb.protocol.smb2.Smb2OpLockLevel;
+import local.transport.netty.smb.protocol.smb2.Smb2ShareAccessFlags;
 
 public class SmbClientTreeConnect implements TreeConnect, RequestSender {
 
@@ -63,6 +71,33 @@ public class SmbClientTreeConnect implements TreeConnect, RequestSender {
         final var flow = new ClientTreeDisconnectFlow(this, this);
         flow.start();
         return flow.completeFuture();
+    }
+
+    @Override
+    public ListenableFuture<OpenFile> openFile(final String path) {
+        final var name = path == null || path.isEmpty() ? "." : path;
+        final var opened = details.opens().get(name);
+        if (opened != null) {
+            return Futures.immediateFuture(opened);
+        }
+        final var openDetails = defaultOpenDetails(name);
+        return new SmbClientOpenFile(openDetails, this).create();
+    }
+
+    private OpenDetails defaultOpenDetails(final String name) {
+        final var openDetails = new OpenDetails();
+        openDetails.setTreeConnect(this);
+        openDetails.setFileName(name);
+        openDetails.setCreateOptions(new Flags<>());
+        openDetails.setFileAttributes(new Flags<>());
+        openDetails.setDesiredAccess(new Flags<Smb2AccessMask>()
+                .set(Smb2AccessMask.FILE_READ_DATA, true)
+                .set(Smb2AccessMask.FILE_READ_ATTRIBUTES, true));
+        openDetails.setShareAccess(new Flags<Smb2ShareAccessFlags>()
+            .set(Smb2ShareAccessFlags.FILE_SHARE_READ, true));
+        openDetails.setCreateDisposition(Smb2CreateDisposition.FILE_OPEN);
+        openDetails.setOpLockLevel(Smb2OpLockLevel.SMB2_OPLOCK_LEVEL_NONE);
+        return openDetails;
     }
 
     @Override

@@ -13,19 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.transport.netty.smb.protocol.details;
+package local.transport.netty.smb.protocol.smb2;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import local.transport.netty.smb.protocol.Flags;
 
 /**
- * Tree Connect Details. Addresses MS_SMB2 (3.2.1.4 Per Tree Connect).
+ * Addresses MS-SMB2 (2.2.33 SMB2 QUERY_DIRECTORY Request)
  */
-public interface TreeConnect {
+public enum Smb2QueryDirectoryFlags implements Flags.BitMaskProvider {
+    SMB2_RESTART_SCANS(0x01),
+    SMB2_RETURN_SINGLE_ENTRY(0x02),
+    SMB2_INDEX_SPECIFIED(0x04),
+    SMB2_REOPEN(0x10);
 
-    TreeConnectDetails details();
+    private final int mask;
 
-    ListenableFuture<OpenFile> openFile(String path);
+    Smb2QueryDirectoryFlags(int mask) {
+        this.mask = mask;
+    }
 
-    ListenableFuture<Void> disconnect();
-
+    @Override
+    public int mask() {
+        return mask;
+    }
 }

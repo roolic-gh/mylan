@@ -32,6 +32,7 @@ import local.transport.netty.smb.protocol.Smb2Request;
 import local.transport.netty.smb.protocol.Smb2Response;
 import local.transport.netty.smb.protocol.SmbError;
 import local.transport.netty.smb.protocol.SmbException;
+import local.transport.netty.smb.protocol.fscc.FileInformationClass;
 import local.transport.netty.smb.protocol.fscc.FsctlCode;
 import local.transport.netty.smb.protocol.smb2.Smb2CloseRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2CloseResponse;
@@ -39,6 +40,7 @@ import local.transport.netty.smb.protocol.smb2.Smb2CreateAction;
 import local.transport.netty.smb.protocol.smb2.Smb2CreateDisposition;
 import local.transport.netty.smb.protocol.smb2.Smb2CreateRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2CreateResponse;
+import local.transport.netty.smb.protocol.smb2.Smb2ErrorResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2Flags;
 import local.transport.netty.smb.protocol.smb2.Smb2ImpersonationLevel;
 import local.transport.netty.smb.protocol.smb2.Smb2IoctlRequest;
@@ -48,6 +50,8 @@ import local.transport.netty.smb.protocol.smb2.Smb2LogoffResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2NegotiateResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2OpLockLevel;
+import local.transport.netty.smb.protocol.smb2.Smb2QueryDirectoryRequest;
+import local.transport.netty.smb.protocol.smb2.Smb2QueryDirectoryResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupRequest;
 import local.transport.netty.smb.protocol.smb2.Smb2SessionSetupResponse;
 import local.transport.netty.smb.protocol.smb2.Smb2ShareType;
@@ -78,6 +82,7 @@ public final class Smb2CodecUtils {
             case SMB2_CREATE -> decodeCreateRequest(byteBuf, header, ctx);
             case SMB2_CLOSE -> decodeCloseRequest(byteBuf, header, ctx);
             case SMB2_IOCTL -> decodeIoctlRequest(byteBuf, header, ctx);
+            case SMB2_QUERY_DIRECTORY -> decodeQueryDirRequest(byteBuf, header, ctx);
 
             default -> throw new SmbException("no request decoder for command " + header.command());
         };
@@ -97,6 +102,7 @@ public final class Smb2CodecUtils {
             case Smb2CreateRequest req -> encodeCreateRequest(byteBuf, req, ctx);
             case Smb2CloseRequest req -> encodeCloseRequest(byteBuf, req, ctx);
             case Smb2IoctlRequest req -> encodeIoctlRequest(byteBuf, req, ctx);
+            case Smb2QueryDirectoryRequest req -> encodeQueryDirRequest(byteBuf, req, ctx);
 
             default -> throw new SmbException("no request encoder for class " + request.getClass());
         }
@@ -108,6 +114,9 @@ public final class Smb2CodecUtils {
         final var header = decodeHeader(byteBuf, ctx);
         // todo validate the message is response
 
+//        if (header.status() != SmbError.STATUS_SUCCESS) {
+//            return decodeErrorResponse(byteBuf, header, ctx);
+//        }
         return switch (header.command()) {
             case SMB2_NEGOTIATE -> decodeNegotiateResponse(byteBuf, header, ctx);
             case SMB2_SESSION_SETUP -> decodeSessionSetupResponse(byteBuf, header, ctx);
@@ -117,6 +126,7 @@ public final class Smb2CodecUtils {
             case SMB2_CREATE -> decodeCreateResponse(byteBuf, header, ctx);
             case SMB2_CLOSE -> decodeCloseResponse(byteBuf, header, ctx);
             case SMB2_IOCTL -> decodeIoctlResponse(byteBuf, header, ctx);
+            case SMB2_QUERY_DIRECTORY -> decodeQueryDirResponse(byteBuf, header, ctx);
 
             default -> throw new SmbException("no response decoder for command " + header.command());
         };
@@ -128,6 +138,7 @@ public final class Smb2CodecUtils {
         final var ctx = new CodecContext(nonNullDialect(dialect), true, byteBuf.writerIndex());
         encodeHeader(byteBuf, response.header(), ctx);
         switch (response) {
+            case Smb2ErrorResponse resp -> encodeErrorResponse(byteBuf, resp, ctx);
             case Smb2NegotiateResponse resp -> encodeNegotiateResponse(byteBuf, resp, ctx);
             case Smb2SessionSetupResponse resp -> encodeSessionSetupResponse(byteBuf, resp, ctx);
             case Smb2LogoffResponse resp -> encodeEmpty(byteBuf);
@@ -136,6 +147,7 @@ public final class Smb2CodecUtils {
             case Smb2CreateResponse resp -> encodeCreateResponse(byteBuf, resp, ctx);
             case Smb2CloseResponse resp -> encodeCloseResponse(byteBuf, resp, ctx);
             case Smb2IoctlResponse resp -> encodeIoctlResponse(byteBuf, resp, ctx);
+            case Smb2QueryDirectoryResponse resp -> encodeQueryDirResponse(byteBuf, resp, ctx);
 
             default -> throw new SmbException("no response encoder for class " + response.getClass());
         }
@@ -218,6 +230,25 @@ public final class Smb2CodecUtils {
         byteBuf.writeZero(16); // actual signature is calculated after whole message is in buffer
     }
 
+    // SMB2 ERROR Response (MS-SMB2 #2.2.2)
+
+    private static Smb2Response decodeErrorResponse(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var response = new Smb2ErrorResponse(header);
+        readAssertStructSize(byteBuf, 9, "ERROR Response");
+        // todo extract error data
+        return response;
+    }
+
+    private static void encodeErrorResponse(final ByteBuf byteBuf, final Smb2ErrorResponse response,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(9); // struct size
+        byteBuf.writeZero(6); // 1x ctx count + 1x reserved + 4x dataLength
+        // todo encode error data if exists
+    }
+
     // SMB2 NEGOTIATE Request (MS-SMB2 #2.2.3)
 
     private static Smb2Request decodeNegotiateRequest(final ByteBuf byteBuf, final Smb2Header header,
@@ -254,7 +285,6 @@ public final class Smb2CodecUtils {
     private static void encodeNegotiateRequest(final ByteBuf byteBuf, final Smb2NegotiateRequest request,
         final CodecContext ctx) {
 
-        final var msgStartPos = byteBuf.writerIndex();
         byteBuf.writeShortLE(0x24); // constant value = 36
         byteBuf.writeShortLE(request.dialects().size());
         byteBuf.writeShortLE(request.securityMode().asIntValue());
@@ -270,10 +300,7 @@ public final class Smb2CodecUtils {
             final var negCtxs = request.negotiateContexts();
             if (negCtxs != null && !negCtxs.isEmpty()) {
                 // add padding if necessary to ensure first context is 8 byte aligned;
-                final var align = (byteBuf.writerIndex() - msgStartPos) % 8;
-                if (align != 0) {
-                    byteBuf.writeBytes(new byte[8 - align]);
-                }
+                CodecUtils.alignWriter(byteBuf, ctx.headerStartPosition(), 8);
                 byteBuf.setIntLE(negCtxInfoPos, byteBuf.writerIndex() - ctx.headerStartPosition()); // offset
                 byteBuf.setShortLE(negCtxInfoPos + 4, negCtxs.size()); // cnt
                 // todo encode contexts
@@ -470,8 +497,12 @@ public final class Smb2CodecUtils {
         byteBuf.writeIntLE(request.createOptions().asIntValue());
         final var nameRef = prepareFieldRef(byteBuf, RefType.SHORT, ctx);
         final var contextsRef = prepareFieldRef(byteBuf, RefType.INT, ctx);
+        final var bufPos = byteBuf.writerIndex();
         writeUnicodeStringField(byteBuf, nameRef, request.name());
         // TODO contexts
+        if (byteBuf.writerIndex() == bufPos) {
+            byteBuf.writeZero(1); // buffer part of the message shoudl be at least 1 byte long
+        }
     }
 
     // SMB2 CREATE Response (MS-SMB2 #2.2.14)
@@ -642,6 +673,60 @@ public final class Smb2CodecUtils {
         byteBuf.writeZero(8); // flags (not used) + reserved (padding)
         writeField(byteBuf, inputRef, () -> IoctlCodecUtils.encodeInput(byteBuf, response.input(), cc));
         writeField(byteBuf, outputRef, () -> IoctlCodecUtils.encodeOutput(byteBuf, response.output(), cc));
+    }
+
+    // SMB2 QUERY_DIRECTORY Request (MS-SMB2 #2.2.33)
+
+    private static Smb2Request decodeQueryDirRequest(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var request = new Smb2QueryDirectoryRequest(header);
+        readAssertStructSize(byteBuf, 33, "QUERY_DIRECTORY Request");
+        request.setFileInformationClass(FileInformationClass.fromValue(byteBuf.readUnsignedByte()));
+        request.setFlags(new Flags<>(byteBuf.readUnsignedByte()));
+        request.setFileIndex(byteBuf.readIntLE());
+        request.setFileId(Utils.readGuid(byteBuf));
+        request.setSearchPattern(readUnicodeStringField(byteBuf, ctx));
+        request.setOutputBufferLength(byteBuf.readIntLE());
+        return request;
+    }
+
+    private static void encodeQueryDirRequest(final ByteBuf byteBuf, final Smb2QueryDirectoryRequest request,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(33); // struct size
+        byteBuf.writeByte(request.fileInformationClass().value());
+        byteBuf.writeByte(request.flags().asIntValue());
+        byteBuf.writeIntLE(request.fileIndex());
+        Utils.writeGuid(byteBuf, request.fileId());
+        final var patternRef = prepareFieldRef(byteBuf, RefType.SHORT, ctx);
+        byteBuf.writeIntLE(request.outputBufferLength());
+        writeUnicodeStringField(byteBuf, patternRef, request.searchPattern());
+    }
+
+    // SMB2 QUERY_DIRECTORY Response (MS-SMB2 #2.2.34)
+
+    private static Smb2Response decodeQueryDirResponse(final ByteBuf byteBuf, final Smb2Header header,
+        final CodecContext ctx) {
+
+        final var response = new Smb2QueryDirectoryResponse(header);
+        readAssertStructSize(byteBuf, 9, "QUERY_DIRECTORY Response");
+        final var offset = byteBuf.readUnsignedShortLE();
+        final var length = byteBuf.readIntLE();
+        response.setEncoded(Utils.getByteArray(byteBuf, ctx.headerStartPosition() + offset, length));
+        return response;
+    }
+
+    private static void encodeQueryDirResponse(final ByteBuf byteBuf, final Smb2QueryDirectoryResponse response,
+        final CodecContext ctx) {
+
+        byteBuf.writeShortLE(9); // struct size
+        final var infoPos = byteBuf.writerIndex();
+        byteBuf.writeZero(6); // 2x offset + 4x length
+        final var dataPos = byteBuf.writerIndex();
+        FsccCodecUtils.encodeFileInformation(byteBuf, response.decoded());
+        byteBuf.setShortLE(infoPos, dataPos - ctx.headerStartPosition()); // offset
+        byteBuf.setIntLE(infoPos + 2, byteBuf.writerIndex() - dataPos); // length
     }
 
     // SHARED

@@ -70,7 +70,6 @@ public final class SmbClientSession implements Session, RequestSender {
     @Override
     public ListenableFuture<List<String>> shareNames(final boolean forceFetch) {
         final var serverShares = sessDetails.connection().details().server().shares();
-        System.out.println("Server shares: " + serverShares);
         if (!forceFetch && !serverShares.isEmpty()) {
             return Futures.immediateFuture(serverShares.stream().map(ShareDetails::pathName).toList());
         }

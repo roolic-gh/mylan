@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,21 @@
 package local.transport.netty.smb.protocol.details;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import java.util.List;
+import local.transport.netty.smb.protocol.fscc.FileInformation;
+import local.transport.netty.smb.protocol.fscc.FileInformationClass;
 
-/**
- * Tree Connect Details. Addresses MS_SMB2 (3.2.1.4 Per Tree Connect).
- */
-public interface TreeConnect {
+public interface OpenFile {
 
-    TreeConnectDetails details();
+    OpenDetails details();
 
-    ListenableFuture<OpenFile> openFile(String path);
+    ListenableFuture<OpenFile> create();
 
-    ListenableFuture<Void> disconnect();
+    ListenableFuture<List<FileInformation>> queryDirectory();
+
+    ListenableFuture<List<FileInformation>> queryDirectory(String searchPattern, FileInformationClass fic,
+        int maxRead);
+
+    ListenableFuture<Void> close();
 
 }

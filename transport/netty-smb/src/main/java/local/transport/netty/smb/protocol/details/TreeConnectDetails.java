@@ -15,6 +15,8 @@
  */
 package local.transport.netty.smb.protocol.details;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import local.transport.netty.smb.protocol.smb2.Smb2ShareType;
 
 /**
@@ -39,6 +41,7 @@ public class TreeConnectDetails {
 
     // non-spec
     private Smb2ShareType shareType;
+    private final Map<String, OpenFile> opens = new ConcurrentHashMap<>();
 
     public Integer treeConnectId() {
         return treeConnectId;
@@ -118,5 +121,9 @@ public class TreeConnectDetails {
 
     public void setCompressData(final boolean compressData) {
         this.compressData = compressData;
+    }
+
+    public Map<String, OpenFile> opens() {
+        return opens;
     }
 }

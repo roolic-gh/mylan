@@ -222,17 +222,11 @@ public final class SrvsCodecUtils {
     }
 
     private static void alignWriter(final ByteBuf byteBuf, final int startPos) {
-        final var overflow = (byteBuf.writerIndex() - startPos) % 4;
-        if (overflow > 0) {
-            byteBuf.writeZero(4 - overflow);
-        }
+        CodecUtils.alignWriter(byteBuf, startPos, 4);
     }
 
     static void alignReader(final ByteBuf byteBuf, final int startPos) {
-        final var overflow = (byteBuf.readerIndex() - startPos) % 4;
-        if (overflow > 0) {
-            byteBuf.skipBytes(4 - overflow);
-        }
+        CodecUtils.alignReader(byteBuf, startPos, 4);
     }
 
     private enum Dir {INBOUND, OUTBOUND}
