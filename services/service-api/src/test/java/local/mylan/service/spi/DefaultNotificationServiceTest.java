@@ -21,9 +21,9 @@ import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Consumer;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.Event;
+import local.mylan.service.api.events.EventListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,65 +36,133 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DefaultNotificationServiceTest {
 
-    private static final SomeTestEvent SOME_1 = new SomeTestEvent("some-1");
-    private static final SomeTestEvent SOME_2 = new SomeTestEvent("some-2");
-    private static final SomeTestEvent SOME_3 = new SomeTestEvent("some-3");
-    private static final SomeTestEvent SOME_4 = new SomeTestEvent("some-4");
-    private static final SomeTestEvent SOME_5 = new SomeTestEvent("some-5");
-    private static final OtherTestEvent OTHER_1 = new OtherTestEvent("other-1");
-    private static final OtherTestEvent OTHER_2 = new OtherTestEvent("other-1");
-    private static final OtherTestEvent OTHER_3 = new OtherTestEvent("other-1");
+    private static final Integer USER_ID1 = Integer.valueOf(101);
+    private static final Integer USER_ID2 = Integer.valueOf(102);
+
+    private static final TestEventA EVENT_A1 = new TestEventA("A1");
+    private static final TestEventA EVENT_A2 = new TestEventA("A2");
+    private static final TestEventA EVENT_A3 = new TestEventA("A3");
+    private static final TestEventA EVENT_A4 = new TestEventA("A4");
+    private static final TestEventA EVENT_A5 = new TestEventA("A5");
+    private static final TestEventB EVENT_B1 = new TestEventB("B1");
+    private static final TestEventB EVENT_B2 = new TestEventB("B2");
+    private static final TestEventB EVENT_B3 = new TestEventB("B3");
+    private static final TestEventX EVENT_X1 = new TestEventX("X1");
+    private static final TestEventX EVENT_X2 = new TestEventX("X2");
+    private static final TestEventX EVENT_Y1 = new TestEventY("Y1");
+    private static final TestEventX EVENT_Y2 = new TestEventY("Y2");
 
     @Mock
-    Consumer<SomeTestEvent> someConsumer1;
+    EventListener<TestEventA> listenerA1;
     @Mock
-    Consumer<SomeTestEvent> someConsumer2;
+    EventListener<TestEventA> listenerA2;
     @Mock
-    Consumer<OtherTestEvent> otherConsumer;
+    EventListener<TestEventB> listenerB;
+    @Mock
+    EventListener<TestEventX> listenerX;
+    @Mock
+    EventListener<TestEventY> listenerY;
     @Captor
-    ArgumentCaptor<SomeTestEvent> someEventCaptor1;
+    ArgumentCaptor<TestEventA> eventCaptorA1;
     @Captor
-    ArgumentCaptor<SomeTestEvent> someEventCaptor2;
+    ArgumentCaptor<TestEventA> eventCaptorA2;
     @Captor
-    ArgumentCaptor<OtherTestEvent> otherEventCaptor;
+    ArgumentCaptor<TestEventB> eventCaptorB;
+    @Captor
+    ArgumentCaptor<TestEventX> eventCaptorX;
+    @Captor
+    ArgumentCaptor<TestEventY> eventCaptorY;
 
     NotificationService service;
 
     @BeforeEach
-    void beforeEach(){
+    void beforeEach() {
         service = new DefaultNotificationService();
     }
 
     @AfterEach
-    void afterEach(){
+    void afterEach() {
         service.stop();
     }
 
     @Test
-    void consumeEvent() throws IOException {
-        final var regSome1 = service.registerEventListener(SomeTestEvent.class, someConsumer1);
-        final var regSome2 = service.registerEventListener(SomeTestEvent.class, someConsumer2);
-        final var regOther = service.registerEventListener(OtherTestEvent.class, otherConsumer);
+    void noUserEvents() throws IOException {
+        final var regA1 = service.registerEventListener(TestEventA.class, listenerA1);
+        final var regA2 = service.registerEventListener(TestEventA.class, listenerA2);
+        final var regB = service.registerEventListener(TestEventB.class, listenerB);
 
-        List.of(SOME_1, SOME_2, OTHER_1, SOME_3, SOME_4, OTHER_2).forEach(service::raiseEvent);
-        regSome2.terminate();
-        regOther.terminate();
-        List.of(SOME_5, OTHER_3).forEach(service::raiseEvent);
-        regSome1.terminate();
+        List.of(EVENT_A1, EVENT_A2, EVENT_B1, EVENT_A3, EVENT_A4, EVENT_B2).forEach(service::raiseEvent);
+        regA2.terminate();
+        regB.terminate();
+        List.of(EVENT_A5, EVENT_B3).forEach(service::raiseEvent);
+        regA1.terminate();
 
-        verify(someConsumer1, timeout(500).times(5)).accept(someEventCaptor1.capture());
-        assertEquals(List.of(SOME_1, SOME_2, SOME_3, SOME_4, SOME_5), someEventCaptor1.getAllValues());
+        verify(listenerA1, timeout(300).times(5)).onEvent(eventCaptorA1.capture());
+        assertEquals(List.of(EVENT_A1, EVENT_A2, EVENT_A3, EVENT_A4, EVENT_A5), eventCaptorA1.getAllValues());
 
-        verify(someConsumer2, timeout(300).times(4)).accept(someEventCaptor2.capture());
-        assertEquals(List.of(SOME_1, SOME_2, SOME_3, SOME_4), someEventCaptor2.getAllValues());
+        verify(listenerA2, timeout(300).times(4)).onEvent(eventCaptorA2.capture());
+        assertEquals(List.of(EVENT_A1, EVENT_A2, EVENT_A3, EVENT_A4), eventCaptorA2.getAllValues());
 
-        verify(otherConsumer, timeout(300).times(2)).accept(otherEventCaptor.capture());
-        assertEquals(List.of(OTHER_1, OTHER_2), otherEventCaptor.getAllValues());
+        verify(listenerB, timeout(300).times(2)).onEvent(eventCaptorB.capture());
+        assertEquals(List.of(EVENT_B1, EVENT_B2), eventCaptorB.getAllValues());
     }
 
-    record SomeTestEvent(String value) implements Event {
+    @Test
+    void userEvents(){
+        service.registerEventListener(USER_ID1, TestEventA.class, listenerA1);
+        service.registerEventListener(USER_ID2, TestEventA.class, listenerA2);
+
+        service.raiseEvent(USER_ID1, EVENT_A1);
+        service.raiseEvent(USER_ID2, EVENT_A2);
+        service.raiseEvent(null, EVENT_A3);
+        service.raiseEvent(USER_ID1, EVENT_A4);
+        service.raiseEvent(USER_ID2, EVENT_A5);
+
+        verify(listenerA1, timeout(300).times(2)).onEvent(eventCaptorA1.capture());
+        assertEquals(List.of(EVENT_A1, EVENT_A4), eventCaptorA1.getAllValues());
+
+        verify(listenerA2, timeout(300).times(2)).onEvent(eventCaptorA2.capture());
+        assertEquals(List.of(EVENT_A2, EVENT_A5), eventCaptorA2.getAllValues());
     }
 
-    record OtherTestEvent(String value) implements Event {
+    @Test
+    void extendedEventClass() {
+        service.registerEventListener(USER_ID1, TestEventX.class, listenerX);
+        service.registerEventListener(USER_ID1, TestEventY.class, listenerY);
+
+        service.raiseEvent(USER_ID1, EVENT_X1);
+        service.raiseEvent(EVENT_X2);
+        service.raiseEvent(EVENT_Y1);
+        service.raiseEvent(USER_ID1, EVENT_Y2);
+
+        verify(listenerX, timeout(300).times(2)).onEvent(eventCaptorX.capture());
+        assertEquals(List.of(EVENT_X1, EVENT_Y2), eventCaptorX.getAllValues());
+
+        verify(listenerY, timeout(300).times(1)).onEvent(eventCaptorY.capture());
+        assertEquals(List.of(EVENT_Y2), eventCaptorY.getAllValues());
+    }
+
+    record TestEventA(String value) implements Event {
+    }
+
+    record TestEventB(String value) implements Event {
+    }
+
+    static class TestEventX implements Event {
+        final String value;
+
+        TestEventX(final String value) {
+            this.value = value;
+        }
+
+        public String value() {
+            return value;
+        }
+    }
+
+    static class TestEventY extends TestEventX {
+        TestEventY(final String value) {
+            super(value);
+        }
     }
 }

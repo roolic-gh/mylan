@@ -16,37 +16,45 @@
 package local.mylan.service.spi;
 
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicLong;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.Event;
+import local.mylan.service.api.events.EventListener;
 import local.mylan.service.api.events.Registration;
 
 public final class DefaultNotificationService implements NotificationService {
-
-    private final Map<Class<? extends Event>, Set<Consumer<Event>>> consumersMap = new ConcurrentHashMap<>();
+    private final AtomicLong idCount = new AtomicLong(0);
+    private final Map<Long, ListenerRecord> listeners = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
-    public <T extends Event> Registration registerEventListener(final Class<T> type, final Consumer<T> consumer) {
-        final Consumer<Event> wrapper = event -> consumer.accept(type.cast(event));
-        consumersMap.computeIfAbsent(type, key -> ConcurrentHashMap.newKeySet()).add(wrapper);
-        return () -> consumersMap.get(type).remove(wrapper);
+    public <T extends Event> Registration registerEventListener(final Integer targetUserId,
+        final Class<T> type, final EventListener<T> listener) {
+
+        final var id = idCount.incrementAndGet();
+        listeners.put(id, new ListenerRecord(targetUserId, type, event -> listener.onEvent(type.cast(event))));
+        return () -> listeners.remove(id);
     }
 
     @Override
-    public void raiseEvent(final Event event) {
-        final var consumers = consumersMap.get(event.getClass());
-        if (consumers != null) {
-            consumers.forEach(consumer -> executorService.submit(() -> consumer.accept(event)));
-        }
+    public void raiseEvent(final Integer targetUserId, final Event event) {
+        listeners.values().stream().
+            filter(rec -> rec.eventType.isInstance(event) && Objects.equals(rec.userId, targetUserId))
+            .forEach(rec -> executorService.submit(() -> rec.eventListener().onEvent(event)));
+
     }
 
     @Override
     public void stop() {
+        listeners.clear();
         executorService.shutdown();
+    }
+
+    private record ListenerRecord(Integer userId, Class<? extends Event> eventType,
+        EventListener<Event> eventListener) {
     }
 }

@@ -15,15 +15,24 @@
  */
 package local.mylan.service.api;
 
-import java.util.function.Consumer;
 import local.mylan.service.api.events.Event;
+import local.mylan.service.api.events.EventListener;
 import local.mylan.service.api.events.Registration;
 
 public interface NotificationService {
 
-    <T extends Event> Registration registerEventListener(Class<T> eventType, Consumer<T> listener);
+    default <T extends Event> Registration registerEventListener(Class<T> eventType, EventListener<T> listener) {
+        return registerEventListener(null, eventType, listener);
+    }
 
-    void raiseEvent(Event event);
+    <T extends Event> Registration registerEventListener(Integer targetUserId, Class<T> eventType,
+        EventListener<T> listener);
+
+    default void raiseEvent(Event event) {
+        raiseEvent(null, event);
+    }
+
+    void raiseEvent(Integer targetUserId, Event event);
 
     default void stop() {
     }
