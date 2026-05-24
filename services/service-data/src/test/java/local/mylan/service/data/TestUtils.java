@@ -15,11 +15,11 @@
  */
 package local.mylan.service.data;
 
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import local.mylan.service.api.EncryptionService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.Event;
+import local.mylan.service.api.events.EventListener;
 import local.mylan.service.api.events.Registration;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -53,13 +53,13 @@ final class TestUtils {
         return new NotificationService() {
 
             @Override
-            public <T extends Event> Registration registerEventListener(final Class<T> eventType,
-                final Consumer<T> listener) {
+            public <T extends Event> Registration registerEventListener(final Integer targetUserId,
+                final Class<T> eventType, final EventListener<T> listener) {
                 return null;
             }
 
             @Override
-            public void raiseEvent(final Event event) {
+            public void raiseEvent(final Integer targetUserId, final Event event) {
             }
         };
     }
