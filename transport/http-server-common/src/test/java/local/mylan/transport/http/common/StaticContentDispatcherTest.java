@@ -100,7 +100,7 @@ class StaticContentDispatcherTest {
     @MethodSource("dispatchers")
     void notFound(final ContextDispatcher dispatcher) {
         final var channel = setupChannel(dispatcher);
-        final var response = executeRequest(channel, httpRequest(GET, CONTEXT_PATH + " /unknown-file.txt"));
+        final var response = executeRequest(channel, httpRequest(GET, CONTEXT_PATH + "/unknown-file.txt"));
         assertResponse(response, HttpResponseStatus.NOT_FOUND);
     }
 
