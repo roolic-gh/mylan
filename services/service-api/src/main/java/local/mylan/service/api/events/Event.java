@@ -16,4 +16,8 @@
 package local.mylan.service.api.events;
 
 public interface Event {
+
+    default String eventType() {
+        return getClass().getSimpleName();
+    }
 }
