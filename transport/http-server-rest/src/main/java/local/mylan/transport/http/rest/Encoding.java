@@ -18,12 +18,12 @@ package local.mylan.transport.http.rest;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_JSON;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_XML;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.xml.XmlWriteFeature;
 
 enum Encoding {
-    XML(APPLICATION_XML, new XmlMapper().configure(ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true)),
+    XML(APPLICATION_XML, XmlMapper.builder().configure(XmlWriteFeature.WRITE_XML_DECLARATION, true).build()),
     JSON(APPLICATION_JSON, new ObjectMapper());
 
     private final ObjectMapper objectMapper;

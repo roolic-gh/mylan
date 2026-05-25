@@ -15,17 +15,19 @@
  */
 package local.mylan.transport.http.rest;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.swagger.v3.core.util.Json;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 class OpenApiBuilderTest {
 
     private static final String rootPath = "/root";
 
     @Test
-    void parse(){
+    void parse() throws Exception {
         final var result = new OpenApiBuilder(rootPath).process(TestService.class).build();
-        System.out.println(Json.mapper().convertValue(result, ObjectNode.class));
+        final var objectNode = new ObjectMapper().convertValue(result, ObjectNode.class);
+        Assertions.assertNotNull(objectNode);
     }
 }

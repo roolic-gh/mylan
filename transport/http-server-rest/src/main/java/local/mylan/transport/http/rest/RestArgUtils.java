@@ -15,8 +15,6 @@
  */
 package local.mylan.transport.http.rest;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,8 +23,11 @@ import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.service.api.UserContext;
 import local.mylan.transport.http.api.RequestContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.type.TypeFactory;
 
 final class RestArgUtils {
+    private static final TypeFactory TYPE_FACTORY = TypeFactory.createDefaultInstance();
 
     private RestArgUtils() {
         // utility class
@@ -84,7 +85,7 @@ final class RestArgUtils {
         final JavaType argType;
 
         private RequestBodyArgBuilder(final Type argType) {
-            this.argType = TypeFactory.defaultInstance().constructType(argType);
+            this.argType = TYPE_FACTORY.constructType(argType);
         }
 
         @Override

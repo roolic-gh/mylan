@@ -43,12 +43,13 @@ public final class RestServiceDispatcher implements ContextDispatcher {
     @Override
     public boolean dispatch(final RequestContext ctx) {
         for (var handler : handlers) {
-            if(handler.httpMethodMatches(ctx.method())){
-            final var matcher = handler.pathMatcher();
-            if (matcher.matches(ctx.contextPath())) {
-                handler.processRequest(ctx, matcher.pathParameters());
-                return true;
-            }}
+            if (handler.httpMethodMatches(ctx.method())) {
+                final var matcher = handler.pathMatcher();
+                if (matcher.matches(ctx.contextPath())) {
+                    handler.processRequest(ctx, matcher.pathParameters());
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -64,7 +65,8 @@ public final class RestServiceDispatcher implements ContextDispatcher {
                     final var pathMatcher = RestPathUtils.getMatcher(mapping.path());
                     result.add(new RestRequestHandler(httpMethod, pathMatcher, classMethod, serviceInstance));
                 } catch (IllegalArgumentException e) {
-                    LOG.error("Exception on building handler for {}.{}()", serviceInstance.getClass(), classMethod.getName(), e);
+                    LOG.error("Exception on building handler for {}.{}()", serviceInstance.getClass(),
+                        classMethod.getName(), e);
                 }
             }
         }

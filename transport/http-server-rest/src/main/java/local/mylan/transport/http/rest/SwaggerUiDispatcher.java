@@ -15,7 +15,6 @@
  */
 package local.mylan.transport.http.rest;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.swagger.v3.core.util.Json;
 import java.io.ByteArrayInputStream;
@@ -24,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import local.mylan.transport.http.api.RequestContext;
 import local.mylan.transport.http.common.StaticContentDispatcher;
+import tools.jackson.databind.node.ObjectNode;
 
 public class SwaggerUiDispatcher extends StaticContentDispatcher {
 

@@ -15,8 +15,6 @@
  */
 package local.mylan.transport.http.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
@@ -32,6 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
 
 final class RestConverter {
     static final RestConverter INSTANCE = new RestConverter();
@@ -55,7 +55,7 @@ final class RestConverter {
         try {
             final var bytes = encoding.objectMapper().writeValueAsBytes(obj);
             return Unpooled.wrappedBuffer(bytes);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException(
                 "Error on converting of %s to %s".formatted(obj, encoding.name()), e);
         }
