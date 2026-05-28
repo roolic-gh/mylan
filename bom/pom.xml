@@ -85,6 +85,11 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
+                <artifactId>service-remote</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
                 <artifactId>service-rest</artifactId>
                 <version>${project.version}</version>
             </dependency>

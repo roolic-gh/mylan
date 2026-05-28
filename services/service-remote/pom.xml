@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2025 Ruslan Kashapov
+  Copyright 2026 Ruslan Kashapov
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,22 +19,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>local.mylan</groupId>
+        <artifactId>mylan-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../../parent</relativePath>
+    </parent>
+    <artifactId>service-remote</artifactId>
 
-    <groupId>local.mylan</groupId>
-    <artifactId>services</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-        <maven.install.skip>true</maven.install.skip>
-    </properties>
-
-    <modules>
-        <module>service-api</module>
-        <module>service-data</module>
-        <module>service-remote</module>
-        <module>service-rest</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>service-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>netty-smb</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

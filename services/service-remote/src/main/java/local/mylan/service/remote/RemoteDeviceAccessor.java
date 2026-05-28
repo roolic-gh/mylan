@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api;
+package local.mylan.service.remote;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import local.mylan.service.api.model.DiscoveryStatus;
+import java.net.InetAddress;
+import javax.annotation.Nullable;
+import local.mylan.service.api.model.DeviceProtocol;
 
-public interface DiscoveryService {
+public interface RemoteDeviceAccessor {
 
-    ListenableFuture<DiscoveryStatus> startDiscovery();
+    @Nullable
+    String extractDeviceName(InetAddress address);
 
-    DiscoveryStatus currentStatus();
-
-    default void stop() {
-    }
+    DeviceProtocol protocol();
 }

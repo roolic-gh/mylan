@@ -16,34 +16,42 @@
 package local.mylan.service.api.model;
 
 public class DiscoveryStatus {
+    private long startTime;
+    private long endTime;
+    private boolean running;
+    private long nextRunTime;
+    private int devicesDiscovered;
 
-    String startTime;
-    String endTime;
-    boolean completed;
-    int devicesDiscovered;
-
-    public String getStartTime() {
+    public long getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(final String startTime) {
+    public void setStartTime(final long startTime) {
         this.startTime = startTime;
     }
 
-    public String getEndTime() {
+    public long getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(final String endTime) {
+    public void setEndTime(final long endTime) {
         this.endTime = endTime;
     }
 
-    public boolean isCompleted() {
-        return completed;
+    public boolean isRunning() {
+        return running;
     }
 
-    public void setCompleted(final boolean completed) {
-        this.completed = completed;
+    public void setRunning(final boolean running) {
+        this.running = running;
+    }
+
+    public long getNextRunTime() {
+        return nextRunTime;
+    }
+
+    public void setNextRunTime(final long nextRunTime) {
+        this.nextRunTime = nextRunTime;
     }
 
     public int getDevicesDiscovered() {

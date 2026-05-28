@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api;
+package local.mylan.service.api.events;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import local.mylan.service.api.model.DiscoveryStatus;
+import java.util.List;
+import local.mylan.service.api.model.Device;
 
-public interface DiscoveryService {
+public class DiscoveryDevicesEvent implements Event {
 
-    ListenableFuture<DiscoveryStatus> startDiscovery();
+    private List<Device> devices;
 
-    DiscoveryStatus currentStatus();
+    public DiscoveryDevicesEvent() {
+        // default;
+    }
 
-    default void stop() {
+    public DiscoveryDevicesEvent(final List<Device> devices) {
+        this.devices = devices;
+    }
+
+    public List<Device> getDevices() {
+        return devices;
+    }
+
+    public void setDevices(final List<Device> devices) {
+        this.devices = devices;
     }
 }
