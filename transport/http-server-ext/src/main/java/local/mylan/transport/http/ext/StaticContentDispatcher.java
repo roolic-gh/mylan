@@ -23,6 +23,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_OCTET_STREAM;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static local.mylan.transport.http.common.utils.RequestUtils.isRootUri;
 import static local.mylan.transport.http.common.utils.ResponseUtils.allowResponse;
 import static local.mylan.transport.http.common.utils.ResponseUtils.fullUrl;
@@ -45,6 +46,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import local.mylan.transport.http.common.api.ContextDispatcher;
 import local.mylan.transport.http.common.api.RequestContext;
@@ -65,6 +68,8 @@ public class StaticContentDispatcher implements ContextDispatcher {
     protected final String resourceBase;
     protected final SourceType type;
     private final Cache<String, ContentSource> cache;
+    private final Map<String, Map<String, String>> substituteMaps = new HashMap<>();
+    private boolean checkFileUpdates;
 
     public StaticContentDispatcher(final String contextPath, final String resourceBase) {
         this(contextPath, resourceBase, SourceType.CLASSPATH);
@@ -80,6 +85,14 @@ public class StaticContentDispatcher implements ContextDispatcher {
             .expireAfterAccess(CACHE_EXPIRES)
             .build();
         LOG.info("Initialized for context {} -> content root: {} ({})", contextPath, resourceBase, type);
+    }
+
+    public void substitute(final String filePath, final Map<String, String> substituteMap) {
+        substituteMaps.put(filePath, substituteMap);
+    }
+
+    public void setCheckFileUpdates(final boolean enabled) {
+        checkFileUpdates = enabled;
     }
 
     @Override
@@ -138,7 +151,7 @@ public class StaticContentDispatcher implements ContextDispatcher {
                     throw new IllegalStateException("Error reading resouece {}", e);
                 }
             } else {
-                // send as separate chunks
+                // send as chunk sequence
                 try {
                     final var responseHeaders = new DefaultHttpResponse(ctx.protocolVersion(), OK, response.headers());
                     responseHeaders.headers().set(TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
@@ -161,6 +174,16 @@ public class StaticContentDispatcher implements ContextDispatcher {
 
     protected ContentSource getContentSource(final String path) {
         try {
+            if (checkFileUpdates && type == SourceType.FILE_SYSTEM) {
+                final var cached = cache.getIfPresent(path);
+                if (cached != null) {
+                    // if cache entry exists no need to verify if file exists
+                    final var file = new File(resourceBase + path);
+                    if (!cached.etag.equals(etag(file.lastModified(), file.length()))) {
+                        cache.invalidate(path);
+                    }
+                }
+            }
             return cache.get(path, () -> loadContentSource(path));
         } catch (ExecutionException e) {
             LOG.warn("Exception on loading content source {} ({})", path, type, e);
@@ -173,14 +196,14 @@ public class StaticContentDispatcher implements ContextDispatcher {
         if (type == SourceType.FILE_SYSTEM) {
             final var file = new File(fullPath);
             if (file.exists() && file.isFile()) {
-                return buildContentSource(fullPath, file.length(), file.lastModified(),
+                return buildContentSource(path, file.length(), file.lastModified(),
                     () -> new FileInputStream(file));
             }
         } else if (type == SourceType.CLASSPATH) {
             final var url = getClass().getResource(fullPath);
             if (url != null) {
                 final var conn = url.openConnection();
-                return buildContentSource(fullPath, conn.getContentLength(), conn.getLastModified(),
+                return buildContentSource(path, conn.getContentLength(), conn.getLastModified(),
                     url::openStream);
             }
         }
@@ -190,18 +213,33 @@ public class StaticContentDispatcher implements ContextDispatcher {
 
     private ContentSource buildContentSource(final String path, final long length, final long modified,
         final StreamProvider streamProvider) {
-        final var etag = "%s-%s".formatted(Long.toHexString(modified), Long.toHexString(length));
+
+        final var etag = etag(modified, length);
         final var guessMediaType = URLConnection.guessContentTypeFromName(path);
         final var mediaType = guessMediaType == null ? APPLICATION_OCTET_STREAM : guessMediaType;
-        if (length > CACHE_ITEM_MAX_LENGTH) {
+        // always cache files with substitution, even if file size is bigger then max allowed;
+        // it's quite complicated to perform strings substitution while streaming output stream
+        if (length > CACHE_ITEM_MAX_LENGTH && ! substituteMaps.containsKey(path)) {
             return new ContentSource(length, modified, mediaType, etag, null, streamProvider);
         }
         try (var in = streamProvider.getInputStream()) {
+            if (substituteMaps.containsKey(path)) {
+                var content = new String(in.readAllBytes(), UTF_8);
+                for (var entry : substituteMaps.get(path).entrySet()) {
+                    content = content.replace(entry.getKey(), entry.getValue());
+                }
+                final var bytes = content.getBytes(UTF_8);
+                return new ContentSource(bytes.length, modified, mediaType, etag, bytes, null);
+            }
             return new ContentSource(length, modified, mediaType, etag, in.readAllBytes(), null);
         } catch (IOException e) {
-            LOG.warn("Error reading resource {} ({})", path, type, e);
+            LOG.warn("Error reading resource {} ({})", resourceBase + path, type, e);
             return NO_CONTENT;
         }
+    }
+
+    private static String etag(final long modified, final long length) {
+        return "%s-%s".formatted(Long.toHexString(modified), Long.toHexString(length));
     }
 
     private static void sendNextChunk(final ChannelHandlerContext channelCtx, final HttpChunkedInput chunkedInput,
@@ -224,7 +262,6 @@ public class StaticContentDispatcher implements ContextDispatcher {
             }
         } catch (Exception e) {
             LOG.error("Exception processing chunk for resource {}", resourcePath, e);
-
         }
     }
 

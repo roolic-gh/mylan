@@ -20,6 +20,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.IF_NONE_MATCH;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_OCTET_STREAM;
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpMethod.GET;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static local.mylan.transport.http.common.HttpTestUtils.assertResponse;
 import static local.mylan.transport.http.common.HttpTestUtils.executeRequest;
 import static local.mylan.transport.http.common.HttpTestUtils.httpRequest;
@@ -29,7 +30,6 @@ import static local.mylan.transport.http.ext.StaticContentDispatcher.SourceType.
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -47,28 +47,36 @@ class StaticContentDispatcherTest {
     private static final String CONTEXT_PATH = "/test";
     private static final String CLASSPATH_PATH = "/classpath-content";
     private static final String TEXT_FILE_NAME = "test-file.txt";
-    private static final byte[] TEXT_FILE_CONTENT = "text content".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] TEXT_FILE_CONTENT = "text content".getBytes(UTF_8);
     private static final String BIN_FILE_NAME = "test-file.bin";
-    private static final byte[] BIN_FILE_CONTENT = "bin content".getBytes(StandardCharsets.UTF_8);
-    private static final String[] EMPTY_PATHS = {CONTEXT_PATH, CONTEXT_PATH + '/'};
-    private static final String REDIRECT = "http://" + HttpTestUtils.DEFAUT_HOST + CONTEXT_PATH + "/index.html" ;
+    private static final byte[] BIN_FILE_CONTENT = "bin content".getBytes(UTF_8);
 
+    private static final Map<String, String> SUBSTITUTE_MAP = Map.of("${test}", "T", "http://replace-me", "/replaced");
+    private static final String SUBSTITUTE_FILE_NAME = "substitute.txt";
+    private static final byte[] SUBSTITUTE_FILE_CONTENT = "A=${test} B=${test} C=http://replace-me".getBytes(UTF_8);
+    private static final byte[] SUBSTITUTED_CONTENT = "A=T B=T C=/replaced".getBytes(UTF_8);
+    private static final byte[] UPDATED_FILE_CONTENT = "X=${test} Y=http://replace-me".getBytes(UTF_8);
+    private static final byte[] UPDATED_SUBSTITUTED_CONTENT = "X=T Y=/replaced".getBytes(UTF_8);
+
+    private static final String[] EMPTY_PATHS = {CONTEXT_PATH, CONTEXT_PATH + '/'};
+    private static final String REDIRECT = "http://" + HttpTestUtils.DEFAUT_HOST + CONTEXT_PATH + "/index.html";
 
     @TempDir
     static Path contentDir;
 
-    static ContextDispatcher classpathDispatcher;
-    static ContextDispatcher filesystemDispatcher;
+    static StaticContentDispatcher classpathDispatcher;
+    static StaticContentDispatcher filesystemDispatcher;
 
     @BeforeAll
     static void beforeAll() throws IOException {
         Files.write(contentDir.resolve(TEXT_FILE_NAME), TEXT_FILE_CONTENT);
         Files.write(contentDir.resolve(BIN_FILE_NAME), BIN_FILE_CONTENT);
+        Files.write(contentDir.resolve(SUBSTITUTE_FILE_NAME), SUBSTITUTE_FILE_CONTENT);
         classpathDispatcher = new StaticContentDispatcher(CONTEXT_PATH, CLASSPATH_PATH);
         filesystemDispatcher = new StaticContentDispatcher(CONTEXT_PATH, contentDir.toString(), FILE_SYSTEM);
     }
 
-    private static List<ContextDispatcher> dispatchers() {
+    private static List<StaticContentDispatcher> dispatchers() {
         return List.of(classpathDispatcher, filesystemDispatcher);
     }
 
@@ -86,6 +94,7 @@ class StaticContentDispatcherTest {
 
     private static void assertOkResponse(final ContextDispatcher dispatcher, final String filename,
         final String expectedMeiaType, final byte[] expectedContent) {
+
         final var uri = CONTEXT_PATH + '/' + filename;
         final var channel = setupChannel(dispatcher);
         final var response = executeRequest(channel, httpRequest(GET, uri));
@@ -108,11 +117,40 @@ class StaticContentDispatcherTest {
     @ParameterizedTest
     @MethodSource("dispatchers")
     void emptyRedirect(final ContextDispatcher dispatcher) {
-        for(var emptyPath: EMPTY_PATHS) {
+        for (var emptyPath : EMPTY_PATHS) {
             final var channel = setupChannel(dispatcher);
             final var response = executeRequest(channel, httpRequest(GET, emptyPath));
             assertResponse(response, HttpResponseStatus.FOUND);
             Assertions.assertEquals(REDIRECT, response.headers().get(HttpHeaderNames.LOCATION));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("dispatchers")
+    void substituteAndCheckUpdated(final StaticContentDispatcher dispatcher) throws Exception {
+        dispatcher.substitute('/' + SUBSTITUTE_FILE_NAME, SUBSTITUTE_MAP);
+
+        final var uri = CONTEXT_PATH + '/' + SUBSTITUTE_FILE_NAME;
+        final var channel = setupChannel(dispatcher);
+        final var response = executeRequest(channel, httpRequest(GET, uri));
+        assertResponse(response, HttpResponseStatus.OK, TEXT_PLAIN.toString(), SUBSTITUTED_CONTENT);
+
+        final var etag = response.headers().get(ETAG);
+        Assertions.assertNotNull(etag);
+        final var response2 = executeRequest(channel, httpRequest(GET, uri, Map.of(IF_NONE_MATCH, etag)));
+        assertResponse(response2, HttpResponseStatus.NOT_MODIFIED);
+
+        // modify file content, verify cache invalidated and updated with new content
+        if (dispatcher.type == FILE_SYSTEM) {
+            dispatcher.setCheckFileUpdates(true);
+            Files.write(contentDir.resolve(SUBSTITUTE_FILE_NAME), UPDATED_FILE_CONTENT);
+            final var response3 = executeRequest(channel, httpRequest(GET, uri, Map.of(IF_NONE_MATCH, etag)));
+            assertResponse(response3, HttpResponseStatus.OK, TEXT_PLAIN.toString(), UPDATED_SUBSTITUTED_CONTENT);
+
+            final var etag2 = response3.headers().get(ETAG);
+            Assertions.assertNotNull(etag2);
+            final var response4 = executeRequest(channel, httpRequest(GET, uri, Map.of(IF_NONE_MATCH, etag2)));
+            assertResponse(response4, HttpResponseStatus.NOT_MODIFIED);
         }
     }
 }

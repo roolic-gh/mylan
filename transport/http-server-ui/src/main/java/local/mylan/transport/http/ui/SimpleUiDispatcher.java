@@ -16,9 +16,7 @@
 package local.mylan.transport.http.ui;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import local.mylan.transport.http.ext.StaticContentDispatcher;
 
 public class SimpleUiDispatcher extends StaticContentDispatcher {
@@ -31,36 +29,10 @@ public class SimpleUiDispatcher extends StaticContentDispatcher {
     @VisibleForTesting
     static final String REST_CONTEXT_REPLACE = "${REST_CONTEXT}";
 
-    private final ContentSource indexCached;
-
     public SimpleUiDispatcher(final String uiContextPath, final String restContextPath) {
         super(uiContextPath, RESOURCE_PATH, SourceType.CLASSPATH);
-        indexCached = cacheIndex(restContextPath);
-    }
-
-    private ContentSource cacheIndex(final String restContextPath) {
-        // substitute configurable paths, index.html only
-        try (var in = getClass().getResourceAsStream(resourceBase + INDEX_PATH)){
-           final var content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-           final var bytes = content
-               .replace(SELF_CONTEXT_REPLACE, contextPath)
-               .replace(REST_CONTEXT_REPLACE, restContextPath)
-               .getBytes(StandardCharsets.UTF_8);
-           final var modified = System.currentTimeMillis();
-           final var etag = Long.toHexString(modified);
-           return new ContentSource(bytes.length, modified, HttpHeaderValues.TEXT_HTML, etag, bytes, null);
-        } catch(IOException e){
-            throw new IllegalStateException("Could not cache index content", e);
-        }
-    }
-
-    @Override
-    protected String emptyRedirectPath() {
-        return INDEX_PATH;
-    }
-
-    @Override
-    protected ContentSource getContentSource(final String path) {
-        return INDEX_PATH.equals(path) ? indexCached : super.getContentSource(path);
+        substitute(INDEX_PATH, Map.of(
+            SELF_CONTEXT_REPLACE, contextPath,
+            REST_CONTEXT_REPLACE, restContextPath));
     }
 }

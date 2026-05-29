@@ -16,13 +16,12 @@
 package local.mylan.transport.http.rest;
 
 import io.netty.handler.codec.http.HttpHeaderValues;
-import io.swagger.v3.core.util.Json;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import local.mylan.transport.http.common.api.RequestContext;
+import java.util.Map;
 import local.mylan.transport.http.ext.StaticContentDispatcher;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 public class SwaggerUiDispatcher extends StaticContentDispatcher {
@@ -32,34 +31,18 @@ public class SwaggerUiDispatcher extends StaticContentDispatcher {
     static final String API_PATH = "/api.js";
     static final String URL_TO_REPLACE = "https://petstore.swagger.io/v2/swagger.json";
 
-    private final ContentSource initializerContentSource;
     private final ContentSource apiContentSource;
 
     public SwaggerUiDispatcher(final String contextPath, final String restContextPath,
         final Class<?>... serviceClasses) {
         super(contextPath, RESOURCE_PATH);
-        initializerContentSource = buildInitialiserContentSource();
+        substitute(INITIALIZER_PATH, Map.of(URL_TO_REPLACE, contextPath + API_PATH));
         apiContentSource = buildApiContentSource(restContextPath, serviceClasses);
-    }
-
-    private ContentSource buildInitialiserContentSource() {
-        // substitute configurable paths, index.html only
-        try (var in = getClass().getResourceAsStream(resourceBase + INITIALIZER_PATH)) {
-            final var content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            final var bytes = content
-                .replace(URL_TO_REPLACE, contextPath + API_PATH)
-                .getBytes(StandardCharsets.UTF_8);
-            final var modified = System.currentTimeMillis();
-            final var etag = Long.toHexString(modified);
-            return new ContentSource(bytes.length, modified, HttpHeaderValues.APPLICATION_JSON, etag, bytes, null);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not cache initializer content", e);
-        }
     }
 
     private static ContentSource buildApiContentSource(final String restContextPath, final Class<?>... serviceClasses) {
         final var openApi = new OpenApiBuilder(restContextPath).process(List.of(serviceClasses)).build();
-        final var bytes = Json.mapper().convertValue(openApi, ObjectNode.class)
+        final var bytes = new ObjectMapper().convertValue(openApi, ObjectNode.class)
             .toString().getBytes(StandardCharsets.UTF_8);
         final var modified = System.currentTimeMillis();
         final var etag = Long.toHexString(modified);
@@ -70,16 +53,10 @@ public class SwaggerUiDispatcher extends StaticContentDispatcher {
 
     @Override
     protected ContentSource getContentSource(final String path) {
-        return switch (path) {
-            case INITIALIZER_PATH -> initializerContentSource;
-            case API_PATH -> apiContentSource;
-            default -> super.getContentSource(path);
-        };
-    }
-
-    @Override
-    public boolean dispatch(final RequestContext ctx) {
-        return super.dispatch(ctx);
+        if (API_PATH.equals(path)) {
+            return apiContentSource;
+        }
+        return super.getContentSource(path);
     }
 
 }
