@@ -16,31 +16,38 @@
 package local.mylan.app;
 
 import java.nio.file.Path;
+import java.util.Map;
+import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
+import local.mylan.service.remote.RemoteDiscoveryService;
+import local.mylan.service.rest.api.RestDiscoveryService;
 import local.mylan.service.rest.api.RestUserService;
+import local.mylan.service.rest.spi.DefaultRestDiscoveryService;
 import local.mylan.service.rest.spi.DefaultRestUserService;
 import local.mylan.service.spi.DefaultEncryptionService;
 import local.mylan.service.spi.DefaultNotificationService;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
+import local.mylan.transport.http.ext.SseDispatcher;
+import local.mylan.transport.http.ext.StaticContentDispatcher;
 import local.mylan.transport.http.rest.RestServiceDispatcher;
 import local.mylan.transport.http.rest.SwaggerUiDispatcher;
-import local.mylan.transport.http.ui.SimpleUiDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class Application {
-    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
+final class AppServer {
+    private static final Logger LOG = LoggerFactory.getLogger(AppServer.class);
 
     private final Path confDir;
     private final Path workDir;
 
     private DataServiceProvider dataServiceProvider;
     private NotificationService notificationService;
+    private DiscoveryService discoveryService;
     private HttpServer server;
 
-    Application(final Path confDir, final Path workDir) {
+    AppServer(final Path confDir, final Path workDir) {
         this.confDir = confDir;
         this.workDir = workDir;
     }
@@ -52,21 +59,34 @@ final class Application {
         notificationService = new DefaultNotificationService();
         final var encryptionService = new DefaultEncryptionService(confDir, workDir);
 
+        // networking
+        discoveryService = new RemoteDiscoveryService(confDir, notificationService);
+
         // persistence layer services
         dataServiceProvider = new DataServiceProvider(confDir, workDir);
         final var userService = dataServiceProvider.buildUserService(encryptionService, notificationService);
 
-        // rest
+        // rest endpoints
         final var restUserService = new DefaultRestUserService(userService);
-        final var restDispatcher = new RestServiceDispatcher("/rest", restUserService);
+        final var restDiscoveryService = new DefaultRestDiscoveryService(discoveryService, notificationService);
+
+        final var restDispatcher = new RestServiceDispatcher("/rest", restUserService, restDiscoveryService);
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest",
-            RestUserService.class);
+            RestUserService.class, RestDiscoveryService.class);
+
+        // streaming
+        final var sseDispatcher = new SseDispatcher("/sse", notificationService, 10_000L);
+
+        // web ui
+        final var uiDispatcher = new StaticContentDispatcher("/ui", "/mylan/web-ui");
+        uiDispatcher.substitute("/index.html", Map.of(
+            "${SELF_CONTEXT}", "/ui", "${REST_CONTEXT}", "/rest", "${SSE_CONTEXT}", "/sse"));
 
         // http server
         final var dispatcher = CompositeDispatcher.builder()
             .authenticator(restUserService::authenticate)
-            .defaultDispatcher(new SimpleUiDispatcher("/ui", "/rest"))
-            .dispatchers(swaggerDispatcher, restDispatcher)
+            .defaultDispatcher(uiDispatcher)
+            .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher)
             .build();
         server = new HttpServer(confDir, dispatcher);
         server.start();
@@ -85,6 +105,9 @@ final class Application {
         }
         if (notificationService != null) {
             notificationService.stop();
+        }
+        if (discoveryService != null) {
+            discoveryService.stop();
         }
     }
 }

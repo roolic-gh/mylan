@@ -35,7 +35,6 @@
         <module>http-server-common</module>
         <module>http-server-ext</module>
         <module>http-server-rest</module>
-        <module>http-server-ui</module>
         <module>netty-smb</module>
     </modules>
 </project>

@@ -26,36 +26,7 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>http-server-ui</artifactId>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-http</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>http-server-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>http-server-common</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>http-server-ext</artifactId>
-        </dependency>
-    </dependencies>
+    <artifactId>web-ui</artifactId>
 
     <build>
         <plugins>
@@ -130,7 +101,7 @@
                                     </includes>
                                 </resource>
                              </resources>
-                            <outputDirectory>${project.build.outputDirectory}/mylan/ui-simple/mat</outputDirectory>
+                            <outputDirectory>${project.build.outputDirectory}/mylan/web-ui/mat</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

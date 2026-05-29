@@ -40,7 +40,7 @@ public final class Main {
         ConfRegistry.INSTANCE.setConfDir(confDir);
         // todo configure logger working dir in case file output to be used
 
-        final var application = new Application(confDir, workDir);
+        final var application = new AppServer(confDir, workDir);
         application.start();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> application.stop()));
         synchronized (application) {

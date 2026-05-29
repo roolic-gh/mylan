@@ -26,7 +26,7 @@
         <relativePath>../parent</relativePath>
     </parent>
 
-    <artifactId>mylan-application</artifactId>
+    <artifactId>mylan-server</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -64,10 +64,6 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>http-server-ui</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
             <artifactId>service-api</artifactId>
         </dependency>
         <dependency>
@@ -76,7 +72,15 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
+            <artifactId>service-remote</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
             <artifactId>service-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>web-ui</artifactId>
         </dependency>
     </dependencies>
 

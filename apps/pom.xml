@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2025 Ruslan Kashapov
+  Copyright 2026 Ruslan Kashapov
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>local.mylan</groupId>
-    <artifactId>mylan-aggregator</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>apps</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -31,13 +31,7 @@
     </properties>
 
     <modules>
-        <module>apps</module>
-        <module>bom</module>
-        <module>common</module>
-        <module>coverage</module>
-        <module>media</module>
-        <module>parent</module>
-        <module>services</module>
-        <module>transport</module>
+        <module>app-server</module>
+        <module>web-ui</module>
     </modules>
 </project>
