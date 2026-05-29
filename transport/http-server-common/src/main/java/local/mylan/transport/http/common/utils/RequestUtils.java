@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.common;
+package local.mylan.transport.http.common.utils;
 
 import static java.util.Objects.requireNonNull;
 
@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import local.mylan.service.api.UserContext;
-import local.mylan.transport.http.api.RequestContext;
-import local.mylan.transport.http.spi.DefaultRequestContext;
+import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.transport.http.common.spi.DefaultRequestContext;
 
 public final class RequestUtils {
 

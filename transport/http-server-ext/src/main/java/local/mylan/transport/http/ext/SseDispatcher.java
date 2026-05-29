@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.common;
+package local.mylan.transport.http.ext;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static local.mylan.transport.http.common.ResponseUtils.allowResponse;
-import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
-import static local.mylan.transport.http.common.ResponseUtils.unsupportedMethodResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.allowResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.unsupportedMethodResponse;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.Event;
 import local.mylan.service.api.events.EventListener;
-import local.mylan.transport.http.api.ContextDispatcher;
-import local.mylan.transport.http.api.RequestContext;
+import local.mylan.transport.http.common.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;

@@ -17,15 +17,15 @@ package local.mylan.transport.http;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static local.mylan.transport.http.common.ResponseUtils.contentOf;
-import static local.mylan.transport.http.common.ResponseUtils.responseWithContent;
-import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.contentOf;
+import static local.mylan.transport.http.common.utils.ResponseUtils.responseWithContent;
+import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import local.mylan.transport.http.api.RequestDispatcher;
+import local.mylan.transport.http.common.api.RequestDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

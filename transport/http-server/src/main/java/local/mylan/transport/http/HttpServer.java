@@ -37,7 +37,7 @@ import java.nio.file.Path;
 import java.util.concurrent.ThreadFactory;
 import jdk.net.ExtendedSocketOptions;
 import local.mylan.common.utils.ConfUtils;
-import local.mylan.transport.http.api.RequestDispatcher;
+import local.mylan.transport.http.common.api.RequestDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.common;
+package local.mylan.transport.http.ext;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.ETAG;
 import static io.netty.handler.codec.http.HttpHeaderNames.IF_NONE_MATCH;
@@ -24,7 +24,7 @@ import static local.mylan.transport.http.common.HttpTestUtils.assertResponse;
 import static local.mylan.transport.http.common.HttpTestUtils.executeRequest;
 import static local.mylan.transport.http.common.HttpTestUtils.httpRequest;
 import static local.mylan.transport.http.common.HttpTestUtils.setupChannel;
-import static local.mylan.transport.http.common.StaticContentDispatcher.SourceType.FILE_SYSTEM;
+import static local.mylan.transport.http.ext.StaticContentDispatcher.SourceType.FILE_SYSTEM;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -34,7 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import local.mylan.transport.http.api.ContextDispatcher;
+import local.mylan.transport.http.common.HttpTestUtils;
+import local.mylan.transport.http.common.api.ContextDispatcher;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;

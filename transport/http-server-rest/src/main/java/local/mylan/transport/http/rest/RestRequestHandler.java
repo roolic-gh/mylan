@@ -20,8 +20,8 @@ import static io.netty.handler.codec.http.HttpHeaderValues.NO_CACHE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static local.mylan.transport.http.common.ResponseUtils.responseWithContent;
-import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.responseWithContent;
+import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
 
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -31,7 +31,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import local.mylan.transport.http.api.RequestContext;
+import local.mylan.transport.http.common.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

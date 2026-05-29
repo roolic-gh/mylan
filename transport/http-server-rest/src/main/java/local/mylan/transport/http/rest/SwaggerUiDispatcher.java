@@ -21,8 +21,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import local.mylan.transport.http.api.RequestContext;
-import local.mylan.transport.http.common.StaticContentDispatcher;
+import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.transport.http.ext.StaticContentDispatcher;
 import tools.jackson.databind.node.ObjectNode;
 
 public class SwaggerUiDispatcher extends StaticContentDispatcher {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.common;
+package local.mylan.transport.http.ext;
 
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static local.mylan.transport.http.common.HttpTestUtils.assertResponse;
@@ -44,7 +44,7 @@ import local.mylan.service.api.UserContext;
 import local.mylan.service.api.events.Event;
 import local.mylan.service.api.model.User;
 import local.mylan.service.spi.DefaultNotificationService;
-import local.mylan.transport.http.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.ContextDispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;

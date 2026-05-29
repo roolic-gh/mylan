@@ -19,8 +19,8 @@ import io.netty.handler.codec.http.HttpMethod;
 import java.util.ArrayList;
 import java.util.List;
 import local.mylan.common.annotations.rest.RequestMapping;
-import local.mylan.transport.http.api.ContextDispatcher;
-import local.mylan.transport.http.api.RequestContext;
+import local.mylan.transport.http.common.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

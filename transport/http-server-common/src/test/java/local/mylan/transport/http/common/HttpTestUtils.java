@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.handler.codec.http.HttpHeaderNames.ACCEPT;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
-import static local.mylan.transport.http.common.RequestUtils.buildRequestContext;
+import static local.mylan.transport.http.common.utils.RequestUtils.buildRequestContext;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,7 +39,8 @@ import io.netty.handler.codec.http.QueryStringEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import local.mylan.service.api.UserContext;
-import local.mylan.transport.http.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.ContextDispatcher;
+import local.mylan.transport.http.common.utils.ResponseUtils;
 import org.junit.jupiter.api.Assertions;
 
 public final class HttpTestUtils {

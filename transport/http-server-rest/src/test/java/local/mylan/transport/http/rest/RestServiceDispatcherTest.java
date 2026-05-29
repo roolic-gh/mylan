@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import local.mylan.service.api.UserContext;
-import local.mylan.transport.http.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.ContextDispatcher;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

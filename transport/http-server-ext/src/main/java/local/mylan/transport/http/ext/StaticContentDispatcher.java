@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.common;
+package local.mylan.transport.http.ext;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -23,13 +23,13 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_OCTET_STREAM;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static local.mylan.transport.http.common.RequestUtils.isRootUri;
-import static local.mylan.transport.http.common.ResponseUtils.allowResponse;
-import static local.mylan.transport.http.common.ResponseUtils.fullUrl;
-import static local.mylan.transport.http.common.ResponseUtils.notFoundResponse;
-import static local.mylan.transport.http.common.ResponseUtils.redirectResponse;
-import static local.mylan.transport.http.common.ResponseUtils.simpleResponse;
-import static local.mylan.transport.http.common.ResponseUtils.unsupportedMethodResponse;
+import static local.mylan.transport.http.common.utils.RequestUtils.isRootUri;
+import static local.mylan.transport.http.common.utils.ResponseUtils.allowResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.fullUrl;
+import static local.mylan.transport.http.common.utils.ResponseUtils.notFoundResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.redirectResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.common.utils.ResponseUtils.unsupportedMethodResponse;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -46,8 +46,8 @@ import java.io.InputStream;
 import java.net.URLConnection;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import local.mylan.transport.http.api.ContextDispatcher;
-import local.mylan.transport.http.api.RequestContext;
+import local.mylan.transport.http.common.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

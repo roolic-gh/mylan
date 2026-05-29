@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.api;
+package local.mylan.transport.http.common.api;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
+public interface ContextDispatcher {
 
-@FunctionalInterface
-public interface RequestDispatcher {
+    String contextPath();
 
-    boolean dispatch(ChannelHandlerContext ctx, FullHttpRequest request);
-
+    boolean dispatch(RequestContext ctx);
 }

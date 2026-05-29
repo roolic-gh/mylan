@@ -15,7 +15,7 @@
  */
 package local.mylan.transport.http.rest;
 
-import local.mylan.transport.http.api.ContextDispatcher;
+import local.mylan.transport.http.common.api.ContextDispatcher;
 import org.junit.jupiter.api.BeforeAll;
 
 public class SwaggerUiDispatcherTest {

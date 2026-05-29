@@ -63,10 +63,6 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>http-server-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
             <artifactId>http-server-common</artifactId>
         </dependency>
         <dependency>
@@ -74,6 +70,10 @@
             <artifactId>http-server-common</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>http-server-ext</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>

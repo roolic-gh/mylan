@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.http.common;
+package local.mylan.transport.http.common.utils;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.handler.codec.http.HttpHeaderNames.ALLOW;
@@ -80,7 +80,7 @@ public final class ResponseUtils {
         return simpleResponse(version, METHOD_NOT_ALLOWED);
     }
 
-    static FullHttpResponse allowResponse(final HttpVersion version, final String allowHeader) {
+    public static FullHttpResponse allowResponse(final HttpVersion version, final String allowHeader) {
         return simpleResponse(version, OK, ALLOW, allowHeader);
     }
 

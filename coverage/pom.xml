@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>http-server-common</artifactId>
+            <artifactId>http-server-ext</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>

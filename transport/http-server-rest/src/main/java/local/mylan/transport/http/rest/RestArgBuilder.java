@@ -16,7 +16,7 @@
 package local.mylan.transport.http.rest;
 
 import java.util.Map;
-import local.mylan.transport.http.api.RequestContext;
+import local.mylan.transport.http.common.api.RequestContext;
 
 @FunctionalInterface
 interface RestArgBuilder {

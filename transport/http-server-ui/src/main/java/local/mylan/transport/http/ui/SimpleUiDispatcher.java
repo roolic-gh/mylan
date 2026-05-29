@@ -19,7 +19,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import local.mylan.transport.http.common.StaticContentDispatcher;
+import local.mylan.transport.http.ext.StaticContentDispatcher;
 
 public class SimpleUiDispatcher extends StaticContentDispatcher {
     @VisibleForTesting
