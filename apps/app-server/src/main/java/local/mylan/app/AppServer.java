@@ -15,6 +15,8 @@
  */
 package local.mylan.app;
 
+import static local.mylan.transport.http.ext.StaticContentDispatcher.SourceType.FILE_SYSTEM;
+
 import java.nio.file.Path;
 import java.util.Map;
 import local.mylan.service.api.DiscoveryService;
@@ -78,9 +80,21 @@ final class AppServer {
         final var sseDispatcher = new SseDispatcher("/sse", notificationService, 10_000L);
 
         // web ui
-        final var uiDispatcher = new StaticContentDispatcher("/ui", "/mylan/web-ui");
-        uiDispatcher.substitute("/index.html", Map.of(
-            "${SELF_CONTEXT}", "/ui", "${REST_CONTEXT}", "/rest", "${SSE_CONTEXT}", "/sse"));
+        boolean devMode = true; // TODO make configurable
+        final StaticContentDispatcher uiDispatcher;
+        if (devMode) {
+            uiDispatcher = new StaticContentDispatcher("/ui",
+                "apps/web-ui/src/main/resources/mylan/web-ui", FILE_SYSTEM);
+            uiDispatcher.setCheckFileUpdates(true);
+            uiDispatcher.substitute("/index.html", Map.of(
+                "${SELF_CONTEXT}", "/ui", "${LIBS_CONTEXT}", "/ui/target-libs",
+                "${REST_CONTEXT}", "/rest", "${SSE_CONTEXT}", "/sse"));
+        } else {
+            uiDispatcher = new StaticContentDispatcher("/ui", "/mylan/web-ui");
+            uiDispatcher.substitute("/index.html", Map.of(
+                "${SELF_CONTEXT}", "/ui", "${LIBS_CONTEXT}", "/ui/libs",
+                "${REST_CONTEXT}", "/rest", "${SSE_CONTEXT}", "/sse"));
+        }
 
         // http server
         final var dispatcher = CompositeDispatcher.builder()
@@ -88,7 +102,9 @@ final class AppServer {
             .defaultDispatcher(uiDispatcher)
             .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher)
             .build();
-        server = new HttpServer(confDir, dispatcher);
+        server = new
+
+            HttpServer(confDir, dispatcher);
         server.start();
     }
 

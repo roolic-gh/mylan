@@ -28,6 +28,30 @@
 
     <artifactId>web-ui</artifactId>
 
+    <properties>
+        <materializecss.version>1.0.0</materializecss.version>
+        <material-icons.version>1.13.11</material-icons.version>
+        <sse-js.version>0.6.1</sse-js.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>materializecss</artifactId>
+            <version>${materializecss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>material-icons</artifactId>
+            <version>${material-icons.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>sse.js</artifactId>
+            <version>${sse-js.version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -51,6 +75,11 @@
                                     <groupId>org.webjars</groupId>
                                     <artifactId>material-icons</artifactId>
                                     <version>${material-icons.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>sse.js</artifactId>
+                                    <version>${sse-js.version}</version>
                                 </artifactItem>
                             </artifactItems>
                             <outputDirectory>${project.build.directory}/temp</outputDirectory>
@@ -100,26 +129,22 @@
                                         <include>**/*.woff2</include>
                                     </includes>
                                 </resource>
+                                <resource>
+                                    <directory>
+                                        ${project.build.directory}/temp/META-INF/resources/webjars/sse.js/${sse-js.version}/lib
+                                    </directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*.js</include>
+                                    </includes>
+                                </resource>
                              </resources>
-                            <outputDirectory>${project.build.outputDirectory}/mylan/web-ui/mat</outputDirectory>
+
+                            <outputDirectory>${project.build.outputDirectory}/mylan/web-ui/libs</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>net.alchim31.maven</groupId>-->
-<!--                <artifactId>yuicompressor-maven-plugin</artifactId>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>compress</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--                    <nosuffix>false</nosuffix>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
         </plugins>
     </build>
 </project>

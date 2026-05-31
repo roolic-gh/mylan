@@ -3,7 +3,7 @@ class App {
     client = null;
     user = null;
 
-    constructor(selfContext, restContext) {
+    constructor(selfContext, restContext, sseContext) {
         this.ui = new MaterialUi(selfContext);
         this.client = new Client(restContext);
         this.user = new User();
