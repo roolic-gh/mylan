@@ -15,14 +15,14 @@
  */
 package local.mylan.transport.http.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import local.mylan.transport.http.ext.StaticContentDispatcher;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.json.JsonMapper;
 
 public class SwaggerUiDispatcher extends StaticContentDispatcher {
 
@@ -42,8 +42,12 @@ public class SwaggerUiDispatcher extends StaticContentDispatcher {
 
     private static ContentSource buildApiContentSource(final String restContextPath, final Class<?>... serviceClasses) {
         final var openApi = new OpenApiBuilder(restContextPath).process(List.of(serviceClasses)).build();
-        final var bytes = new ObjectMapper().convertValue(openApi, ObjectNode.class)
-            .toString().getBytes(StandardCharsets.UTF_8);
+        final var mapper = JsonMapper.builder()
+            .addModule(new OpenApiJsonModule())
+            .changeDefaultPropertyInclusion(
+                incl -> incl.withContentInclusion(JsonInclude.Include.NON_NULL)
+                    .withValueInclusion(JsonInclude.Include.NON_NULL)).build();
+        final var bytes = mapper.writeValueAsString(openApi).getBytes(StandardCharsets.UTF_8);
         final var modified = System.currentTimeMillis();
         final var etag = Long.toHexString(modified);
         return new ContentSource(bytes.length, modified,

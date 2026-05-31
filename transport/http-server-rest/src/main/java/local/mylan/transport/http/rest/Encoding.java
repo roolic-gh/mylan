@@ -18,13 +18,17 @@ package local.mylan.transport.http.rest;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_JSON;
 import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_XML;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.xml.XmlMapper;
 import tools.jackson.dataformat.xml.XmlWriteFeature;
 
 enum Encoding {
     XML(APPLICATION_XML, XmlMapper.builder().configure(XmlWriteFeature.WRITE_XML_DECLARATION, true).build()),
-    JSON(APPLICATION_JSON, new ObjectMapper());
+    JSON(APPLICATION_JSON, JsonMapper.builder().changeDefaultPropertyInclusion(
+        incl -> incl.withContentInclusion(JsonInclude.Include.NON_NULL)
+            .withValueInclusion(JsonInclude.Include.NON_NULL)).build());
 
     private final ObjectMapper objectMapper;
     private final CharSequence mediaType;

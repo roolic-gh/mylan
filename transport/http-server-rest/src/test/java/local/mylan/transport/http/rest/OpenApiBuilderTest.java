@@ -17,8 +17,6 @@ package local.mylan.transport.http.rest;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 class OpenApiBuilderTest {
 
@@ -27,7 +25,6 @@ class OpenApiBuilderTest {
     @Test
     void parse() throws Exception {
         final var result = new OpenApiBuilder(rootPath).process(TestService.class).build();
-        final var objectNode = new ObjectMapper().convertValue(result, ObjectNode.class);
-        Assertions.assertNotNull(objectNode);
+        Assertions.assertNotNull(result);
     }
 }

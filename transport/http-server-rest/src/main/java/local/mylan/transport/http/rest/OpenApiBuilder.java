@@ -59,9 +59,9 @@ class OpenApiBuilder {
     private final Map<Type, Schema<?>> schemaMap = new HashMap<>();
     private final List<String> supportedEncodings;
     private final OpenAPI openApi = new OpenAPI();
-    private Components components = new Components();
-    private Paths paths = new Paths();
-    private Set<Tag> tags = new HashSet<>();
+    private final Components components = new Components();
+    private final Paths paths = new Paths();
+    private final Set<Tag> tags = new HashSet<>();
 
     OpenApiBuilder(final String rootPath) {
         this(rootPath, List.of(HttpHeaderValues.APPLICATION_JSON.toString()));
