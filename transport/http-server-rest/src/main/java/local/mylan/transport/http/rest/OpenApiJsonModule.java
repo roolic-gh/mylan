@@ -33,10 +33,8 @@ import tools.jackson.databind.ser.ValueSerializerModifier;
  *
  * @see io.swagger.v3.core.util.ObjectMapperFactory
  */
+@SuppressWarnings("serial")
 class OpenApiJsonModule extends SimpleModule {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     @Override
     public void setupModule(final JacksonModule.SetupContext context) {
@@ -69,6 +67,7 @@ class OpenApiJsonModule extends SimpleModule {
         private final ValueSerializer<T> delegator;
         private final DelegateSerializer<T> delegateSerializer;
 
+        @SuppressWarnings("unchecked")
         protected DelegateValueSerialzer(final ValueSerializer<?> delegator,
             final DelegateSerializer<T> delegateSerializer) {
 
