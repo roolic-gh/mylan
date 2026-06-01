@@ -20,6 +20,7 @@ import static local.mylan.transport.http.common.utils.ResponseUtils.allowRespons
 import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
 import static local.mylan.transport.http.common.utils.ResponseUtils.unsupportedMethodResponse;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -37,7 +38,15 @@ import local.mylan.transport.http.common.api.ContextDispatcher;
 import local.mylan.transport.http.common.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.BeanDescription;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.ValueSerializerModifier;
 
 public class SseDispatcher implements ContextDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(SseDispatcher.class);
@@ -47,7 +56,9 @@ public class SseDispatcher implements ContextDispatcher {
         Unpooled.wrappedBuffer(": ping\r\n\r\n".getBytes(UTF_8)).asReadOnly();
     private static final String EVENT_MESSAGE_PATTERN = "event: %s\r\ndata: %s\r\n\r\n";
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().addModule(new EventSerializerModule())
+        .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL)
+            .withContentInclusion(JsonInclude.Include.NON_NULL)).build();
 
     private final String contextPath;
     private final NotificationService notificationService;
@@ -61,7 +72,7 @@ public class SseDispatcher implements ContextDispatcher {
         this.pingIntervalMillis = pingIntervalMillis;
     }
 
-    @Override
+        @Override
     public String contextPath() {
         return contextPath;
     }
@@ -152,4 +163,45 @@ public class SseDispatcher implements ContextDispatcher {
             return !channelCtx.isRemoved() && channelCtx.channel().isActive();
         }
     }
+
+    @SuppressWarnings("serial")
+    private static class EventSerializerModule extends SimpleModule{
+
+        @Override
+        public void setupModule(final SetupContext context) {
+            super.setupModule(context);
+            context.addSerializerModifier(new ValueSerializerModifier() {
+                @Override
+                public ValueSerializer<?> modifySerializer(final SerializationConfig config,
+                    final BeanDescription.Supplier beanDesc, final ValueSerializer<?> serializer) {
+
+                    return Event.class.isAssignableFrom(beanDesc.getBeanClass()) ?
+                        new EventValueSerializer(serializer) : serializer;
+                }
+            });
+        }
+    }
+
+    private static class EventValueSerializer extends ValueSerializer<Event>{
+        final ValueSerializer<Event> delegator;
+
+        @SuppressWarnings("unchecked")
+        EventValueSerializer(final ValueSerializer<?> delegator) {
+            this.delegator = (ValueSerializer<Event>) delegator;
+        }
+
+        @Override
+        public void resolve(final SerializationContext ctxt) {
+            delegator.resolve(ctxt);
+        }
+
+        @Override
+        public void serialize(final Event event, final JsonGenerator gen, final SerializationContext ctxt){
+            gen.writeStartObject();
+            delegator.unwrappingSerializer(null).serialize(event, gen, ctxt);
+            gen.writeStringProperty("eventType", event.eventType());
+            gen.writeEndObject();
+        }
+    }
+
 }

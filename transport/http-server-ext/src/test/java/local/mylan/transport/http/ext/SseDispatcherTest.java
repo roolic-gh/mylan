@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.base.Objects;
-import io.netty.channel.Channel;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -57,10 +56,10 @@ public class SseDispatcherTest {
     private static final UserContext USER_CTX = new UserContext(new User(USER_ID, "user", "User", false), null);
 
     private static final Pattern EVENT_MESSAGE_PATTERN = Pattern.compile("event: (.+?)\\r\\ndata: (.+)\\r\\n\\r\\n");
+    private static final String EVENT_TYPE_JSON_FRAGMENT = "\"eventType\":\"test-event-type\"";
 
     private NotificationService notificationService;
     private ContextDispatcher dispatcher;
-    private Channel channel;
 
     @BeforeEach
     void beforeEach() {
@@ -122,7 +121,10 @@ public class SseDispatcherTest {
         final var matcher = EVENT_MESSAGE_PATTERN.matcher(eventContent);
         assertTrue(matcher.matches());
         assertEquals(originalEvent.eventType(), matcher.group(1));
-        final var parcedEvent = new ObjectMapper().readValue(matcher.group(2), TestEvent.class);
+        final var json = matcher.group(2);
+        // ensure eventType is serialized to json
+        assertTrue(json.indexOf(EVENT_TYPE_JSON_FRAGMENT) > 0);
+        final var parcedEvent = new ObjectMapper().readValue(json, TestEvent.class);
         assertEquals(originalEvent, parcedEvent);
     }
 
@@ -142,6 +144,11 @@ public class SseDispatcherTest {
         TestEvent(final long time, final String name) {
             this.time = time;
             this.name = name;
+        }
+
+        @Override
+        public String eventType() {
+            return "test-event-type";
         }
 
         public long getTime() {

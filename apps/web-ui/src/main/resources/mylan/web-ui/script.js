@@ -2,11 +2,13 @@ class App {
     ui = null;
     client = null;
     user = null;
+    sse = null;
 
     constructor(selfContext, restContext, sseContext) {
         this.ui = new MaterialUi(selfContext);
         this.client = new Client(restContext);
         this.user = new User();
+        this.sse = new SseHandler(sseContext);
     }
 
     init() {
@@ -23,6 +25,7 @@ class App {
         this.client.authenticate(creds, (response) => {
             this.client.setToken(response.authToken, persist);
             this.user.reset(response.user);
+            this.sse.start(response.authToken);
             this.ui.applyUser(this.user);
             this.ui.closeModal('login-modal');
             if (response.mustChangePassword) {
@@ -36,6 +39,7 @@ class App {
         this.client.clearToken();
         this.user.reset({userId: null});
         this.ui.applyUser(this.user);
+        this.sse.stop();
         // TODO refresh ui
     }
 
@@ -102,6 +106,46 @@ class App {
                 report("User @" + user.username + " deleted.");
                 this.listUsers();
             });
+    }
+}
+
+class SseHandler{
+    uri = null;
+    sse = null;
+
+    constructor(uri){
+        this.uri = uri;
+    }
+
+    start(token){
+        this.sse = new SSE(this.uri,{
+            method: "GET",
+            headers: {
+                Authorization: "Bearer " + token,
+                Accept: "text/event-stream"
+            },
+            autoReconnect: true,
+            reconnectDelay: 3000,
+            maxRetries: 1,
+            start: false
+        });
+        this.sse.addEventListener("message", (evt) => {
+            if(evt.data){
+                this.onEvent(JSON.parse(evt.data));
+            }
+        })
+        this.sse.stream();
+    }
+
+    stop(){
+        if(this.sse != null){
+            this.sse.close();
+            this.sse = null;
+        }
+    }
+
+    onEvent(event){
+        console.log(event);
     }
 }
 
@@ -213,12 +257,7 @@ class Client {
     }
 
     getUserList(callback) {
-        //        callback([
-        //            {userId: 1, username: "admin", displayName: "Admin", admin: true, disabled: false},
-        //            {userId: 2, username: "user1", displayName: "User 1", admin: false, disabled: false},
-        //            {userId: 3, username: "user2", displayName: "User 3", admin: false, disabled: true}
-        //        ]);
-        this.request("GET", "/user/list", callback);
+          this.request("GET", "/user/list", callback);
     }
 
     async request(method, path, callback, body) {
