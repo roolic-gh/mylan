@@ -173,7 +173,6 @@ public class SmbClientConnection implements Connection {
                     }
                 });
                 nettyChannel = channel;
-                LOG.debug("Channel {} initialized", channel);
             }
         };
     }
