@@ -72,6 +72,19 @@ class NavResourceDataServiceTest {
     private static final String IP_1 = "192.168.1.101";
     private static final String IP_2 = "192.168.1.102";
 
+    private static final String SYNC_1 = "sync-1";
+    private static final String SYNC_2 = "sync-2";
+    private static final String SYNC_3 = "sync-3";
+
+    private static final String SYNC_IP_1 = "192.168.1.181";
+    private static final String SYNC_IP_2 = "192.168.1.182";
+    private static final String SYNC_IP_3 = "192.168.1.183";
+    private static final String SYNC_IP_4 = "192.168.1.184";
+    private static final String SYNC_IP_5 = "192.168.1.185";
+    private static final String SYNC_IP_6 = "192.168.1.186";
+    private static final String SYNC_IP_7 = "192.168.1.187";
+    private static final String SYNC_IP_8 = "192.168.1.188";
+
     private static final String SHARE_LOCAL_1 = "share-local-1";
     private static final String SHARE_LOCAL_2 = "share-local-2";
     private static final String SHARE_LOCAL_3 = "share-local-3";
@@ -229,6 +242,38 @@ class NavResourceDataServiceTest {
         // validate db
         final var check = navResourceService.getDevice(device1.getDeviceId());
         assertDeviceIpAddresses(check.getIpAddresses(), Set.of(IP_1));
+    }
+
+    @Test
+    @Order(15)
+    void syncDeviceAddresses() {
+        // devices before: sync1(ip1, ip2, ip3) + sync2(ip4, ip5, ip6)
+        navResourceService.createDevice(new Device(SYNC_1, DeviceProtocol.SMB, List.of(
+            new DeviceIpAddress(SYNC_IP_1), new DeviceIpAddress(SYNC_IP_2), new DeviceIpAddress(SYNC_IP_3))));
+        navResourceService.createDevice(new Device(SYNC_2, DeviceProtocol.SMB, List.of(
+            new DeviceIpAddress(SYNC_IP_4), new DeviceIpAddress(SYNC_IP_5), new DeviceIpAddress(SYNC_IP_6))));
+
+        // sync with devices: sync1(ip1, ip6, ip7), sync3(ip2, ip4, ip8) -->
+        // 2 reassigned, (sync2 offline) 2 new, 1 removed
+        final var syncList = List.of(
+            new Device(SYNC_1, DeviceProtocol.SMB, List.of(
+                new DeviceIpAddress(SYNC_IP_1), new DeviceIpAddress(SYNC_IP_6), new DeviceIpAddress(SYNC_IP_7))),
+            new Device(SYNC_3, DeviceProtocol.NFS, List.of(
+                new DeviceIpAddress(SYNC_IP_2), new DeviceIpAddress(SYNC_IP_4), new DeviceIpAddress(SYNC_IP_8))));
+
+        // execute and check
+        navResourceService.syncDeviceAddresses(syncList);
+
+        final var deviceMap =  toMap(navResourceService.getAllDevices(), Device::getIdentifier);
+        assertNotNull(deviceMap.get(SYNC_1));
+        assertDeviceIpAddresses(deviceMap.get(SYNC_1).getIpAddresses(), Set.of(SYNC_IP_1, SYNC_IP_6, SYNC_IP_7));
+        assertNotNull(deviceMap.get(SYNC_2));
+        assertDeviceIpAddresses(deviceMap.get(SYNC_2).getIpAddresses(), Set.of(SYNC_IP_5));
+        assertNotNull(deviceMap.get(SYNC_3));
+        assertDeviceIpAddresses(deviceMap.get(SYNC_3).getIpAddresses(), Set.of(SYNC_IP_2, SYNC_IP_4, SYNC_IP_8));
+
+        // validate released ip3 address removed
+        assertNull(sessionFactory.fromSession(session -> session.get(DeviceIpAddressEntity.class, SYNC_IP_3)));
     }
 
     @Test

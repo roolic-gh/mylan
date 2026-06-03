@@ -37,6 +37,8 @@ public interface NavResourceService {
 
     void removeDeviceAddress(Integer deviceId, String ipAddress);
 
+    void syncDeviceAddresses(List<Device> devices);
+
     DeviceAccount getLocalAccount();
 
     DeviceAccount getAccount(Integer accountId);

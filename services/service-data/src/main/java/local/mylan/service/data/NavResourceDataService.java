@@ -18,13 +18,17 @@ package local.mylan.service.data;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
+import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -42,6 +46,7 @@ import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.Queries;
 import local.mylan.service.data.entities.UserEntity;
 import local.mylan.service.data.mappers.NavResourceModelMapper;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.exception.ConstraintViolationException;
 import org.mapstruct.factory.Mappers;
@@ -63,6 +68,8 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         localDeviceId = localDevice.getDeviceId();
         final var localAccount = getLocalAccountEntity(localDevice);
         localAccountId = localAccount.getAccountId();
+        notificationService.registerEventListener(DiscoveryDevicesEvent.class,
+            event -> syncDeviceAddresses(event.getDevices()));
     }
 
     private DeviceEntity getLocalDeviceEntity() {
@@ -173,6 +180,80 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
+    public void syncDeviceAddresses(final List<Device> devices) {
+        if (devices == null || devices.isEmpty()) {
+            return;
+        }
+        // synchronize device-to-ip-address mapping
+        final var checkedAddresses = devices.stream()
+            .filter(device -> device.getIpAddresses() != null)
+            .flatMap(device -> device.getIpAddresses().stream())
+            .map(DeviceIpAddress::getIpAddress).collect(toSet());
+
+        final var deviceEntities = fromSession(session ->
+            session.createNamedQuery(Queries.GET_ALL_DEVICES, DeviceEntity.class).getResultList());
+        final var deviceEntityMap = deviceEntities.stream()
+            .collect(toMap(DeviceEntity::getIdentifier, entity -> entity));
+        final var allIpAddressMap = deviceEntities.stream()
+            .filter(entity -> entity.getIpAddresses() != null)
+            .flatMap(entity -> entity.getIpAddresses().stream())
+            .collect(toMap(DeviceIpAddressEntity::getIpAddress, entity -> entity));
+
+        inTransaction(session -> {
+            for (var device : devices) {
+                if (device.getIpAddresses() == null) {
+                    continue;
+                }
+                final var deviceEntity = deviceEntityMap.get(device.getIdentifier());
+                if (deviceEntity != null) {
+                    final var ipAddressEntityMap = new HashMap<String, DeviceIpAddressEntity>(
+                        deviceEntity.getIpAddresses() == null ? Map.of() : deviceEntity.getIpAddresses().stream()
+                            .collect(toMap(DeviceIpAddressEntity::getIpAddress, entity -> entity)));
+
+                    for (var ipAddress : device.getIpAddresses()) {
+                        if (ipAddressEntityMap.remove(ipAddress.getIpAddress()) == null) {
+                            // reassign device if assigned to other device, otherwise create new entry
+                            updateOrInsertIpAddress(session, deviceEntity,
+                                allIpAddressMap.get(ipAddress.getIpAddress()), ipAddress);
+                        }
+                    }
+                    // invalid ip addresses to remove
+                    for (var ipAddressEntity : ipAddressEntityMap.values()) {
+                        // if only it's not assigned to other device within current sync list
+                        // (those to be updated not removed)
+                        if (!checkedAddresses.contains(ipAddressEntity.getIpAddress())) {
+                            session.remove(ipAddressEntity);
+                        }
+                    }
+                } else {
+                    // new device
+                    final var newDeviceEntity = MAPPER.toEntity(device);
+                    newDeviceEntity.setIpAddresses(List.of());
+                    session.persist(newDeviceEntity);
+                    for (var ipAddress : device.getIpAddresses()) {
+                        updateOrInsertIpAddress(session, newDeviceEntity,
+                            allIpAddressMap.get(ipAddress.getIpAddress()), ipAddress);
+                    }
+                }
+            }
+        });
+    }
+
+    private static void updateOrInsertIpAddress(final Session session, final DeviceEntity deviceEntity,
+        final DeviceIpAddressEntity ipAddressEntity, final DeviceIpAddress ipAddress) {
+
+        if (ipAddressEntity != null) {
+            ipAddressEntity.setDevice(deviceEntity);
+            session.merge(ipAddressEntity);
+        } else{
+            final var newEntity = MAPPER.toEntity(ipAddress);
+            newEntity.setDevice(deviceEntity);
+            session.persist(newEntity);
+        }
+
+    }
+
+    @Override
     public DeviceAccount getLocalAccount() {
         return getAccount(localAccountId);
     }
@@ -279,8 +360,8 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         inTransaction(session -> {
             final var localAccount = session.get(DeviceAccountEntity.class, localAccountId);
             final var entitiesMap = session
-                    .createNamedQuery(Queries.GET_LOCAL_SHARED_RESOURCES, NavResourceShareEntity.class)
-                    .stream().collect(toMap(NavResourceShareEntity::getPath, Function.identity()));
+                .createNamedQuery(Queries.GET_LOCAL_SHARED_RESOURCES, NavResourceShareEntity.class)
+                .stream().collect(toMap(NavResourceShareEntity::getPath, Function.identity()));
             for (var share : uniquePaths) {
                 final var entity = entitiesMap.remove(share.getPath());
                 if (entity == null) {
