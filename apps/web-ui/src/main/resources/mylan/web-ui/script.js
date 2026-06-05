@@ -1,8 +1,25 @@
+/*
+  Copyright 2026 Ruslan Kashapov
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 class App {
     ui = null;
     client = null;
     user = null;
     sse = null;
+    nav = null;
 
     constructor(selfContext, restContext, sseContext) {
         this.ui = new MaterialUi(selfContext);
@@ -16,11 +33,20 @@ class App {
         this.client.getCurrentUser((currentUser) => {
             this.user.reset(currentUser);
             this.ui.applyUser(this.user);
+            if (!this.user.isGuest) {
+                this.sse.start(this.client.token);
+            }
+            this.refresh();
+        });
+        window.addEventListener("popstate", (evt) => {
+            console.log("popstate", evt);
+            // FIXME prevent refresh after history.statePush, only on browser back/forward
+            // this.refresh();
         });
     }
 
     login() {
-        const creds = {username: byId('username-input').value, password: byId('password-input').value };
+        const creds = { username: byId('username-input').value, password: byId('password-input').value };
         const persist = byId('rememberme-input').checked;
         this.client.authenticate(creds, (response) => {
             this.client.setToken(response.authToken, persist);
@@ -37,10 +63,10 @@ class App {
     logout() {
         // TODO Notify server to cancel session
         this.client.clearToken();
-        this.user.reset({userId: null});
+        this.user.reset({ userId: null });
         this.ui.applyUser(this.user);
         this.sse.stop();
-        // TODO refresh ui
+        this.refresh();
     }
 
     updatePassword() {
@@ -52,7 +78,7 @@ class App {
             return;
         }
         this.client.updateUserPassword(
-            {userId:this.user.id, oldPassword: oldPass, newPassword: newPass},
+            { userId: this.user.id, oldPassword: oldPass, newPassword: newPass },
             () => {
                 report("Password updated. Please re-login.");
                 this.ui.closeModal('change-password-modal');
@@ -61,7 +87,7 @@ class App {
 
     updateProfile() {
         this.client.updateUserDetails(
-            {userId: this.user.id, displayName: byId('edit-displayname-input').value},
+            { userId: this.user.id, displayName: byId('edit-displayname-input').value },
             (updatedUser) => {
                 this.user.reset(updatedUser);
                 this.ui.applyUser(this.user);
@@ -69,7 +95,39 @@ class App {
             });
     }
 
+    refresh() {
+        const navId = getNav();
+        if ("users" === navId) {
+            this.listUsers();
+        } else if ("resources" === navId) {
+            this.listResources();
+        } else if ("bookmarks" === navId) {
+            this.listBookmarks();
+        } else if ("recent" === navId) {
+            this.listRecent();
+        } else {
+            this.dashboard();
+        }
+    }
+
+    dashboard() {
+        setNav("home");
+    }
+
+    listBookmarks() {
+        setNav("bookmarks");
+    }
+
+    listRecent() {
+        setNav("recent");
+    }
+
+    listResources() {
+        setNav("resources");
+    }
+
     listUsers() {
+        setNav("users");
         this.client.getUserList((users) => this.ui.drawUserList(users, this));
     }
 
@@ -102,23 +160,23 @@ class App {
 
     deleteUser(user) {
         // TODO delete confirm dialog
-        this.client.deleteUser( user.userId, () => {
-                report("User @" + user.username + " deleted.");
-                this.listUsers();
-            });
+        this.client.deleteUser(user.userId, () => {
+            report("User @" + user.username + " deleted.");
+            this.listUsers();
+        });
     }
 }
 
-class SseHandler{
+class SseHandler {
     uri = null;
     sse = null;
 
-    constructor(uri){
+    constructor(uri) {
         this.uri = uri;
     }
 
-    start(token){
-        this.sse = new SSE(this.uri,{
+    start(token) {
+        this.sse = new SSE(this.uri, {
             method: "GET",
             headers: {
                 Authorization: "Bearer " + token,
@@ -130,39 +188,39 @@ class SseHandler{
             start: false
         });
         this.sse.addEventListener("message", (evt) => {
-            if(evt.data){
+            if (evt.data) {
                 this.onEvent(JSON.parse(evt.data));
             }
         })
         this.sse.stream();
     }
 
-    stop(){
-        if(this.sse != null){
+    stop() {
+        if (this.sse != null) {
             this.sse.close();
             this.sse = null;
         }
     }
 
-    onEvent(event){
+    onEvent(event) {
         console.log(event);
     }
 }
 
-class MaterialUi{
+class MaterialUi {
     selfContext = null;
 
-    constructor(selfContext){
+    constructor(selfContext) {
         this.selfContext = selfContext;
     }
 
     init() {
         M.Dropdown.init(document.querySelectorAll(`.dropdown-trigger`), {});
-        M.Modal.init(document.querySelectorAll(`.modal`), {onOpenStart: M.updateTextFields});
+        M.Modal.init(document.querySelectorAll(`.modal`), { onOpenStart: M.updateTextFields });
     }
 
     applyUser(user) {
-        setVisible('volumes-menu-item', !user.isGuest);
+        setVisible('resources-menu-item', !user.isGuest);
         setVisible('bookmarks-menu-item', !user.isGuest);
         setVisible('users-menu-item', user.isAdmin);
         setVisible('registered-menu-item', !user.isGuest);
@@ -172,21 +230,23 @@ class MaterialUi{
     }
 
     drawUserList(users, app) {
-        console.log(users);
-        setTableContentFromTemplate('user-lst-template', users, (user) => [
-            user.userId, user.username, user.displayName,
-            user.admin ? 'admin' : 'user',
-            user.disabled ? 'disabled' : 'active',
-            user.disabled
-                ? [
-                button('Enable', () => app.setUserEnabled(user, true)),
-                button('Delete', () => app.deleteUser(user))
-            ]
-                : [
-                button('Reset Password', () => app.resetUserPassword(user)),
-                button('Disable', () => app.setUserEnabled(user, false))
-            ]
-        ]);
+        console.log("Users", users);
+        setTableContentFromTemplate('user-lst-template', users,
+            (user) => "user-list-tr-" + user.userId,
+            (user) => [
+                user.userId, user.username, user.displayName,
+                user.admin ? 'admin' : 'user',
+                user.disabled ? 'disabled' : 'active',
+                user.disabled
+                    ? [
+                        button('Enable', () => app.setUserEnabled(user, true)),
+                        button('Delete', () => app.deleteUser(user))
+                    ]
+                    : [
+                        button('Reset Password', () => app.resetUserPassword(user)),
+                        button('Disable', () => app.setUserEnabled(user, false))
+                    ]
+            ]);
     }
 
     openModal(id) {
@@ -197,14 +257,14 @@ class MaterialUi{
         M.Modal.getInstance(byId(id)).close();
     }
 
-    notifyPasswordChangeRequired(){
+    notifyPasswordChangeRequired() {
         M.toast({ html: "Password change is required" });
         this.openModal('change-password-modal')
     }
 }
 
 class Client {
-    restContext= null;
+    restContext = null;
     token = null;
     constructor(restContext) {
         this.restContext = restContext;
@@ -224,7 +284,6 @@ class Client {
     }
 
     getCurrentUser(callback) {
-        //        callback({userId: 10, username: "admin", displayName: "Admin", admin: true});
         this.request("GET", "/user", callback);
     }
 
@@ -236,7 +295,7 @@ class Client {
         this.request("POST", "/user/change-password", callback, creds);
     }
 
-    resetUserPassword(userId, callback){
+    resetUserPassword(userId, callback) {
         this.request("POST", "/user/" + userId + "/reset-password", callback);
     }
 
@@ -257,7 +316,7 @@ class Client {
     }
 
     getUserList(callback) {
-          this.request("GET", "/user/list", callback);
+        this.request("GET", "/user/list", callback);
     }
 
     async request(method, path, callback, body) {
@@ -328,10 +387,9 @@ class User {
     }
 }
 
-function setTableContentFromTemplate(templateId, items, toCells) {
-    const fragment = byId(templateId).content.cloneNode(true);
-    const tbody = fragment.querySelector('tbody');
-    items.forEach((item) => tbody.append(buildTableRow(toCells(item))));
+function setTableContentFromTemplate(templateId, items, toId, toCells) {
+    const fragment = byId(templateId).content.cloneNode(true); const tbody = fragment.querySelector('tbody');
+    items.forEach((item) => tbody.append(buildTableRow(toId(item), toCells(item))))
     byId('content').replaceChildren(fragment);
 }
 
@@ -343,13 +401,14 @@ function setVisible(id, visible) {
     byId(id).style.display = visible ? '' : 'none';
 }
 
-function buildTable(headers, rows){
+function buildTable(headers, rows) {
     return elementNode('table', [elementNode('thead', [buildTableRow(headers)]), elementNode('tbody', rows)]);
 }
 
-function buildTableRow(items) {
+function buildTableRow(id, items) {
     var row = document.createElement('tr');
-    items.forEach((item) => row.append(Array.isArray(item)? elementNode('td', item) : elementText('td', item)));
+    row.id = id;
+    items.forEach((item) => row.append(Array.isArray(item) ? elementNode('td', item) : elementText('td', item)));
     return row;
 }
 
@@ -359,7 +418,7 @@ function elementNode(tag, children) {
     return elm;
 }
 
-function elementText(tag, text){
+function elementText(tag, text) {
     const elm = document.createElement(tag);
     elm.textContent = text;
     return elm;
@@ -379,4 +438,16 @@ function report(message) {
 function reportError(message) {
     console.log(message);
     M.toast({ html: "Error: " + message, classes: 'red darken-2' });
+}
+
+function setNav(value) {
+    window.history.pushState({ nav: value }, null, "?" + value);
+}
+
+function getNav() {
+    const search = window.location.search;
+    if (search != null && search.length > 1) {
+        return search.substring(1);
+    }
+    return null;
 }

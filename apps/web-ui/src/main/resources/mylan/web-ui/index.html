@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Copyright 2025 Ruslan Kashapov
+  Copyright 2026 Ruslan Kashapov
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@
 <!-- navbar -->
 <nav>
     <div class="nav-wrapper blue-grey darken-3">
-        <a href="#" class="left brand-logo">MyLAN</a>
+        <a href="#" onclick="app.dashboard()"class="left brand-logo">MyLAN</a>
         <ul class="right">
             <li id="bookmarks-menu-item"><a href="#" onclick="app.listBookmarks()">Bookmarks</a></li>
-            <li id="volumes-menu-item"><a href="#" onclick="app.listVolumes()">Volumes</a></li>
+            <li id="resources-menu-item"><a href="#" onclick="app.listResources()">Resources</a></li>
             <li id="users-menu-item"><a href="#" onclick="app.listUsers()">Users</a></li>
             <li id="registered-menu-item">
                 <a href="#" class="dropdown-trigger column s1" data-target="user-dropdown" id="user-link">
