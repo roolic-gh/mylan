@@ -1,3 +1,27 @@
 body {
-    background-color : white;
+    background-color: white;
+}
+
+.tabs,
+.tab {
+    background: none;
+}
+
+.tabs .tab a {
+    color: black;
+}
+
+.tabs .tab a:hover,
+.tabs .tab a.active {
+    background: none;
+    color: teal;
+}
+
+.tabs .tab a:focus,
+.tabs .tab a:focus.active {
+    background-color: rgba(0, 150, 136, .1);
+}
+
+.tabs .indicator {
+    background-color: teal;
 }

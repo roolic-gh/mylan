@@ -32,7 +32,7 @@
         });
     </script>
 </head>
-<body>
+<body id="mylan">
 <!-- navbar -->
 <nav>
     <div class="nav-wrapper blue-grey darken-3">
@@ -119,8 +119,77 @@
     </div>
 </div>
 
+<!-- resources -->
+
+<template id="resources-tabs-template">
+    <ul id="resources-tabs" class="tabs">
+        <li class="tab"><a href="#resources-devices">Devices</a></li>
+        <li class="tab"><a href="#resources-accounts">Accounts</a></li>
+        <li class="tab"><a href="#resources-shares">Shares</a></li>
+    </ul>
+    <div id="resources-devices" class="col"></div>
+    <div id="resources-accounts"></div>
+    <div id="resources-shares"></div>
+</template>
+
+<template id="resources-devices-template">
+    <h2>Devices</h2>
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large" href="#" onClick="app.startDiscovery()"><i class="material-icons">cloud_sync</i> Rescan the LAN</a>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Hostname</th>
+            <th>IP Addresses</th>
+            <th>Protocol</th>
+            <th>Status</th>
+
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</template>
+
+<template id="resources-accounts-template">
+    <h2>Device Accounts</h2>
+    <div class="fixed-action-btn">
+        <a class="btn-floating btn-large modal-trigger" href="#new-account-modal"><i class="material-icons">add</i></a>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username @ Device</th>
+            <th>Lock State</th>
+            <th>Status</th>
+            <th>&nbsp</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</template>
+
+<template id="resources-shares-template">
+    <h2>Shared Resources</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Device</th>
+            <th>Share Name</th>
+            <th>Path</th>
+            <th>Scope</th>
+            <th>&nbsp</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</template>
+
 <!-- users -->
-<template id="user-lst-template">
+<template id="user-list-template">
     <h2>Users</h2>
     <div class="fixed-action-btn">
         <a class="btn-floating btn-large modal-trigger" href="#new-user-modal"><i class="material-icons">add</i></a>

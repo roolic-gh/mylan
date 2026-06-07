@@ -38,11 +38,6 @@ class App {
             }
             this.refresh();
         });
-        window.addEventListener("popstate", (evt) => {
-            console.log("popstate", evt);
-            // FIXME prevent refresh after history.statePush, only on browser back/forward
-            // this.refresh();
-        });
     }
 
     login() {
@@ -96,6 +91,10 @@ class App {
     }
 
     refresh() {
+        if (!this.user || this.user.isGuest) {
+            this.dashboard();
+            return;
+        }
         const navId = getNav();
         if ("users" === navId) {
             this.listUsers();
@@ -124,6 +123,30 @@ class App {
 
     listResources() {
         setNav("resources");
+        this.ui.drawResourcesTabs(this);
+        this.listResourcesDevices();
+        this.listResourcesAccounts();
+        this.listResourcesShares();
+    }
+
+    listResourcesDevices() {
+        this.client.getDeviceList((devices) => {
+            this.ui.setDeviceSelectors(devices);
+            this.ui.drawResourceDevicesList(devices, this);
+        });
+    }
+
+    startDiscovery() {
+        // fixme: report actual status
+        this.client.startDiscovery((status) => report("Discovery started."));
+    }
+
+    listResourcesAccounts() {
+        this.client.getAccountList((accounts) => this.ui.drawResourceAccountList(accounts, this));
+    }
+
+    listResourcesShares() {
+        this.client.getShareList((shares) => this.ui.drawResourceShareList(shares, this));
     }
 
     listUsers() {
@@ -215,23 +238,74 @@ class MaterialUi {
     }
 
     init() {
-        M.Dropdown.init(document.querySelectorAll(`.dropdown-trigger`), {});
-        M.Modal.init(document.querySelectorAll(`.modal`), { onOpenStart: M.updateTextFields });
+        M.Dropdown.init(document.querySelectorAll(".dropdown-trigger"), {});
+        M.Modal.init(document.querySelectorAll(".modal"), { onOpenStart: M.updateTextFields });
     }
 
     applyUser(user) {
-        setVisible('resources-menu-item', !user.isGuest);
-        setVisible('bookmarks-menu-item', !user.isGuest);
-        setVisible('users-menu-item', user.isAdmin);
-        setVisible('registered-menu-item', !user.isGuest);
-        setVisible('login-menu-item', user.isGuest);
-        byId('username').textContent = user.displayName;
-        byId('edit-displayname-input').value = user.displayName;
+        setVisible("resources-menu-item", !user.isGuest);
+        setVisible("bookmarks-menu-item", !user.isGuest);
+        setVisible("users-menu-item", user.isAdmin);
+        setVisible("registered-menu-item", !user.isGuest);
+        setVisible("login-menu-item", user.isGuest);
+        byId("username").textContent = user.displayName;
+        byId("edit-displayname-input").value = user.displayName;
+    }
+
+    drawResourcesTabs() {
+        setContent(byId("resources-tabs-template").content.cloneNode(true));
+        const tabs = M.Tabs.init(byId("resources-tabs"), { onShow: (div) => localStorage.setItem("rsrc-tab", div.id) });
+        const prevTabId = localStorage.getItem("rsrc-tab");
+        if (prevTabId != null) {
+            tabs.select(prevTabId);
+        }
+    }
+
+    drawResourceDevicesList(devices, app) {
+        const devicesTable = buildTableFromTemplate("resources-devices-template", devices,
+            (device) => "rsrc-device-tr-" + device.deviceId,
+            (device) => [device.deviceId, device.identifier, device.ipAddresses, device.protocol, device.status]);
+        byId("resources-devices").replaceChildren(devicesTable);
+    }
+
+    setDeviceSelectors(devices) {
+
+    }
+
+    drawResourceAccountList(accounts, app) {
+        const devicesTable = buildTableFromTemplate("resources-accounts-template", accounts,
+            (acc) => "rsrc-acc-tr-" + acc.accountId,
+            (acc) => [
+                acc.accountId, acc.username + " @ " + acc.deviceIdentifier,
+                acc.lockable ? acc.lockState : "--",
+                acc.state,
+                [
+                    button("Browse", () => app.browseAcc(acc)),
+                    acc.lockable && acc.lockState == "UNLOCKED" ? button("Lock", () => app.lockAccount()) : "",
+                    acc.lockable && acc.lockState == "LOCKED" ? button("Unlock", () => app.unlockAccount()) : "",
+                    button("Edit", () => app.editAccount(acc)),
+                    button("Delete", () => app.deleteAccount(acc))
+                ]
+            ]);
+        byId("resources-accounts").replaceChildren(devicesTable);
+    }
+
+    drawResourceShareList(shares, app) {
+        const devicesTable = buildTableFromTemplate("resources-shares-template", shares,
+            (share) => "rsrc-share-tr-" + share.shareId,
+            (share) => [
+                share.shareId, share.account.username + " @ " + share.account.deviceIdentifier,
+                share.name, share.path, share.type,
+                [
+                    button("Browse", () => app.browseShare(share)), 
+                    button("Edit", () => app.editShare(share)), 
+                    button("Delete", () => app.deleteShare(share))]
+            ]);
+        byId("resources-shares").replaceChildren(devicesTable);
     }
 
     drawUserList(users, app) {
-        console.log("Users", users);
-        setTableContentFromTemplate('user-lst-template', users,
+        const usersTable = buildTableFromTemplate('user-list-template', users,
             (user) => "user-list-tr-" + user.userId,
             (user) => [
                 user.userId, user.username, user.displayName,
@@ -247,6 +321,7 @@ class MaterialUi {
                         button('Disable', () => app.setUserEnabled(user, false))
                     ]
             ]);
+        setContent(usersTable);
     }
 
     openModal(id) {
@@ -268,19 +343,22 @@ class Client {
     token = null;
     constructor(restContext) {
         this.restContext = restContext;
-        this.token = localStorage.getItem('token');
+        var tokenFromSession = sessionStorage.getItem("token");
+        this.token = tokenFromSession == null ? localStorage.getItem("token") : tokenFromSession;
     }
 
     setToken(newToken, persist) {
         this.token = newToken;
+        sessionStorage.setItem("token", newToken); admin
         if (persist) {
-            localStorage.setItem('token', newToken);
+            localStorage.setItem("token", newToken);
         }
     }
 
     clearToken() {
         this.token = null;
-        localStorage.removeItem('token');
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("token");
     }
 
     getCurrentUser(callback) {
@@ -290,6 +368,33 @@ class Client {
     authenticate(creds, callback) {
         this.request("POST", "/authenticate", callback, creds);
     }
+
+    getDeviceList(callback) {
+        callback([{
+            deviceId: 1, identifier: "ROOLIC-TEST", protocol: "SMB",
+            ipAddresses: ["192.168.1.100"], status: "OK"
+        }]);
+    }
+
+    startDiscovery(callback) {
+        this.request("POST", "/discovery/start", callback);
+    }
+
+    getAccountList(callback) {
+        callback([{
+            accountId: 1, username: "username", deviceId: 1, deviceIdentifier: "ROOLIC-TEST",
+            lockable: true, lockState: "UNLOCKED", state: "UNKNOWN"
+        }]);
+    }
+
+    getShareList(callback) {
+        callback([{
+            shareId: 1,
+            account: { accountId: 1, username: "username", deviceId: 1, deviceIdentifier: "ROOLIC-TEST" },
+            name: "My Files", path: "path/to/files", type: "ALL"
+        }]);
+    }
+
 
     updateUserPassword(creds, callback) {
         this.request("POST", "/user/change-password", callback, creds);
@@ -387,10 +492,15 @@ class User {
     }
 }
 
-function setTableContentFromTemplate(templateId, items, toId, toCells) {
-    const fragment = byId(templateId).content.cloneNode(true); const tbody = fragment.querySelector('tbody');
+function buildTableFromTemplate(templateId, items, toId, toCells) {
+    const fragment = byId(templateId).content.cloneNode(true);
+    const tbody = fragment.querySelector('tbody');
     items.forEach((item) => tbody.append(buildTableRow(toId(item), toCells(item))))
-    byId('content').replaceChildren(fragment);
+    return fragment;
+}
+
+function setContent(newContent) {
+    byId('content').replaceChildren(newContent);
 }
 
 function byId(id) {
