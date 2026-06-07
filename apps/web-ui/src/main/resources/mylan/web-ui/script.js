@@ -29,7 +29,7 @@ class App {
     }
 
     init() {
-        this.ui.init();
+        this.ui.init(this);
         this.client.getCurrentUser((currentUser) => {
             this.user.reset(currentUser);
             this.ui.applyUser(this.user);
@@ -237,9 +237,12 @@ class MaterialUi {
         this.selfContext = selfContext;
     }
 
-    init() {
+    init(app) {
         M.Dropdown.init(document.querySelectorAll(".dropdown-trigger"), {});
-        M.Modal.init(document.querySelectorAll(".modal"), { onOpenStart: M.updateTextFields });
+        M.Modal.init(document.querySelectorAll(".modal"), {
+            onOpenStart: M.updateTextFields, onOpenEnd: modalFocusFirst
+        });
+        byId("password-input").onkeydown = (evt) => onEnterClickButton(evt, "login-button");
     }
 
     applyUser(user) {
@@ -297,8 +300,8 @@ class MaterialUi {
                 share.shareId, share.account.username + " @ " + share.account.deviceIdentifier,
                 share.name, share.path, share.type,
                 [
-                    button("Browse", () => app.browseShare(share)), 
-                    button("Edit", () => app.editShare(share)), 
+                    button("Browse", () => app.browseShare(share)),
+                    button("Edit", () => app.editShare(share)),
                     button("Delete", () => app.deleteShare(share))]
             ]);
         byId("resources-shares").replaceChildren(devicesTable);
@@ -349,7 +352,7 @@ class Client {
 
     setToken(newToken, persist) {
         this.token = newToken;
-        sessionStorage.setItem("token", newToken); admin
+        sessionStorage.setItem("token", newToken);
         if (persist) {
             localStorage.setItem("token", newToken);
         }
@@ -560,4 +563,17 @@ function getNav() {
         return search.substring(1);
     }
     return null;
+}
+
+function modalFocusFirst(elm) {
+    var input = elm.querySelector("input");
+    if (input != null) {
+        input.focus();
+    }
+}
+
+function onEnterClickButton(evt, buttonId) {
+    if (evt.key == "Enter") {
+        byId(buttonId).click();
+    }
 }
