@@ -23,6 +23,7 @@ public class Device {
     private String identifier;
     private DeviceProtocol protocol;
     private List<DeviceIpAddress> ipAddresses;
+    private DeviceState state;
 
     public Device() {
         // default
@@ -69,5 +70,13 @@ public class Device {
 
     public void setIpAddresses(final List<DeviceIpAddress> ipAddresses) {
         this.ipAddresses = ipAddresses == null ? null : List.copyOf(ipAddresses);
+    }
+
+    public DeviceState getState() {
+        return state;
+    }
+
+    public void setState(final DeviceState state) {
+        this.state = state;
     }
 }

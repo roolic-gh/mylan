@@ -26,13 +26,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import local.mylan.service.api.EncryptionService;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
+import local.mylan.service.api.events.CrudOperation;
+import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.NavResource;
@@ -46,6 +50,7 @@ import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.Queries;
 import local.mylan.service.data.entities.UserEntity;
 import local.mylan.service.data.mappers.NavResourceModelMapper;
+import local.mylan.service.spi.model.EncryptedDeviceAccountWithCredentials;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.exception.ConstraintViolationException;
@@ -58,16 +63,32 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     static final String LOCAL_DEVICE_IDENTIFIER = "mylan.server.local";
     @VisibleForTesting
     static final String LOCAL_ACCOUNT_USERNAME = "local";
+    @VisibleForTesting
+    static final String LOCKED_INDICATOR = "LCK";
 
+    final EncryptedDeviceAccountWithCredentials.Encryptor encryptor;
+    final EncryptedDeviceAccountWithCredentials.Decryptor decryptor;
+
+    final NotificationService notificationService;
     final Integer localDeviceId;
     final Integer localAccountId;
 
-    public NavResourceDataService(final SessionFactory sessionFactory, final NotificationService notificationService) {
+    public NavResourceDataService(final SessionFactory sessionFactory, final EncryptionService encryptionService,
+        final NotificationService notificationService) {
+
         super(sessionFactory);
+        this.notificationService = notificationService;
+
+        encryptor = (value, key) -> key == null ? encryptionService.encrypt(value)
+            : encryptionService.encrypt(value, key);
+        decryptor = (value, key) -> key == null ? encryptionService.decrypt(value)
+            : encryptionService.decrypt(value, key);
+
         final var localDevice = getLocalDeviceEntity();
         localDeviceId = localDevice.getDeviceId();
         final var localAccount = getLocalAccountEntity(localDevice);
         localAccountId = localAccount.getAccountId();
+
         notificationService.registerEventListener(DiscoveryDevicesEvent.class,
             event -> syncDeviceAddresses(event.getDevices()));
     }
@@ -245,7 +266,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         if (ipAddressEntity != null) {
             ipAddressEntity.setDevice(deviceEntity);
             session.merge(ipAddressEntity);
-        } else{
+        } else {
             final var newEntity = MAPPER.toEntity(ipAddress);
             newEntity.setDevice(deviceEntity);
             session.persist(newEntity);
@@ -264,10 +285,34 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
+    public DeviceAccountWithCredentials getAccountWithCredentials(final Integer accountId) {
+        return entityById(DeviceAccountEntity.class, accountId)
+            .map(this::toDeviceAccountWithCredentials).orElse(null);
+    }
+
+    private DeviceAccountWithCredentials toDeviceAccountWithCredentials(final DeviceAccountEntity entity) {
+        final var acc = new EncryptedDeviceAccountWithCredentials(encryptor, decryptor,
+            LOCKED_INDICATOR.equals(entity.getKey()));
+        acc.setAccountId(entity.getAccountId());
+        acc.setUserId(entity.getUserId());
+        acc.setDeviceId(entity.getDeviceId());
+        acc.setUsername(entity.getUsername());
+        acc.setPassword(entity.getPassword());
+        return acc;
+    }
+
+    @Override
     public List<DeviceAccount> getAllAccounts() {
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_ALL_ACCOUNTS, DeviceAccountEntity.class).getResultList()
         ).stream().map(MAPPER::fromEntity).toList();
+    }
+
+    @Override
+    public List<DeviceAccountWithCredentials> getAllAccountsWithCredentials() {
+        return fromSession(session ->
+            session.createNamedQuery(Queries.GET_ALL_ACCOUNTS, DeviceAccountEntity.class).getResultList()
+        ).stream().map(this::toDeviceAccountWithCredentials).toList();
     }
 
     @Override
@@ -276,7 +321,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_USER_ACCOUNTS, DeviceAccountEntity.class)
                 .setParameter("userId", userId).getResultList()
-        ).stream().map(MAPPER::fromEntityMin).toList();
+        ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
@@ -290,8 +335,12 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         // direct setting foreign key ids allows skipping post-persitence refresh to ensure the entity is up-to-date
         entity.setDeviceId(deviceEntity.getDeviceId());
         entity.setUserId(userEntity.getUserId());
+        // encrypt password
+        entity.setPassword(encryptor.encrypt(account.getPassword(), account.getKey()));
+        entity.setKey(account.getKey() == null ? null : LOCKED_INDICATOR);
         try {
             inTransaction(session -> session.persist(entity));
+            notificationService.raiseEvent(new DeviceAccountCrudEvent(entity.getAccountId(), CrudOperation.CREATE));
             return MAPPER.fromEntity(entity);
         } catch (ConstraintViolationException e) {
             throw new DataCollisionException("Account for user %s at device %s is already defined."
@@ -304,9 +353,10 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         final var entity = validAccountEntity(account.getAccountId());
         validateOwner(userId, entity.getUserId(), "Account can be updated by owner only");
         entity.setUsername(account.getUsername());
-        entity.setPassword(account.getPassword());
-        entity.setKey(account.getKey());
+        entity.setPassword(encryptor.encrypt(account.getPassword(), account.getKey()));
+        entity.setKey(account.getKey() == null ? null : LOCKED_INDICATOR);
         inTransaction(session -> session.merge(entity));
+        notificationService.raiseEvent(new DeviceAccountCrudEvent(account.getAccountId(), CrudOperation.UPDATE));
     }
 
     @Override
@@ -314,13 +364,18 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         requireNonNull(accountId, "accountId is required");
         checkArgument(!accountId.equals(localAccountId),
             "Requested account is for internal use only. It cannot be deleted");
-        inTransaction(session -> {
+        boolean removed = fromTransaction(session -> {
             final var entity = session.get(DeviceAccountEntity.class, accountId);
             if (entity != null) {
                 validateOwner(userId, entity.getUserId(), "Account can be removed by owner only");
                 session.remove(entity);
+                return true;
             }
+            return false;
         });
+        if (removed) {
+            notificationService.raiseEvent(new DeviceAccountCrudEvent(accountId, CrudOperation.DELETE));
+        }
     }
 
     @Override

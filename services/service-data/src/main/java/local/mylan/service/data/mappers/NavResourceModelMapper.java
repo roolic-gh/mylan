@@ -33,6 +33,7 @@ public interface NavResourceModelMapper {
 
     DeviceEntity toEntity(Device model);
 
+    @Mapping(target = "state", ignore = true)
     Device fromEntity(DeviceEntity entity);
 
     @Mapping(target = "deviceId", ignore = true)
@@ -43,13 +44,16 @@ public interface NavResourceModelMapper {
 
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "device", ignore = true)
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "key", ignore = true)
     DeviceAccountEntity toEntity(DeviceAccount model);
-
-    DeviceAccount fromEntity(DeviceAccountEntity entity);
 
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "key", ignore = true)
-    DeviceAccount fromEntityMin(DeviceAccountEntity entity);
+    @Mapping(target = "deviceIdentifier", ignore = true)
+    @Mapping(target = "state", ignore = true)
+    @Mapping(target = "lockState", ignore = true)
+    DeviceAccount fromEntity(DeviceAccountEntity entity);
 
     @Mapping(target = "displayName", source = "resourceName")
     @Mapping(target = "accountId", ignore = true)

@@ -19,9 +19,12 @@ public class DeviceAccount {
     private Integer accountId;
     private Integer userId;
     private Integer deviceId;
+    private String deviceIdentifier;
     private String username;
     private String password;
     private String key;
+    private DeviceAccountState state;
+    private DeviceAccountLockState lockState;
 
     public DeviceAccount() {
         // default
@@ -64,6 +67,14 @@ public class DeviceAccount {
         this.deviceId = deviceId;
     }
 
+    public String getDeviceIdentifier() {
+        return deviceIdentifier;
+    }
+
+    public void setDeviceIdentifier(final String deviceIdentifier) {
+        this.deviceIdentifier = deviceIdentifier;
+    }
+
     public String getUsername() {
         return username;
     }
@@ -86,5 +97,21 @@ public class DeviceAccount {
 
     public void setKey(final String key) {
         this.key = key;
+    }
+
+    public DeviceAccountState getState() {
+        return state;
+    }
+
+    public void setState(final DeviceAccountState state) {
+        this.state = state;
+    }
+
+    public DeviceAccountLockState getLockState() {
+        return lockState;
+    }
+
+    public void setLockState(final DeviceAccountLockState lockState) {
+        this.lockState = lockState;
     }
 }

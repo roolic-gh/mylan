@@ -18,6 +18,7 @@ package local.mylan.service.api;
 import java.util.List;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
@@ -43,7 +44,11 @@ public interface NavResourceService {
 
     DeviceAccount getAccount(Integer accountId);
 
+    DeviceAccountWithCredentials getAccountWithCredentials(Integer accountId);
+
     List<DeviceAccount> getAllAccounts();
+
+    List<DeviceAccountWithCredentials> getAllAccountsWithCredentials();
 
     List<DeviceAccount> getUserAccounts(Integer userId);
 

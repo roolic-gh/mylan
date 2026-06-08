@@ -26,16 +26,21 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.service.api.NavResourceService;
+import local.mylan.service.api.events.CrudOperation;
+import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.DeviceAccountLockState;
+import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.NavResource;
@@ -48,13 +53,16 @@ import local.mylan.service.data.entities.DeviceIpAddressEntity;
 import local.mylan.service.data.entities.NavResourceBookmarkEntity;
 import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.UserEntity;
+import local.mylan.service.spi.DefaultEncryptionService;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.io.TempDir;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class NavResourceDataServiceTest {
@@ -99,8 +107,12 @@ class NavResourceDataServiceTest {
     private static final String BOOKMARK_PATH_2 = "/bookmark/path/2";
     private static final String BOOKMARK_PATH_3 = "/bookmark/path/3";
 
+    @TempDir
+    static Path tempDir;
+
     static SessionFactory sessionFactory;
     static NavResourceService navResourceService;
+    static TestUtils.TestNotificationService notificationService;
 
     static Integer userId1;
     static Integer userId2;
@@ -128,7 +140,9 @@ class NavResourceDataServiceTest {
     static void beforeAll() {
         sessionFactory = setupSessionFactory(UserEntity.class, DeviceEntity.class, DeviceAccountEntity.class,
             DeviceIpAddressEntity.class, NavResourceShareEntity.class, NavResourceBookmarkEntity.class);
-        navResourceService = new NavResourceDataService(sessionFactory, notificationService());
+        notificationService = notificationService();
+        navResourceService = new NavResourceDataService(sessionFactory,
+            new DefaultEncryptionService(tempDir, tempDir), notificationService);
 
         userId1 = newUserId("user-1");
         userId2 = newUserId("user-2");
@@ -159,6 +173,11 @@ class NavResourceDataServiceTest {
     @AfterAll
     static void afterAll() {
         tearDownSessionFactory(sessionFactory);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        notificationService.clearEvents();
     }
 
     @Test
@@ -264,7 +283,7 @@ class NavResourceDataServiceTest {
         // execute and check
         navResourceService.syncDeviceAddresses(syncList);
 
-        final var deviceMap =  toMap(navResourceService.getAllDevices(), Device::getIdentifier);
+        final var deviceMap = toMap(navResourceService.getAllDevices(), Device::getIdentifier);
         assertNotNull(deviceMap.get(SYNC_1));
         assertDeviceIpAddresses(deviceMap.get(SYNC_1).getIpAddresses(), Set.of(SYNC_IP_1, SYNC_IP_6, SYNC_IP_7));
         assertNotNull(deviceMap.get(SYNC_2));
@@ -282,18 +301,33 @@ class NavResourceDataServiceTest {
         // single account to device 1
         final var inAccount1 = new DeviceAccount(device1.getDeviceId(), USERNAME_1, PASSWORD_1);
         account1 = navResourceService.createAccount(userId1, inAccount1);
-        assertAccount(inAccount1, account1, true);
+        assertAccount(inAccount1, account1);
         final var checkAccount1 = navResourceService.getAccount(account1.getAccountId());
-        assertAccount(account1, checkAccount1, true);
+        assertAccount(account1, checkAccount1);
+        assertAccountWithCredentials(inAccount1, navResourceService.getAccountWithCredentials(account1.getAccountId()));
+        account1.setPassword(PASSWORD_1); // for subsequent checks
 
         // 2 accounts to device 2
         final var inAccount2 = new DeviceAccount(device2.getDeviceId(), USERNAME_2, PASSWORD_2, CRYPT_KEY);
         account2 = navResourceService.createAccount(userId2, inAccount2);
-        assertAccount(inAccount2, account2, true);
+        assertAccount(inAccount2, account2);
+        assertAccountWithCredentials(inAccount2, navResourceService.getAccountWithCredentials(account2.getAccountId()));
+        account2.setPassword(PASSWORD_2); // for subsequent checks
+        account2.setKey(CRYPT_KEY);
 
         final var inAccount3 = new DeviceAccount(device2.getDeviceId(), USERNAME_1, PASSWORD_1);
         account3 = navResourceService.createAccount(userId2, inAccount3);
-        assertAccount(inAccount3, account3, true);
+        assertAccount(inAccount3, account3);
+        assertAccountWithCredentials(inAccount3, navResourceService.getAccountWithCredentials(account3.getAccountId()));
+        account3.setPassword(PASSWORD_1); // for subsequent checks
+
+        // events
+        assertEquals(3, notificationService.eventsCount());
+        final var expectedEvents = List.of(
+            new DeviceAccountCrudEvent(account1.getAccountId(), CrudOperation.CREATE),
+            new DeviceAccountCrudEvent(account2.getAccountId(), CrudOperation.CREATE),
+            new DeviceAccountCrudEvent(account3.getAccountId(), CrudOperation.CREATE));
+        assertEquals(expectedEvents, notificationService.getEvents());
 
         // error cases
         // local device is not allowed
@@ -307,17 +341,16 @@ class NavResourceDataServiceTest {
             -1, new DeviceAccount(device1.getDeviceId(), USERNAME_2, PASSWORD_X)));
     }
 
-    private static void assertAccount(final DeviceAccount expected, final DeviceAccount actual,
-        final boolean withPassword) {
+    private static void assertAccount(final DeviceAccount expected, final DeviceAccount actual) {
 
         assertNotNull(actual);
         assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        assertNull(actual.getPassword());
+        assertNull(actual.getKey());
         if (localDeviceId.equals(expected.getDeviceId())) {
             // local
             assertNull(actual.getUserId());
             assertNull(actual.getUsername());
-            assertNull(actual.getPassword());
-            assertNull(actual.getKey());
             return;
         }
         if (expected.getUserId() == null) {
@@ -326,16 +359,26 @@ class NavResourceDataServiceTest {
             assertEquals(expected.getUserId(), actual.getUserId());
         }
         assertEquals(expected.getUsername(), actual.getUsername());
-        if (withPassword) {
+    }
+
+    private static void assertAccountWithCredentials(final DeviceAccount expected,
+        final DeviceAccountWithCredentials actual) {
+
+        assertNotNull(actual);
+        assertNotNull(actual.getAccountId());
+        assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        if (expected.getUserId() != null) {
+            assertEquals(expected.getUserId(), actual.getUserId());
+        }
+        assertEquals(expected.getUsername(), actual.getUsername());
+        if (expected.getKey() != null) {
+            assertEquals(DeviceAccountLockState.LOCKED, actual.getLockState());
+            actual.unlock(expected.getKey());
+            assertEquals(DeviceAccountLockState.UNLOCKED, actual.getLockState());
             assertEquals(expected.getPassword(), actual.getPassword());
-            if (expected.getKey() == null) {
-                assertNull(actual.getKey());
-            } else {
-                assertEquals(expected.getKey(), actual.getKey());
-            }
         } else {
-            assertNull(actual.getPassword());
-            assertNull(actual.getKey());
+            assertEquals(DeviceAccountLockState.HAS_NO_LOCK, actual.getLockState());
+            assertEquals(expected.getPassword(), actual.getPassword());
         }
     }
 
@@ -353,9 +396,21 @@ class NavResourceDataServiceTest {
         assertEquals(userId2, check.getUserId());
         assertEquals(device2.getDeviceId(), check.getDeviceId());
         assertEquals(USERNAME_X, check.getUsername());
-        assertEquals(PASSWORD_X, check.getPassword());
-        assertEquals(CRYPT_KEY, check.getKey());
+
+        final var checkCreds = navResourceService.getAccountWithCredentials(account3.getAccountId());
+        assertEquals(DeviceAccountLockState.LOCKED, checkCreds.getLockState());
+        checkCreds.unlock(CRYPT_KEY);
+        assertEquals(DeviceAccountLockState.UNLOCKED, checkCreds.getLockState());
+        assertEquals(PASSWORD_X, checkCreds.getPassword());
+
         account3 = check;
+        account3.setPassword(PASSWORD_X); //  for subsequent checks
+        account3.setKey(CRYPT_KEY);
+
+        // checkEvents
+        assertEquals(1, notificationService.eventsCount());
+        final var expectedEvents = List.of(new DeviceAccountCrudEvent(account3.getAccountId(), CrudOperation.UPDATE));
+        assertEquals(expectedEvents, notificationService.getEvents());
 
         // error cases
         // non-existent account
@@ -377,30 +432,47 @@ class NavResourceDataServiceTest {
         assertNotNull(allList);
         assertEquals(4, allList.size());
         final var allMap = toMap(allList, DeviceAccount::getAccountId);
-        assertAccount(account1, allMap.get(account1.getAccountId()), true);
-        assertAccount(account2, allMap.get(account2.getAccountId()), true);
-        assertAccount(account3, allMap.get(account3.getAccountId()), true);
+
+        assertAccount(account1, allMap.get(account1.getAccountId()));
+        assertAccount(account2, allMap.get(account2.getAccountId()));
+        assertAccount(account3, allMap.get(account3.getAccountId()));
         assertNotNull(allMap.get(localAccountId));
+
+        final var credsAllList = navResourceService.getAllAccountsWithCredentials();
+        assertNotNull(credsAllList);
+        assertEquals(4, credsAllList.size());
+        final var credsAllMap = toMap(credsAllList, DeviceAccountWithCredentials::getAccountId);
+
+        assertAccountWithCredentials(account1, credsAllMap.get(account1.getAccountId()));
+        assertAccountWithCredentials(account2, credsAllMap.get(account2.getAccountId()));
+        assertAccountWithCredentials(account3, credsAllMap.get(account3.getAccountId()));
+        assertNotNull(credsAllMap.get(localAccountId));
 
         final var list1 = navResourceService.getUserAccounts(userId1);
         assertNotNull(list1);
         assertEquals(1, list1.size());
-        assertAccount(account1, list1.getFirst(), false);
+        assertAccount(account1, list1.getFirst());
 
         final var list2 = navResourceService.getUserAccounts(userId2);
         assertNotNull(list2);
         assertEquals(2, list2.size());
         final var map = toMap(list2, DeviceAccount::getAccountId);
-        assertAccount(account2, map.get(account2.getAccountId()), false);
-        assertAccount(account3, map.get(account3.getAccountId()), false);
+        assertAccount(account2, map.get(account2.getAccountId()));
+        assertAccount(account3, map.get(account3.getAccountId()));
     }
 
     @Test
     @Order(24)
     void removeAccount() {
-        navResourceService.removeAccount(userId2, account3.getAccountId());
-        account3 = navResourceService.getAccount(account3.getAccountId());
+        final var accountId = account3.getAccountId();
+        navResourceService.removeAccount(userId2, accountId);
+        account3 = navResourceService.getAccount(accountId);
         assertNull(account3);
+
+        // checkEvents
+        assertEquals(1, notificationService.eventsCount());
+        final var expectedEvents = List.of(new DeviceAccountCrudEvent(accountId, CrudOperation.DELETE));
+        assertEquals(expectedEvents, notificationService.getEvents());
 
         // removing local account is not allowed
         assertThrows(IllegalArgumentException.class, () -> navResourceService.removeAccount(userId2, localAccountId));

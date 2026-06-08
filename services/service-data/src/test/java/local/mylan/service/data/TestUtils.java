@@ -15,6 +15,8 @@
  */
 package local.mylan.service.data;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 import local.mylan.service.api.EncryptionService;
 import local.mylan.service.api.NotificationService;
@@ -49,19 +51,8 @@ final class TestUtils {
         }
     }
 
-    static NotificationService notificationService() {
-        return new NotificationService() {
-
-            @Override
-            public <T extends Event> Registration registerEventListener(final Integer targetUserId,
-                final Class<T> eventType, final EventListener<T> listener) {
-                return null;
-            }
-
-            @Override
-            public void raiseEvent(final Integer targetUserId, final Event event) {
-            }
-        };
+    static TestNotificationService notificationService() {
+        return new TestNotificationService();
     }
 
     static EncryptionService encryptionService() {
@@ -91,5 +82,36 @@ final class TestUtils {
                 return input;
             }
         };
+    }
+
+    static class TestNotificationService implements NotificationService {
+
+        private final List<Event> events = new ArrayList<>();
+
+        void clearEvents() {
+            events.clear();
+        }
+
+        int eventsCount(){
+            return events.size();
+        }
+
+        List<Event> getEvents(){
+            return List.copyOf(events);
+        }
+
+        @Override
+        public <T extends Event> Registration registerEventListener(final Integer targetUserId,
+            final Class<T> eventType, final EventListener<T> listener) {
+            return null;
+        }
+
+        @Override
+        public void raiseEvent(final Integer targetUserId, final Event event) {
+            if (targetUserId == null) {
+                // track global event only
+                events.add(event);
+            }
+        }
     }
 }

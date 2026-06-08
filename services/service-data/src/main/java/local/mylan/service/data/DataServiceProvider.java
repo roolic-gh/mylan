@@ -108,8 +108,9 @@ public final class DataServiceProvider implements AutoCloseable {
         return new UserDataService(sessionFactory, encryptionService, notificationService);
     }
 
-    public NavResourceService buildNavResourceService(final NotificationService notificationService) {
-        return new NavResourceDataService(sessionFactory, notificationService);
+    public NavResourceService buildNavResourceService(final EncryptionService encryptionService,
+        final NotificationService notificationService) {
+        return new NavResourceDataService(sessionFactory, encryptionService, notificationService);
     }
 
     @Override

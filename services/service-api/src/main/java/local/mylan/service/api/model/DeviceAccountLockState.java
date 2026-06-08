@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Ruslan Kashapov
+ * Copyright 2026 Ruslan Kashapov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,6 @@
  */
 package local.mylan.service.api.model;
 
-public enum DeviceState {
-    ONLINE, OFFLINE
+public enum DeviceAccountLockState {
+    LOCKED, UNLOCKED, HAS_NO_LOCK
 }
