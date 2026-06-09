@@ -139,7 +139,7 @@ class RemoteDiscoveryServceTest {
         // verify devices notification event sent
         verify(notificationService, timeout(2000).times(1)).raiseEvent(eventCaptor.capture());
         final var event = assertInstanceOf(DiscoveryDevicesEvent.class, eventCaptor.getValue());
-        final var discovered = event.getDevices();
+        final var discovered = event.devices();
         assertNotNull(discovered);
         assertEquals(3, discovered.size());
 

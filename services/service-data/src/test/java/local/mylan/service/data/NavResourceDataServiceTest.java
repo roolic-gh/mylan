@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
+import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -196,6 +197,12 @@ class NavResourceDataServiceTest {
         device2 = navResourceService.createDevice(inDevice2);
         assertDevice(inDevice2, device2);
 
+        // events raised
+        assertEquals(List.of(
+            new DeviceCrudEvent(device1.getDeviceId(), CrudOperation.CREATE),
+            new DeviceCrudEvent(device2.getDeviceId(), CrudOperation.CREATE)
+        ), notificationService.getEvents());
+
         // local not allower
         assertThrows(IllegalArgumentException.class,
             () -> navResourceService.createDevice(new Device("NEW LOCAL", DeviceProtocol.LOCAL)));
@@ -271,6 +278,7 @@ class NavResourceDataServiceTest {
             new DeviceIpAddress(SYNC_IP_1), new DeviceIpAddress(SYNC_IP_2), new DeviceIpAddress(SYNC_IP_3))));
         navResourceService.createDevice(new Device(SYNC_2, DeviceProtocol.SMB, List.of(
             new DeviceIpAddress(SYNC_IP_4), new DeviceIpAddress(SYNC_IP_5), new DeviceIpAddress(SYNC_IP_6))));
+        notificationService.clearEvents(); // reset to check sync events only
 
         // sync with devices: sync1(ip1, ip6, ip7), sync3(ip2, ip4, ip8) -->
         // 2 reassigned, (sync2 offline) 2 new, 1 removed
@@ -293,6 +301,11 @@ class NavResourceDataServiceTest {
 
         // validate released ip3 address removed
         assertNull(sessionFactory.fromSession(session -> session.get(DeviceIpAddressEntity.class, SYNC_IP_3)));
+
+        // new device regisered (created) event
+        assertEquals(
+            List.of(new DeviceCrudEvent(deviceMap.get(SYNC_3).getDeviceId(), CrudOperation.CREATE)),
+            notificationService.getEvents());
     }
 
     @Test
@@ -741,6 +754,8 @@ class NavResourceDataServiceTest {
         // success
         navResourceService.removeDevice(device1.getDeviceId());
         assertNull(navResourceService.getDevice(device1.getDeviceId()));
+        assertEquals(List.of(new DeviceCrudEvent(device1.getDeviceId(), CrudOperation.DELETE)),
+            notificationService.getEvents());
 
         // ensure dependent entries are removed via cascade
         assertNull(navResourceService.getAccount(account1.getAccountId())); // depends om device1

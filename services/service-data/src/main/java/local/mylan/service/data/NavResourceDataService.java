@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
+import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
@@ -90,7 +92,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         localAccountId = localAccount.getAccountId();
 
         notificationService.registerEventListener(DiscoveryDevicesEvent.class,
-            event -> syncDeviceAddresses(event.getDevices()));
+            event -> syncDeviceAddresses(event.devices()));
     }
 
     private DeviceEntity getLocalDeviceEntity() {
@@ -146,6 +148,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         }
         try {
             inTransaction(session -> session.persist(entity));
+            notificationService.raiseEvent(new DeviceCrudEvent(entity.getDeviceId(), CrudOperation.CREATE));
         } catch (ConstraintViolationException e) {
             throw new DataCollisionException("Device with identifier %s already exists."
                 .formatted(device.getIdentifier()), e);
@@ -158,12 +161,17 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         requireNonNull(deviceId, "deviceId is required");
         checkArgument(!deviceId.equals(localDeviceId),
             "Requested device is for internal use only. It cannot be deleted");
-        inTransaction(session -> {
+        boolean removed = fromTransaction(session -> {
             final var entity = session.get(DeviceEntity.class, deviceId);
             if (entity != null) {
                 session.remove(entity);
+                return true;
             }
+            return false;
         });
+        if (removed) {
+            notificationService.raiseEvent(new DeviceCrudEvent(deviceId, CrudOperation.DELETE));
+        }
     }
 
     @Override
@@ -220,7 +228,8 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             .flatMap(entity -> entity.getIpAddresses().stream())
             .collect(toMap(DeviceIpAddressEntity::getIpAddress, entity -> entity));
 
-        inTransaction(session -> {
+        final var newEntities = fromTransaction(session -> {
+            final var newDevices = new ArrayList<DeviceEntity>();
             for (var device : devices) {
                 if (device.getIpAddresses() == null) {
                     continue;
@@ -251,13 +260,18 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
                     final var newDeviceEntity = MAPPER.toEntity(device);
                     newDeviceEntity.setIpAddresses(List.of());
                     session.persist(newDeviceEntity);
+                    newDevices.add(newDeviceEntity);
                     for (var ipAddress : device.getIpAddresses()) {
                         updateOrInsertIpAddress(session, newDeviceEntity,
                             allIpAddressMap.get(ipAddress.getIpAddress()), ipAddress);
                     }
                 }
             }
+            return newDevices;
         });
+        // notify new devices registered
+        newEntities.forEach(entity->
+            notificationService.raiseEvent(new DeviceCrudEvent(entity.getDeviceId(), CrudOperation.CREATE)));
     }
 
     private static void updateOrInsertIpAddress(final Session session, final DeviceEntity deviceEntity,
