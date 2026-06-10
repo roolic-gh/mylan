@@ -17,26 +17,30 @@ package local.mylan.service.api;
 
 import java.util.List;
 import local.mylan.service.api.model.Device;
-import local.mylan.service.api.model.DeviceState;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 
 public interface NavigationService {
 
-    List<Device> getDevicesForUser(Integer userId);
+    List<Device> listDevices();
 
-    List<DeviceState> getDeviceStatesForUser(Integer userId);
+    List<DeviceAccount> listUserDeviceAccounts(Integer userId);
 
-    void unlockDevice(Integer userId, Integer deviceId, String key);
+    DeviceAccount unlockAccount(Integer userId, Integer accountId, String key);
 
-    void lockDevice(Integer userId, Integer deviceId);
+    DeviceAccount lockAccount(Integer userId, Integer accountId);
 
-    NavDirectory getDeviceDirectoryContent(Integer userId, Integer deviceId, String path);
+    boolean isValidAccount(DeviceAccount account);
 
-    NavDirectory getSharedDirectoryContent(Integer userId, Long shareId, String path);
+    List<NavResourceShare> listShares(Integer userId);
 
-    List<NavResourceShare> getSharedResources(Integer userId);
+    List<NavResourceShare> listUserShares(Integer userId);
 
-    List<NavResourceBookmark> getBookmarks(Integer userId);
+    List<NavResourceBookmark> listUserBookmarks(Integer userId);
+
+    NavDirectory readDeviceDirectoryByAccount(Integer userId, Integer accountId, String path);
+
+    NavDirectory readDeviceDirectoryByShare(Integer userId, Integer shareId, String path);
 }

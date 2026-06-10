@@ -33,7 +33,6 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
-import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -90,9 +89,6 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         localDeviceId = localDevice.getDeviceId();
         final var localAccount = getLocalAccountEntity(localDevice);
         localAccountId = localAccount.getAccountId();
-
-        notificationService.registerEventListener(DiscoveryDevicesEvent.class,
-            event -> syncDeviceAddresses(event.devices()));
     }
 
     private DeviceEntity getLocalDeviceEntity() {

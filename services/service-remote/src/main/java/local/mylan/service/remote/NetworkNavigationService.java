@@ -1,0 +1,219 @@
+/*
+ * Copyright 2026 Ruslan Kashapov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package local.mylan.service.remote;
+
+import static java.util.stream.Collectors.toMap;
+
+import com.google.common.annotations.VisibleForTesting;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import local.mylan.service.api.NavResourceService;
+import local.mylan.service.api.NavigationService;
+import local.mylan.service.api.NotificationService;
+import local.mylan.service.api.events.DeviceAccountCrudEvent;
+import local.mylan.service.api.events.DeviceCrudEvent;
+import local.mylan.service.api.events.DiscoveryDevicesEvent;
+import local.mylan.service.api.model.Device;
+import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.DeviceAccountState;
+import local.mylan.service.api.model.DeviceAccountWithCredentials;
+import local.mylan.service.api.model.DeviceIpAddress;
+import local.mylan.service.api.model.DeviceProtocol;
+import local.mylan.service.api.model.DeviceState;
+import local.mylan.service.api.model.NavDirectory;
+import local.mylan.service.api.model.NavResourceBookmark;
+import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.remote.accessors.SmbDeviceAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class NetworkNavigationService implements NavigationService {
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkNavigationService.class);
+    private static final Comparator<Device> DEVICE_COMPARATOR = (a, b) ->
+        CharSequence.compare(a.getIdentifier(), b.getIdentifier());
+    private static final Comparator<DeviceAccount> ACCOUNT_COMPARATOR = (a, b) -> {
+        final var byDevice = CharSequence.compare(a.getDeviceIdentifier(), b.getDeviceIdentifier());
+        return byDevice == 0 ? CharSequence.compare(a.getUsername(), b.getUsername()) : byDevice;
+    };
+
+    private final NavResourceService navResourceService;
+    private final Set<String> pendingOnlineDeviceIdentifiers = ConcurrentHashMap.newKeySet();
+    private final Map<DeviceProtocol, RemoteDeviceAccessor> accessorsMap;
+    private final Map<Integer, Device> deviceMap = new ConcurrentHashMap<>();
+    private final Map<Integer, DeviceAccountWithCredentials> accountMap = new ConcurrentHashMap<>();
+
+    public NetworkNavigationService(final Path confDir, final NavResourceService navResourceService,
+        final NotificationService notificationService) {
+        this(navResourceService, notificationService, defaultAccessors(confDir));
+    }
+
+    @VisibleForTesting
+    NetworkNavigationService(final NavResourceService navResourceService, final NotificationService notificationService,
+        final Collection<? extends RemoteDeviceAccessor> accessors) {
+
+        this.navResourceService = navResourceService;
+        accessorsMap = accessors.stream().collect(toMap(RemoteDeviceAccessor::protocol, accr -> accr));
+
+        notificationService.registerEventListener(DiscoveryDevicesEvent.class, this::onDiscovery);
+        notificationService.registerEventListener(DeviceCrudEvent.class, this::onDeviceCrud);
+        notificationService.registerEventListener(DeviceAccountCrudEvent.class, this::onDeviceAccountCrud);
+
+        initCaches();
+        LOG.info("Initialized.");
+    }
+
+    private void initCaches() {
+        navResourceService.getAllDevices().forEach(device -> {
+            device.setState(DeviceState.OFFLINE);
+            deviceMap.put(device.getDeviceId(), device);
+        });
+
+        navResourceService.getAllAccountsWithCredentials().forEach(account -> {
+            final var device = deviceMap.get(account.getDeviceId());
+            account.setDeviceIdentifier(device == null ? "" : device.getIdentifier());
+            account.setState(DeviceAccountState.UNKNOWN);
+            accountMap.put(account.getAccountId(), account);
+        });
+    }
+
+    private static Set<RemoteDeviceAccessor> defaultAccessors(final Path confDir) {
+        return Set.of(new SmbDeviceAccessor(confDir));
+    }
+
+    private void onDiscovery(final DiscoveryDevicesEvent event) {
+        // update caches first: set online statuses and refresh ip addresses
+        pendingOnlineDeviceIdentifiers.clear();
+        final var onlineDevicesMap = new HashMap<String, Device>(
+            event.devices().stream().collect(toMap(Device::getIdentifier, device -> device)));
+
+        for (var device : deviceMap.values()) {
+            final var onlineDevice = onlineDevicesMap.remove(device.getIdentifier());
+            if (onlineDevice == null) {
+                device.setState(DeviceState.OFFLINE);
+            } else {
+                device.setIpAddresses(copyIpAddresses(onlineDevice.getIpAddresses()));
+                device.setState(DeviceState.ONLINE);
+            }
+        }
+
+        if (!onlineDevicesMap.isEmpty()) {
+            pendingOnlineDeviceIdentifiers.addAll(onlineDevicesMap.keySet());
+        }
+        // update data layer, causing DeviceCrudEvent with new device id if new device detected
+        navResourceService.syncDeviceAddresses(event.devices());
+    }
+
+    private void onDeviceCrud(final DeviceCrudEvent event) {
+        switch (event.operation()) {
+            case CREATE -> {
+                final var device = navResourceService.getDevice(event.deviceId());
+                device.setState(pendingOnlineDeviceIdentifiers.remove(device.getIdentifier())
+                    ? DeviceState.ONLINE : DeviceState.OFFLINE);
+                deviceMap.put(device.getDeviceId(), device);
+            }
+            case DELETE -> {
+                // TODO clear caches cascade
+            }
+        }
+    }
+
+    @Override
+    public List<Device> listDevices() {
+        return deviceMap.values().stream()
+            .map(NetworkNavigationService::copyDevice).sorted(DEVICE_COMPARATOR).toList();
+    }
+
+    private static Device copyDevice(final Device device) {
+        final var copy = new Device(device.getIdentifier(), device.getProtocol());
+        copy.setDeviceId(device.getDeviceId());
+        copy.setState(device.getState());
+        copy.setIpAddresses(copyIpAddresses(device.getIpAddresses()));
+        return copy;
+    }
+
+    private static List<DeviceIpAddress> copyIpAddresses(final List<DeviceIpAddress> ipAddresses) {
+        return ipAddresses == null
+            ? List.of() : ipAddresses.stream().map(ipa -> new DeviceIpAddress(ipa.getIpAddress())).toList();
+    }
+
+    private void onDeviceAccountCrud(final DeviceAccountCrudEvent event) {
+
+    }
+
+    @Override
+    public List<DeviceAccount> listUserDeviceAccounts(final Integer userId) {
+        return accountMap.values().stream().filter(account -> Objects.equals(userId, account.getUserId()))
+            .map(NetworkNavigationService::copyAccount).sorted(ACCOUNT_COMPARATOR).toList();
+    }
+
+    private static DeviceAccount copyAccount(final DeviceAccountWithCredentials account) {
+        final var copy = new DeviceAccount();
+        copy.setDeviceId(account.getDeviceId());
+        copy.setDeviceIdentifier(account.getDeviceIdentifier());
+        copy.setUserId(account.getUserId());
+        copy.setUsername(account.getUsername());
+        copy.setState(account.getState());
+        copy.setLockState(account.getLockState());
+        return copy;
+    }
+
+    @Override
+    public DeviceAccount unlockAccount(final Integer userId, final Integer accountId, final String key) {
+        return null;
+    }
+
+    @Override
+    public DeviceAccount lockAccount(final Integer userId, final Integer accountId) {
+        return null;
+    }
+
+    @Override
+    public boolean isValidAccount(final DeviceAccount account) {
+        return false;
+    }
+
+    @Override
+    public List<NavResourceShare> listShares(final Integer userId) {
+        return List.of();
+    }
+
+    @Override
+    public List<NavResourceShare> listUserShares(final Integer userId) {
+        return List.of();
+    }
+
+    @Override
+    public List<NavResourceBookmark> listUserBookmarks(final Integer userId) {
+        return List.of();
+    }
+
+    @Override
+    public NavDirectory readDeviceDirectoryByAccount(final Integer userId, final Integer accountId, final String path) {
+        return null;
+    }
+
+    @Override
+    public NavDirectory readDeviceDirectoryByShare(final Integer userId, final Integer shareId, final String path) {
+        return null;
+    }
+}

@@ -33,6 +33,10 @@ public interface DeviceAccountWithCredentials {
 
     void unlock(String key);
 
+    String getDeviceIdentifier();
+
+    void setDeviceIdentifier(String deviceIdentifier);
+
     DeviceAccountState getState();
 
     void setState (DeviceAccountState state);
