@@ -37,5 +37,11 @@
             <groupId>local.mylan</groupId>
             <artifactId>service-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>service-api</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

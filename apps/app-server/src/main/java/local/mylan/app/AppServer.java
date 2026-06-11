@@ -22,9 +22,14 @@ import java.util.Map;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
+import local.mylan.service.remote.NetworkNavigationService;
 import local.mylan.service.remote.RemoteDiscoveryService;
+import local.mylan.service.rest.api.NavResourceRestService;
+import local.mylan.service.rest.api.NavigationRestService;
 import local.mylan.service.rest.api.RestDiscoveryService;
 import local.mylan.service.rest.api.RestUserService;
+import local.mylan.service.rest.spi.DefaultNavResourceRestService;
+import local.mylan.service.rest.spi.DefaultNavigationRestService;
 import local.mylan.service.rest.spi.DefaultRestDiscoveryService;
 import local.mylan.service.rest.spi.DefaultRestUserService;
 import local.mylan.service.spi.DefaultEncryptionService;
@@ -61,20 +66,27 @@ final class AppServer {
         notificationService = new DefaultNotificationService();
         final var encryptionService = new DefaultEncryptionService(confDir, workDir);
 
-        // networking
-        discoveryService = new RemoteDiscoveryService(confDir, notificationService);
-
         // persistence layer services
         dataServiceProvider = new DataServiceProvider(confDir, workDir);
         final var userService = dataServiceProvider.buildUserService(encryptionService, notificationService);
+        final var navResourceService =
+            dataServiceProvider.buildNavResourceService(encryptionService, notificationService);
+
+        // networking
+        discoveryService = new RemoteDiscoveryService(confDir, notificationService);
+        final var navService = new NetworkNavigationService(confDir, navResourceService, notificationService);
 
         // rest endpoints
         final var restUserService = new DefaultRestUserService(userService);
         final var restDiscoveryService = new DefaultRestDiscoveryService(discoveryService, notificationService);
+        final var navResRestService = new DefaultNavResourceRestService(navResourceService);
+        final var navRestService = new DefaultNavigationRestService(navService);
 
-        final var restDispatcher = new RestServiceDispatcher("/rest", restUserService, restDiscoveryService);
+        final var restDispatcher = new RestServiceDispatcher("/rest",
+            restUserService, restDiscoveryService, navResRestService, navRestService);
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest",
-            RestUserService.class, RestDiscoveryService.class);
+            RestUserService.class, RestDiscoveryService.class,
+            NavResourceRestService.class, NavigationRestService.class);
 
         // streaming
         final var sseDispatcher = new SseDispatcher("/sse", notificationService, 10_000L);
@@ -102,9 +114,7 @@ final class AppServer {
             .defaultDispatcher(uiDispatcher)
             .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher)
             .build();
-        server = new
-
-            HttpServer(confDir, dispatcher);
+        server = new HttpServer(confDir, dispatcher);
         server.start();
     }
 

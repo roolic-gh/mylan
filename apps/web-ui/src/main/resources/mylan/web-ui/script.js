@@ -267,7 +267,9 @@ class MaterialUi {
     drawResourceDevicesList(devices, app) {
         const devicesTable = buildTableFromTemplate("resources-devices-template", devices,
             (device) => "rsrc-device-tr-" + device.deviceId,
-            (device) => [device.deviceId, device.identifier, device.ipAddresses, device.protocol, device.status]);
+            (device) => [device.deviceId, device.identifier, 
+                device.ipAddresses.map(ipa => ipa.ipAddress).join(", "), 
+                device.protocol, device.state]);
         byId("resources-devices").replaceChildren(devicesTable);
     }
 
@@ -373,10 +375,7 @@ class Client {
     }
 
     getDeviceList(callback) {
-        callback([{
-            deviceId: 1, identifier: "ROOLIC-TEST", protocol: "SMB",
-            ipAddresses: ["192.168.1.100"], status: "OK"
-        }]);
+        this.request("GET", "/nav/devices", callback);
     }
 
     startDiscovery(callback) {
