@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote;
+package local.mylan.service.net;
 
 import static local.mylan.service.api.model.DeviceProtocol.NFS;
 import static local.mylan.service.api.model.DeviceProtocol.SMB;
@@ -68,7 +68,7 @@ class NetworkNavigationServiceTest {
     static EncryptedDeviceAccountWithCredentials.Decryptor decryptor;
 
     @Mock
-    RemoteDeviceAccessor accessor;
+    DeviceAccessor accessor;
     @Mock
     NavResourceService navResourceService;
     @Captor

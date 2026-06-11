@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote.accessors;
+package local.mylan.service.net.accessors;
 
 import java.net.InetAddress;
 import java.nio.file.Path;
@@ -21,10 +21,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.remote.RemoteDeviceAccessor;
+import local.mylan.service.net.DeviceAccessor;
 import local.mylan.transport.smb.SmbClient;
 
-public class SmbDeviceAccessor implements RemoteDeviceAccessor {
+public class SmbDeviceAccessor implements DeviceAccessor {
 
     private final SmbClient client;
 

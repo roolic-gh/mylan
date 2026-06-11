@@ -72,7 +72,7 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>service-remote</artifactId>
+            <artifactId>service-net</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>

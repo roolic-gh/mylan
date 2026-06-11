@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote;
+package local.mylan.service.net;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -43,7 +43,7 @@ import local.mylan.service.api.model.DeviceState;
 import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
-import local.mylan.service.remote.accessors.SmbDeviceAccessor;
+import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +58,7 @@ public final class NetworkNavigationService implements NavigationService {
 
     private final NavResourceService navResourceService;
     private final Set<String> pendingOnlineDeviceIdentifiers = ConcurrentHashMap.newKeySet();
-    private final Map<DeviceProtocol, RemoteDeviceAccessor> accessorsMap;
+    private final Map<DeviceProtocol, DeviceAccessor> accessorsMap;
     private final Map<Integer, Device> deviceMap = new ConcurrentHashMap<>();
     private final Map<Integer, DeviceAccountWithCredentials> accountMap = new ConcurrentHashMap<>();
 
@@ -69,10 +69,10 @@ public final class NetworkNavigationService implements NavigationService {
 
     @VisibleForTesting
     NetworkNavigationService(final NavResourceService navResourceService, final NotificationService notificationService,
-        final Collection<? extends RemoteDeviceAccessor> accessors) {
+        final Collection<? extends DeviceAccessor> accessors) {
 
         this.navResourceService = navResourceService;
-        accessorsMap = accessors.stream().collect(toMap(RemoteDeviceAccessor::protocol, accr -> accr));
+        accessorsMap = accessors.stream().collect(toMap(DeviceAccessor::protocol, accr -> accr));
 
         notificationService.registerEventListener(DiscoveryDevicesEvent.class, this::onDiscovery);
         notificationService.registerEventListener(DeviceCrudEvent.class, this::onDeviceCrud);
@@ -96,7 +96,7 @@ public final class NetworkNavigationService implements NavigationService {
         });
     }
 
-    private static Set<RemoteDeviceAccessor> defaultAccessors(final Path confDir) {
+    private static Set<DeviceAccessor> defaultAccessors(final Path confDir) {
         return Set.of(new SmbDeviceAccessor(confDir));
     }
 

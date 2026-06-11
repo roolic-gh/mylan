@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote;
+package local.mylan.service.net;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,7 +42,7 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.events.Event;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.remote.accessors.SmbDeviceAccessor;
+import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RemoteDiscoveryServceTest {
+class NetworkDiscoveryServceTest {
     private static final String SUBNET = "192.168.1.0/24";
     private static final String IP_ADDRESS_1 = "192.168.1.101";
     private static final String IP_ADDRESS_2 = "192.168.1.102";
@@ -80,8 +80,8 @@ class RemoteDiscoveryServceTest {
     @Test
     @Disabled
     void live() throws Exception {
-        discoveryService = new RemoteDiscoveryService(
-            ConfUtils.loadConfiguration(RemoteDiscoveryServiceConf.class),
+        discoveryService = new NetworkDiscoveryService(
+            ConfUtils.loadConfiguration(NetworkDiscoveryServiceConf.class),
             notificationService,
             InetAddressList.valueOf(SUBNET),
             Set.of(new SmbDeviceAccessor(Path.of("~"))));
@@ -91,7 +91,7 @@ class RemoteDiscoveryServceTest {
     @Test
     void discoveryFlow() throws Exception {
         // disable scheduled invokation
-        final var conf = ConfUtils.loadConfiguration(RemoteDiscoveryServiceConf.class, """
+        final var conf = ConfUtils.loadConfiguration(NetworkDiscoveryServiceConf.class, """
                 remote.discover.threads=2
                 remote.discover.interval=0
             """);
@@ -109,7 +109,7 @@ class RemoteDiscoveryServceTest {
         // 256 addresses to scan
         final var subnets = InetAddressList.valueOf(SUBNET);
 
-        discoveryService = new RemoteDiscoveryService(conf, notificationService, subnets, accessors);
+        discoveryService = new NetworkDiscoveryService(conf, notificationService, subnets, accessors);
 
         // start discovery
         final var future = discoveryService.startDiscovery();
@@ -166,7 +166,7 @@ class RemoteDiscoveryServceTest {
     record DiscoveredDevice(String ipAddress, String name, DeviceProtocol protocol) {
     }
 
-    private static class TestDeviceAccessor implements RemoteDeviceAccessor {
+    private static class TestDeviceAccessor implements DeviceAccessor {
 
         private final DeviceProtocol protocol;
         private final Map<InetAddress, String> deviceMap;

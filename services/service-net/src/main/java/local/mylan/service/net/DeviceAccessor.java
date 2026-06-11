@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote;
+package local.mylan.service.net;
 
 import java.net.InetAddress;
 import javax.annotation.Nullable;
 import local.mylan.service.api.model.DeviceProtocol;
 
-public interface RemoteDeviceAccessor {
+public interface DeviceAccessor {
 
     @Nullable
     String extractDeviceName(InetAddress address);

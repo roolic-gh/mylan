@@ -23,8 +23,8 @@ import java.util.Map;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
-import local.mylan.service.remote.NetworkNavigationService;
-import local.mylan.service.remote.RemoteDiscoveryService;
+import local.mylan.service.net.NetworkDiscoveryService;
+import local.mylan.service.net.NetworkNavigationService;
 import local.mylan.service.rest.api.DiscoveryRestService;
 import local.mylan.service.rest.api.NavResourceRestService;
 import local.mylan.service.rest.api.NavigationRestService;
@@ -74,7 +74,7 @@ final class AppServer {
             dataServiceProvider.buildNavResourceService(encryptionService, notificationService);
 
         // networking
-        discoveryService = new RemoteDiscoveryService(confDir, notificationService);
+        discoveryService = new NetworkDiscoveryService(confDir, notificationService);
         final var navService = new NetworkNavigationService(confDir, navResourceService, notificationService);
 
         // rest endpoints

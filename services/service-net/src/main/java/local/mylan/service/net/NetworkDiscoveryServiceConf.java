@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote;
+package local.mylan.service.net;
 
 import local.mylan.common.annotations.conf.ConfFile;
 import local.mylan.common.annotations.conf.ConfProperty;
 
 @ConfFile("remote-discovery.conf")
-public @interface RemoteDiscoveryServiceConf {
+public @interface NetworkDiscoveryServiceConf {
 
     @ConfProperty("remote.discover.threads")
     int threads() default 10;

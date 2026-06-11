@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.remote;
+package local.mylan.service.net;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.Futures;
@@ -44,12 +44,12 @@ import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DiscoveryStatus;
-import local.mylan.service.remote.accessors.SmbDeviceAccessor;
+import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RemoteDiscoveryService implements DiscoveryService {
-    private static final Logger LOG = LoggerFactory.getLogger(RemoteDiscoveryService.class);
+public class NetworkDiscoveryService implements DiscoveryService {
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkDiscoveryService.class);
 
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService executorService;
@@ -61,23 +61,23 @@ public class RemoteDiscoveryService implements DiscoveryService {
     private final AtomicReference<DiscoveryStatus> currentStatus = new AtomicReference<>();
 
     private final InetAddressList addressList;
-    private final RemoteDiscoveryServiceConf conf;
+    private final NetworkDiscoveryServiceConf conf;
     private final NotificationService notificationService;
-    private final Set<RemoteDeviceAccessor> accessors;
+    private final Set<DeviceAccessor> accessors;
 
-    public RemoteDiscoveryService(final Path confDir, final NotificationService notificationService) {
-        this(ConfUtils.loadConfiguration(RemoteDiscoveryServiceConf.class, confDir), notificationService,
+    public NetworkDiscoveryService(final Path confDir, final NotificationService notificationService) {
+        this(ConfUtils.loadConfiguration(NetworkDiscoveryServiceConf.class, confDir), notificationService,
             defaultAccessors(confDir));
     }
 
-    public RemoteDiscoveryService(final RemoteDiscoveryServiceConf conf, final NotificationService notificationService,
-        final Collection<RemoteDeviceAccessor> accessors) {
+    public NetworkDiscoveryService(final NetworkDiscoveryServiceConf conf, final NotificationService notificationService,
+        final Collection<DeviceAccessor> accessors) {
         this(conf, notificationService, InetAddressList.valueOf(conf.subnets()), accessors);
     }
 
     @VisibleForTesting
-    RemoteDiscoveryService(final RemoteDiscoveryServiceConf conf, final NotificationService notificationService,
-        final InetAddressList addressList, final Collection<? extends RemoteDeviceAccessor> accessors) {
+    NetworkDiscoveryService(final NetworkDiscoveryServiceConf conf, final NotificationService notificationService,
+        final InetAddressList addressList, final Collection<? extends DeviceAccessor> accessors) {
 
         this.conf = conf;
         this.addressList = addressList;
@@ -93,7 +93,7 @@ public class RemoteDiscoveryService implements DiscoveryService {
         LOG.info("Initialized");
     }
 
-    private static Set<RemoteDeviceAccessor> defaultAccessors(final Path confDir) {
+    private static Set<DeviceAccessor> defaultAccessors(final Path confDir) {
         return Set.of(new SmbDeviceAccessor(confDir));
     }
 
