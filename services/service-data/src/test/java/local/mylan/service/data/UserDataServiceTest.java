@@ -15,8 +15,6 @@
  */
 package local.mylan.service.data;
 
-import static local.mylan.service.data.TestUtils.encryptionService;
-import static local.mylan.service.data.TestUtils.notificationService;
 import static local.mylan.service.data.TestUtils.setupSessionFactory;
 import static local.mylan.service.data.TestUtils.tearDownSessionFactory;
 import static local.mylan.service.data.UserDataService.ADMIN_USERNAME;
@@ -32,6 +30,8 @@ import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.data.entities.UserCredEntity;
 import local.mylan.service.data.entities.UserEntity;
+import local.mylan.service.test.TestEncryptionService;
+import local.mylan.service.test.TestNotificationService;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,7 +60,7 @@ public class UserDataServiceTest {
     @BeforeAll
     static void beforeAll() {
         sessionFactory = setupSessionFactory(UserEntity.class, UserCredEntity.class);
-        userService = new UserDataService(sessionFactory, encryptionService(), notificationService());
+        userService = new UserDataService(sessionFactory, new TestEncryptionService(), new TestNotificationService());
     }
 
     @AfterAll

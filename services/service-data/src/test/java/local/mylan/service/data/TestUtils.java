@@ -15,14 +15,7 @@
  */
 package local.mylan.service.data;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
-import local.mylan.service.api.EncryptionService;
-import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.events.EventListener;
-import local.mylan.service.api.events.Registration;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.JdbcSettings;
@@ -48,70 +41,6 @@ final class TestUtils {
     static void tearDownSessionFactory(SessionFactory sessionFactory) {
         if (sessionFactory != null && sessionFactory.isOpen()) {
             sessionFactory.close();
-        }
-    }
-
-    static TestNotificationService notificationService() {
-        return new TestNotificationService();
-    }
-
-    static EncryptionService encryptionService() {
-        return new EncryptionService() {
-            @Override
-            public String encrypt(final String input) {
-                return input;
-            }
-
-            @Override
-            public String encrypt(final String input, final String password) {
-                return input;
-            }
-
-            @Override
-            public String decrypt(final String input) {
-                return input;
-            }
-
-            @Override
-            public String decrypt(final String input, final String password) {
-                return input;
-            }
-
-            @Override
-            public String buildHash(final String input) {
-                return input;
-            }
-        };
-    }
-
-    static class TestNotificationService implements NotificationService {
-
-        private final List<Event> events = new ArrayList<>();
-
-        void clearEvents() {
-            events.clear();
-        }
-
-        int eventsCount(){
-            return events.size();
-        }
-
-        List<Event> getEvents(){
-            return List.copyOf(events);
-        }
-
-        @Override
-        public <T extends Event> Registration registerEventListener(final Integer targetUserId,
-            final Class<T> eventType, final EventListener<T> listener) {
-            return null;
-        }
-
-        @Override
-        public void raiseEvent(final Integer targetUserId, final Event event) {
-            if (targetUserId == null) {
-                // track global event only
-                events.add(event);
-            }
         }
     }
 }

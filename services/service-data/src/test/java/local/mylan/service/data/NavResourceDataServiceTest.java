@@ -17,7 +17,6 @@ package local.mylan.service.data;
 
 import static local.mylan.service.data.NavResourceDataService.LOCAL_ACCOUNT_USERNAME;
 import static local.mylan.service.data.NavResourceDataService.LOCAL_DEVICE_IDENTIFIER;
-import static local.mylan.service.data.TestUtils.notificationService;
 import static local.mylan.service.data.TestUtils.setupSessionFactory;
 import static local.mylan.service.data.TestUtils.tearDownSessionFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,6 +54,7 @@ import local.mylan.service.data.entities.NavResourceBookmarkEntity;
 import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.UserEntity;
 import local.mylan.service.spi.DefaultEncryptionService;
+import local.mylan.service.test.TestNotificationService;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -113,7 +113,7 @@ class NavResourceDataServiceTest {
 
     static SessionFactory sessionFactory;
     static NavResourceService navResourceService;
-    static TestUtils.TestNotificationService notificationService;
+    static TestNotificationService notificationService;
 
     static Integer userId1;
     static Integer userId2;
@@ -141,7 +141,7 @@ class NavResourceDataServiceTest {
     static void beforeAll() {
         sessionFactory = setupSessionFactory(UserEntity.class, DeviceEntity.class, DeviceAccountEntity.class,
             DeviceIpAddressEntity.class, NavResourceShareEntity.class, NavResourceBookmarkEntity.class);
-        notificationService = notificationService();
+        notificationService = new TestNotificationService();
         navResourceService = new NavResourceDataService(sessionFactory,
             new DefaultEncryptionService(tempDir, tempDir), notificationService);
 
@@ -335,7 +335,6 @@ class NavResourceDataServiceTest {
         account3.setPassword(PASSWORD_1); // for subsequent checks
 
         // events
-        assertEquals(3, notificationService.eventsCount());
         final var expectedEvents = List.of(
             new DeviceAccountCrudEvent(account1.getAccountId(), CrudOperation.CREATE),
             new DeviceAccountCrudEvent(account2.getAccountId(), CrudOperation.CREATE),
@@ -421,7 +420,6 @@ class NavResourceDataServiceTest {
         account3.setKey(CRYPT_KEY);
 
         // checkEvents
-        assertEquals(1, notificationService.eventsCount());
         final var expectedEvents = List.of(new DeviceAccountCrudEvent(account3.getAccountId(), CrudOperation.UPDATE));
         assertEquals(expectedEvents, notificationService.getEvents());
 
@@ -483,7 +481,6 @@ class NavResourceDataServiceTest {
         assertNull(account3);
 
         // checkEvents
-        assertEquals(1, notificationService.eventsCount());
         final var expectedEvents = List.of(new DeviceAccountCrudEvent(accountId, CrudOperation.DELETE));
         assertEquals(expectedEvents, notificationService.getEvents());
 

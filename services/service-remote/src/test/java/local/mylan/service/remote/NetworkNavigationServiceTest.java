@@ -22,18 +22,15 @@ import static local.mylan.service.api.model.DeviceState.ONLINE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NavigationService;
-import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
@@ -41,15 +38,13 @@ import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceState;
-import local.mylan.service.spi.DefaultEncryptionService;
-import local.mylan.service.spi.DefaultNotificationService;
 import local.mylan.service.spi.model.EncryptedDeviceAccountWithCredentials;
-import org.awaitility.Awaitility;
+import local.mylan.service.test.TestEncryptionService;
+import local.mylan.service.test.TestNotificationService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -69,29 +64,29 @@ class NetworkNavigationServiceTest {
     private static final String IP3 = "192.168.1.103";
     private static final String IP4 = "192.168.1.104";
 
-    @TempDir
-    static Path tempDir;
     static EncryptedDeviceAccountWithCredentials.Encryptor encryptor;
     static EncryptedDeviceAccountWithCredentials.Decryptor decryptor;
 
+    @Mock
+    RemoteDeviceAccessor accessor;
     @Mock
     NavResourceService navResourceService;
     @Captor
     ArgumentCaptor<List<Device>> deviceListCaptor;
 
-    NotificationService notificationService;
+    TestNotificationService notificationService;
     NavigationService service;
 
     @BeforeAll
     static void beforeAll() {
-        final var encService = new DefaultEncryptionService(tempDir, tempDir);
-        encryptor = (value, key) -> key == null ? encService.encrypt(value) : encService.encrypt(value, key);
-        decryptor = (value, key) -> key == null ? encService.decrypt(value) : encService.decrypt(value, key);
+        final var encService = new TestEncryptionService();
+        encryptor = encService.credentialsEncryptor();
+        decryptor = encService.credentialsDecryptor();
     }
 
     @BeforeEach
     void beforeEach() {
-        notificationService = new DefaultNotificationService();
+        notificationService = new TestNotificationService();
     }
 
     @Test
@@ -115,7 +110,7 @@ class NetworkNavigationServiceTest {
             .when(navResourceService).getDevice(DEVICE_ID3);
 
         // start service
-        service = new NetworkNavigationService(tempDir, navResourceService, notificationService);
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor));
 
         // all devices marked offline initially
         assertDeviceList(List.of(
@@ -125,16 +120,11 @@ class NetworkNavigationServiceTest {
 
         // discovery event
         notificationService.raiseEvent(discoveryEvent);
-        verify(navResourceService, timeout(500).times(1)).syncDeviceAddresses(deviceListCaptor.capture());
+        verify(navResourceService, times(1)).syncDeviceAddresses(deviceListCaptor.capture());
         assertDeviceList(discoveryEvent.devices(), deviceListCaptor.getValue(), Device::getIdentifier);
 
-        // noew device event
+        // new device event
         notificationService.raiseEvent(newDeviceEvent);
-        // FIXME use simplified test notification service using 1 thread, no timeouts expected
-        Awaitility.await()
-            .pollInterval(Duration.ofMillis(100))
-            .atMost(Duration.ofSeconds(2))
-            .until(() -> service.listDevices().size() > 2);
         assertDeviceList(List.of(
                 device(DEVICE_ID1, DEVICE_NAME1, SMB, List.of(IP4), ONLINE),
                 device(DEVICE_ID2, DEVICE_NAME2, NFS, List.of(IP2), OFFLINE),

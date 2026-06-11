@@ -21,14 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.nio.file.Path;
 import local.mylan.service.api.model.DeviceAccountLockState;
 import local.mylan.service.api.model.DeviceAccountWithCredentials;
-import local.mylan.service.spi.DefaultEncryptionService;
+import local.mylan.service.test.TestEncryptionService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -42,14 +40,11 @@ class EncryptedDeviceAccountWithCredentialsTest {
     static EncryptedDeviceAccountWithCredentials.Encryptor encryptor;
     static EncryptedDeviceAccountWithCredentials.Decryptor decryptor;
 
-    @TempDir
-    static Path tempDir;
-
     @BeforeAll
     static void beforeAll() {
-        final var encService = new DefaultEncryptionService(tempDir, tempDir);
-        encryptor = (value, key) -> key == null ? encService.encrypt(value) : encService.encrypt(value, key);
-        decryptor = (value, key) -> key == null ? encService.decrypt(value) : encService.decrypt(value, key);
+        final var encService = new TestEncryptionService();
+        encryptor = encService.credentialsEncryptor();
+        decryptor = encService.credentialsDecryptor();
 
         // validate encryption/decryption works as expected
 
