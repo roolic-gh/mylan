@@ -26,7 +26,7 @@ import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
 
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
-public interface RestUserService {
+public interface UserRestService {
 
     UserContext authenticate(String authHeader);
 

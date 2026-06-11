@@ -15,9 +15,9 @@
  */
 package local.mylan.service.rest.spi;
 
-import static local.mylan.service.rest.spi.DefaultRestUserService.ANONIMOUS_CONTEXT;
-import static local.mylan.service.rest.spi.DefaultRestUserService.AUTH_BASIC;
-import static local.mylan.service.rest.spi.DefaultRestUserService.AUTH_BEARER;
+import static local.mylan.service.rest.spi.DefaultUserRestService.ANONIMOUS_CONTEXT;
+import static local.mylan.service.rest.spi.DefaultUserRestService.AUTH_BASIC;
+import static local.mylan.service.rest.spi.DefaultUserRestService.AUTH_BEARER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,7 +41,7 @@ import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
-import local.mylan.service.rest.api.RestUserService;
+import local.mylan.service.rest.api.UserRestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +49,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class DefaultRestUserServiceTest {
+public class DefaultUserRestServiceTest {
     private static final String USERNAME = "username";
     private static final String PASSWORD = "pa$$w0Rd";
     private static final String PASSWORD2 = "pa55w0Rd";
@@ -72,11 +72,11 @@ public class DefaultRestUserServiceTest {
     @Mock
     UserService userService;
 
-    private RestUserService restService;
+    private UserRestService restService;
 
     @BeforeEach
     void beforeEach() {
-        restService = new DefaultRestUserService(userService);
+        restService = new DefaultUserRestService(userService);
     }
 
     @Test

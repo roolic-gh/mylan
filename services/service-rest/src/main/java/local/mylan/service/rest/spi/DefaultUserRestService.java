@@ -34,10 +34,10 @@ import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.api.ChangePassword;
-import local.mylan.service.rest.api.RestUserService;
 import local.mylan.service.rest.api.UserAuthResult;
+import local.mylan.service.rest.api.UserRestService;
 
-public final class DefaultRestUserService implements RestUserService {
+public final class DefaultUserRestService implements UserRestService {
 
     private static final Duration SESSION_EXPIRES = Duration.ofHours(24);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
@@ -52,7 +52,7 @@ public final class DefaultRestUserService implements RestUserService {
     private final UserService service;
     private final Cache<String, UserContext> contextCache;
 
-    public DefaultRestUserService(final UserService service) {
+    public DefaultUserRestService(final UserService service) {
         this.service = service;
         contextCache = CacheBuilder.newBuilder().expireAfterAccess(SESSION_EXPIRES).build();
     }

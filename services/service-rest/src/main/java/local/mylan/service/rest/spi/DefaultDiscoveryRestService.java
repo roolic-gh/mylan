@@ -23,14 +23,14 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.UserContext;
 import local.mylan.service.api.events.DiscoveryStatusEvent;
 import local.mylan.service.api.model.DiscoveryStatus;
-import local.mylan.service.rest.api.RestDiscoveryService;
+import local.mylan.service.rest.api.DiscoveryRestService;
 
-public class DefaultRestDiscoveryService implements RestDiscoveryService {
+public class DefaultDiscoveryRestService implements DiscoveryRestService {
 
     private final DiscoveryService discoveryService;
     private final NotificationService notificationService;
 
-    public DefaultRestDiscoveryService(final DiscoveryService discoveryService,
+    public DefaultDiscoveryRestService(final DiscoveryService discoveryService,
         final NotificationService notificationService) {
         this.discoveryService = discoveryService;
         this.notificationService = notificationService;

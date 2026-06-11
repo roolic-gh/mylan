@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import local.mylan.transport.http.ext.StaticContentDispatcher;
 import tools.jackson.databind.json.JsonMapper;
@@ -34,14 +34,17 @@ public class SwaggerUiDispatcher extends StaticContentDispatcher {
     private final ContentSource apiContentSource;
 
     public SwaggerUiDispatcher(final String contextPath, final String restContextPath,
-        final Class<?>... serviceClasses) {
+        final Collection<Class<?>> serviceClasses) {
+
         super(contextPath, RESOURCE_PATH);
         substitute(INITIALIZER_PATH, Map.of(URL_TO_REPLACE, contextPath + API_PATH));
         apiContentSource = buildApiContentSource(restContextPath, serviceClasses);
     }
 
-    private static ContentSource buildApiContentSource(final String restContextPath, final Class<?>... serviceClasses) {
-        final var openApi = new OpenApiBuilder(restContextPath).process(List.of(serviceClasses)).build();
+    private static ContentSource buildApiContentSource(final String restContextPath,
+        final Collection<Class<?>> serviceClasses) {
+
+        final var openApi = new OpenApiBuilder(restContextPath).process(serviceClasses).build();
         final var mapper = JsonMapper.builder()
             .addModule(new OpenApiJsonModule())
             .changeDefaultPropertyInclusion(
@@ -62,5 +65,4 @@ public class SwaggerUiDispatcher extends StaticContentDispatcher {
         }
         return super.getContentSource(path);
     }
-
 }

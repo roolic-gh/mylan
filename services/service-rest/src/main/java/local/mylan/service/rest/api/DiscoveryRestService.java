@@ -21,7 +21,7 @@ import local.mylan.service.api.UserContext;
 import local.mylan.service.api.model.DiscoveryStatus;
 
 @ServiceDescriptor(id = "DiscoveryService", description = "Device discovery operations")
-public interface RestDiscoveryService {
+public interface DiscoveryRestService {
 
     @RequestMapping(method = "POST", path = "/discovery/start", description = "Start device discovery")
     DiscoveryStatus startDiscovery(UserContext userCtx);

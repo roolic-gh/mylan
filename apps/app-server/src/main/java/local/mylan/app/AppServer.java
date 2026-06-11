@@ -18,20 +18,21 @@ package local.mylan.app;
 import static local.mylan.transport.http.ext.StaticContentDispatcher.SourceType.FILE_SYSTEM;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
 import local.mylan.service.remote.NetworkNavigationService;
 import local.mylan.service.remote.RemoteDiscoveryService;
+import local.mylan.service.rest.api.DiscoveryRestService;
 import local.mylan.service.rest.api.NavResourceRestService;
 import local.mylan.service.rest.api.NavigationRestService;
-import local.mylan.service.rest.api.RestDiscoveryService;
-import local.mylan.service.rest.api.RestUserService;
+import local.mylan.service.rest.api.UserRestService;
+import local.mylan.service.rest.spi.DefaultDiscoveryRestService;
 import local.mylan.service.rest.spi.DefaultNavResourceRestService;
 import local.mylan.service.rest.spi.DefaultNavigationRestService;
-import local.mylan.service.rest.spi.DefaultRestDiscoveryService;
-import local.mylan.service.rest.spi.DefaultRestUserService;
+import local.mylan.service.rest.spi.DefaultUserRestService;
 import local.mylan.service.spi.DefaultEncryptionService;
 import local.mylan.service.spi.DefaultNotificationService;
 import local.mylan.transport.http.CompositeDispatcher;
@@ -77,16 +78,16 @@ final class AppServer {
         final var navService = new NetworkNavigationService(confDir, navResourceService, notificationService);
 
         // rest endpoints
-        final var restUserService = new DefaultRestUserService(userService);
-        final var restDiscoveryService = new DefaultRestDiscoveryService(discoveryService, notificationService);
-        final var navResRestService = new DefaultNavResourceRestService(navResourceService);
-        final var navRestService = new DefaultNavigationRestService(navService);
-
-        final var restDispatcher = new RestServiceDispatcher("/rest",
-            restUserService, restDiscoveryService, navResRestService, navRestService);
-        final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest",
-            RestUserService.class, RestDiscoveryService.class,
-            NavResourceRestService.class, NavigationRestService.class);
+        final var userRestService = new DefaultUserRestService(userService);
+        final var restDispatcher = new RestServiceDispatcher("/rest", List.of(
+            userRestService,
+            new DefaultDiscoveryRestService(discoveryService, notificationService),
+            new DefaultNavResourceRestService(navResourceService),
+            new DefaultNavigationRestService(navService)
+        ));
+        final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest", List.of(
+            UserRestService.class, DiscoveryRestService.class,
+            NavResourceRestService.class, NavigationRestService.class));
 
         // streaming
         final var sseDispatcher = new SseDispatcher("/sse", notificationService, 10_000L);
@@ -110,7 +111,7 @@ final class AppServer {
 
         // http server
         final var dispatcher = CompositeDispatcher.builder()
-            .authenticator(restUserService::authenticate)
+            .authenticator(userRestService::authenticate)
             .defaultDispatcher(uiDispatcher)
             .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher)
             .build();

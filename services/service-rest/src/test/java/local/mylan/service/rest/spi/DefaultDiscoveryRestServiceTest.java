@@ -32,7 +32,7 @@ import local.mylan.service.api.events.DiscoveryStatusEvent;
 import local.mylan.service.api.events.Event;
 import local.mylan.service.api.model.DiscoveryStatus;
 import local.mylan.service.api.model.User;
-import local.mylan.service.rest.api.RestDiscoveryService;
+import local.mylan.service.rest.api.DiscoveryRestService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DefaultRestDiscoveryServiceTest {
+class DefaultDiscoveryRestServiceTest {
     private static final Integer USER_ID = Integer.valueOf(1001);
     static DiscoveryStatus statusRunning = new DiscoveryStatus();
     static DiscoveryStatus statusCompleted = new DiscoveryStatus();
@@ -55,7 +55,7 @@ class DefaultRestDiscoveryServiceTest {
     @Captor
     ArgumentCaptor<Event> eventCaptor;
 
-    RestDiscoveryService restService;
+    DiscoveryRestService restService;
 
     @BeforeAll
     static void beforeAll() {
@@ -68,7 +68,7 @@ class DefaultRestDiscoveryServiceTest {
 
     @BeforeEach
     void beforeEach() {
-        restService = new DefaultRestDiscoveryService(discoveryService, notificationService);
+        restService = new DefaultDiscoveryRestService(discoveryService, notificationService);
         doReturn(statusRunning).when(discoveryService).currentStatus();
     }
 

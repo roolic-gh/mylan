@@ -69,7 +69,7 @@ class RestServiceDispatcherTest {
     @BeforeAll
     static void beforeAll() {
         proxy = new TestServiceProxy();
-        dispatcher = new RestServiceDispatcher(CONTEXT_PATH, proxy);
+        dispatcher = new RestServiceDispatcher(CONTEXT_PATH, List.of(proxy));
     }
 
     @BeforeEach

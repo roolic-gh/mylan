@@ -17,6 +17,7 @@ package local.mylan.transport.http.rest;
 
 import io.netty.handler.codec.http.HttpMethod;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.transport.http.common.api.ContextDispatcher;
@@ -30,9 +31,9 @@ public final class RestServiceDispatcher implements ContextDispatcher {
     private final String contextPath;
     private final List<RestRequestHandler> handlers;
 
-    public RestServiceDispatcher(final String contextPath, final Object... serviceInstances) {
+    public RestServiceDispatcher(final String contextPath, final Collection<?> restServices) {
         this.contextPath = contextPath;
-        handlers = buildHandlers(serviceInstances);
+        handlers = buildHandlers(restServices);
     }
 
     @Override
@@ -54,7 +55,7 @@ public final class RestServiceDispatcher implements ContextDispatcher {
         return false;
     }
 
-    private static List<RestRequestHandler> buildHandlers(final Object[] serviceInstances) {
+    private static List<RestRequestHandler> buildHandlers(final Collection<?> serviceInstances) {
         final var result = new ArrayList<RestRequestHandler>();
         for (var serviceInstance : serviceInstances) {
             final var cls = serviceInstance.getClass();

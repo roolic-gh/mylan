@@ -15,6 +15,7 @@
  */
 package local.mylan.transport.http.rest;
 
+import java.util.List;
 import local.mylan.transport.http.common.api.ContextDispatcher;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -26,6 +27,6 @@ public class SwaggerUiDispatcherTest {
 
     @BeforeAll
     static void beforeAll() {
-        dispatcher = new SwaggerUiDispatcher(CONTEXT_PATH, REST_PATH, TestService.class);
+        dispatcher = new SwaggerUiDispatcher(CONTEXT_PATH, REST_PATH, List.of(TestService.class));
     }
 }
