@@ -17,12 +17,14 @@ package local.mylan.service.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.service.api.model.Device;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceState;
@@ -32,6 +34,8 @@ public final class NavResourceTestUtils {
     private NavResourceTestUtils() {
         // utility class
     }
+
+    // devices
 
     public static Device device(final Integer deviceId, final String deviceName, final DeviceProtocol protocol,
         final List<String> ipList, final DeviceState state) {
@@ -71,7 +75,45 @@ public final class NavResourceTestUtils {
         assertEquals(expectedSet, actualSet);
     }
 
-    private static <K, V> void assertList(final List<V> expectedList, final List<V> actualList,
+    // device accounts
+
+    public static DeviceAccount deviceAccount(final Integer accountId, final Integer userId, final Integer deviceId,
+        final String username, final String password, final String key) {
+        final var account = new DeviceAccount(deviceId, username, password, key);
+        account.setAccountId(accountId);
+        account.setUserId(userId);
+        return account;
+    }
+
+    public static void assertAccountList(final List<DeviceAccount> expected, final List<DeviceAccount> actual) {
+        assertList(expected, actual, DeviceAccount::getAccountId, NavResourceTestUtils::assertAccount);
+    }
+
+    public static void assertAccount(final DeviceAccount expected, final DeviceAccount actual) {
+        assertAccount(expected, actual, false);
+    }
+
+    public static void assertAccountWithPassword(final DeviceAccount expected, final DeviceAccount actual) {
+        assertAccount(expected, actual, true);
+    }
+
+    private static void assertAccount(final DeviceAccount expected, final DeviceAccount actual, boolean withPassword) {
+        assertNotNull(actual);
+        assertEquals(expected.getDeviceId(), actual.getDeviceId());
+        assertEquals(expected.getUserId(), actual.getUserId());
+        assertEquals(expected.getUsername(), actual.getUsername());
+        if (withPassword) {
+            assertEquals(expected.getPassword(), actual.getPassword());
+            assertEquals(expected.getKey(), actual.getKey());
+        } else {
+            assertNull(actual.getPassword());
+            assertNull(actual.getKey());
+        }
+    }
+
+    // utility
+
+    public static <K, V> void assertList(final List<V> expectedList, final List<V> actualList,
         final Function<V, K> keyBuilder, final ValueAsserter<V> asserter) {
 
         assertNotNull(actualList);
@@ -84,7 +126,7 @@ public final class NavResourceTestUtils {
         }
     }
 
-    private static <K, V> Map<K, V> toMap(final List<V> list, final Function<V, K> keyBuilder) {
+    public static <K, V> Map<K, V> toMap(final List<V> list, final Function<V, K> keyBuilder) {
         return list.stream().collect(Collectors.toMap(keyBuilder, value -> value));
     }
 

@@ -36,17 +36,17 @@ public interface NavResourceRestService {
     List<DeviceAccount> listDeviceAccounts(UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/res/account/{id}")
-    List<DeviceAccount> getDeviceAccount(@PathParameter ("id") Integer accountId, UserContext userCtx);
+    DeviceAccount getDeviceAccount(@PathParameter ("id") Integer accountId, UserContext userCtx);
 
     @RequestMapping(method = "POST", path = "/nav/res/account")
-    DeviceAccount createDeviceAccounts(@RequestBody DeviceAccountRequest accountRequest, UserContext userCtx);
+    DeviceAccount createDeviceAccount(@RequestBody DeviceAccount account, UserContext userCtx);
 
     @RequestMapping(method = "PATCH", path = "/nav/res/account/{id}")
-    DeviceAccount updateDeviceAccounts(@PathParameter ("id") Integer accountId,
-        @RequestBody DeviceAccountRequest accountRequest, UserContext userCtx);
+    DeviceAccount updateDeviceAccount(@PathParameter ("id") Integer accountId,
+        @RequestBody DeviceAccount account, UserContext userCtx);
 
     @RequestMapping(method = "DELETE", path = "/nav/res/account/{id}")
-    DeviceAccount deleteDeviceAccounts(@PathParameter ("id") Integer accountId, UserContext userCtx);
+    void deleteDeviceAccount(@PathParameter ("id") Integer accountId, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/res/shares")
     List<NavResourceShare> listUserShares(UserContext userCtx);

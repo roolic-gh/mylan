@@ -19,6 +19,7 @@ import static local.mylan.service.data.NavResourceDataService.LOCAL_ACCOUNT_USER
 import static local.mylan.service.data.NavResourceDataService.LOCAL_DEVICE_IDENTIFIER;
 import static local.mylan.service.data.TestUtils.setupSessionFactory;
 import static local.mylan.service.data.TestUtils.tearDownSessionFactory;
+import static local.mylan.service.test.NavResourceTestUtils.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -354,7 +354,6 @@ class NavResourceDataServiceTest {
     }
 
     private static void assertAccount(final DeviceAccount expected, final DeviceAccount actual) {
-
         assertNotNull(actual);
         assertEquals(expected.getDeviceId(), actual.getDeviceId());
         assertNull(actual.getPassword());
@@ -400,22 +399,21 @@ class NavResourceDataServiceTest {
         // only accountId and credentials are taken from input
         final var update = new DeviceAccount(null, USERNAME_X, PASSWORD_X, CRYPT_KEY);
         update.setAccountId(account3.getAccountId());
-        navResourceService.updateAccount(userId2, update);
+        final var updated = navResourceService.updateAccount(userId2, update);
+        assertNotNull(updated);
+        assertEquals(userId2, updated.getUserId());
+        assertEquals(device2.getDeviceId(), updated.getDeviceId());
+        assertEquals(USERNAME_X, updated.getUsername());
 
         // validate credentials only updated
-        final var check = navResourceService.getAccount(account3.getAccountId());
-        assertNotNull(check);
-        assertEquals(userId2, check.getUserId());
-        assertEquals(device2.getDeviceId(), check.getDeviceId());
+        final var check = navResourceService.getAccountWithCredentials(account3.getAccountId());
+        assertEquals(DeviceAccountLockState.LOCKED, check.getLockState());
+        check.unlock(CRYPT_KEY);
+        assertEquals(DeviceAccountLockState.UNLOCKED, check.getLockState());
         assertEquals(USERNAME_X, check.getUsername());
+        assertEquals(PASSWORD_X, check.getPassword());
 
-        final var checkCreds = navResourceService.getAccountWithCredentials(account3.getAccountId());
-        assertEquals(DeviceAccountLockState.LOCKED, checkCreds.getLockState());
-        checkCreds.unlock(CRYPT_KEY);
-        assertEquals(DeviceAccountLockState.UNLOCKED, checkCreds.getLockState());
-        assertEquals(PASSWORD_X, checkCreds.getPassword());
-
-        account3 = check;
+        account3 = updated;
         account3.setPassword(PASSWORD_X); //  for subsequent checks
         account3.setKey(CRYPT_KEY);
 
@@ -778,9 +776,5 @@ class NavResourceDataServiceTest {
 
         // ensure local bookmarks remain for user1
         assertBookmark(bookmark3, navResourceService.getBookmark(bookmark3.getBookmarkId()));
-    }
-
-    private static <K, V> Map<K, V> toMap(final List<V> list, Function<V, K> keyBuilder) {
-        return list.stream().collect(Collectors.toMap(keyBuilder, Function.identity()));
     }
 }

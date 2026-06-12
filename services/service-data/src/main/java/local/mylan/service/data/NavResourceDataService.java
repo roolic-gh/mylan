@@ -281,7 +281,6 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             newEntity.setDevice(deviceEntity);
             session.persist(newEntity);
         }
-
     }
 
     @Override
@@ -359,7 +358,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
-    public void updateAccount(final Integer userId, final DeviceAccount account) {
+    public DeviceAccount updateAccount(final Integer userId, final DeviceAccount account) {
         final var entity = validAccountEntity(account.getAccountId());
         validateOwner(userId, entity.getUserId(), "Account can be updated by owner only");
         entity.setUsername(account.getUsername());
@@ -367,6 +366,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         entity.setKey(account.getKey() == null ? null : LOCKED_INDICATOR);
         inTransaction(session -> session.merge(entity));
         notificationService.raiseEvent(new DeviceAccountCrudEvent(account.getAccountId(), CrudOperation.UPDATE));
+        return MAPPER.fromEntity(entity);
     }
 
     @Override

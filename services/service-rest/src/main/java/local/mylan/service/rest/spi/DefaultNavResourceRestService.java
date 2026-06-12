@@ -15,14 +15,18 @@
  */
 package local.mylan.service.rest.spi;
 
+import static local.mylan.service.api.UserContext.userIdFrom;
+
 import java.util.List;
+import java.util.Objects;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.UserContext;
+import local.mylan.service.api.exceptions.NoDataException;
+import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
-import local.mylan.service.rest.api.DeviceAccountRequest;
 import local.mylan.service.rest.api.NavResourceRestService;
 
 public class DefaultNavResourceRestService implements NavResourceRestService {
@@ -40,28 +44,37 @@ public class DefaultNavResourceRestService implements NavResourceRestService {
 
     @Override
     public List<DeviceAccount> listDeviceAccounts(final UserContext userCtx) {
-        return List.of();
+        return navResoourceService.getUserAccounts(userIdFrom(userCtx));
     }
 
     @Override
-    public List<DeviceAccount> getDeviceAccount(final Integer accountId, final UserContext userCtx) {
-        return List.of();
+    public DeviceAccount getDeviceAccount(final Integer accountId, final UserContext userCtx) {
+        final var account = navResoourceService.getAccount(accountId);
+        if (account == null) {
+            throw new NoDataException("Account with requested id does not exists");
+        }
+        if (!Objects.equals(account.getUserId(), userIdFrom(userCtx))) {
+            throw new UnauthorizedException("Account belongs to other user");
+        }
+        return account;
     }
 
     @Override
-    public DeviceAccount createDeviceAccounts(final DeviceAccountRequest accountRequest, final UserContext userCtx) {
-        return null;
+    public DeviceAccount createDeviceAccount(final DeviceAccount account, final UserContext userCtx) {
+        return navResoourceService.createAccount(userIdFrom(userCtx), account);
     }
 
     @Override
-    public DeviceAccount updateDeviceAccounts(final Integer accountId, final DeviceAccountRequest accountRequest,
+    public DeviceAccount updateDeviceAccount(final Integer accountId, final DeviceAccount account,
         final UserContext userCtx) {
-        return null;
+
+        account.setAccountId(accountId);
+        return navResoourceService.updateAccount(userIdFrom(userCtx), account);
     }
 
     @Override
-    public DeviceAccount deleteDeviceAccounts(final Integer accountId, final UserContext userCtx) {
-        return null;
+    public void deleteDeviceAccount(final Integer accountId, final UserContext userCtx) {
+        navResoourceService.removeAccount(userIdFrom(userCtx), accountId);
     }
 
     @Override

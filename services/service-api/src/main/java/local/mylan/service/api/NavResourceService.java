@@ -54,7 +54,7 @@ public interface NavResourceService {
 
     DeviceAccount createAccount(Integer userId, DeviceAccount account);
 
-    void updateAccount(Integer userId, DeviceAccount account);
+    DeviceAccount updateAccount(Integer userId, DeviceAccount account);
 
     void removeAccount(Integer userId, Integer accountId);
 

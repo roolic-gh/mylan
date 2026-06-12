@@ -18,4 +18,8 @@ package local.mylan.service.api;
 import local.mylan.service.api.model.User;
 
 public record UserContext(User currentUser, String currentSessionId) {
+
+    public static Integer userIdFrom(UserContext userCtx){
+        return userCtx == null || userCtx.currentUser == null ? null : userCtx.currentUser.getUserId();
+    }
 }
