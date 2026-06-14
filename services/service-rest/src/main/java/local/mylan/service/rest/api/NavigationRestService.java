@@ -16,6 +16,7 @@
 package local.mylan.service.rest.api;
 
 import java.util.List;
+import local.mylan.common.annotations.rest.PathParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
@@ -38,10 +39,10 @@ public interface NavigationRestService {
     DeviceAccount validateAccount(@RequestBody DeviceAccount account, UserContext userCtx);
 
     @RequestMapping(method = "POST", path = "/nav/account/{id}/unlock")
-    DeviceAccount lockAccount(UserContext userCtx);
+    DeviceAccount unlockAccount(@PathParameter("id") Integer accountId, @RequestBody UnlockRequest account, UserContext userCtx);
 
-    @RequestMapping(method = "POST", path = "/nav/account/{id}/unlock")
-    DeviceAccount unlockAccount(@RequestBody DeviceAccount account, UserContext userCtx);
+    @RequestMapping(method = "POST", path = "/nav/account/{id}/lock")
+    DeviceAccount lockAccount(@PathParameter("id") Integer accountId, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/shares/all")
     List<NavResourceShare> listShares(UserContext userCtx);

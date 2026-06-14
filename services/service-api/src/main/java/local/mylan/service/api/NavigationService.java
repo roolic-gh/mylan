@@ -32,7 +32,7 @@ public interface NavigationService {
 
     DeviceAccount lockAccount(Integer userId, Integer accountId);
 
-    boolean isValidAccount(DeviceAccount account);
+    DeviceAccount validateAccount(DeviceAccount account);
 
     List<NavResourceShare> listShares(Integer userId);
 
@@ -43,4 +43,7 @@ public interface NavigationService {
     NavDirectory readDeviceDirectoryByAccount(Integer userId, Integer accountId, String path);
 
     NavDirectory readDeviceDirectoryByShare(Integer userId, Integer shareId, String path);
+
+    default void stop(){
+    }
 }

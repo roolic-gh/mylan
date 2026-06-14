@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import local.mylan.common.utils.ConfUtils;
 import local.mylan.common.utils.InetAddressList;
+import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;

@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.api.model;
+package local.mylan.service.rest.api;
 
-public interface DeviceAccountWithCredentials extends HavingCredentials {
+public class UnlockRequest {
 
-    Integer getAccountId();
+    private String key;
 
-    Integer getUserId();
+    public UnlockRequest() {
+        // default
+    }
 
-    Integer getDeviceId();
+    public UnlockRequest(final String key) {
+        this.key = key;
+    }
 
-    String getDeviceIdentifier();
+    public String getKey() {
+        return key;
+    }
 
-    void setDeviceIdentifier(String deviceIdentifier);
-
-    DeviceAccountLockState getLockState();
-
-    void lock();
-
-    void unlock(String key);
-
-    DeviceAccountState getState();
-
-    void setState (DeviceAccountState state);
+    public void setKey(final String key) {
+        this.key = key;
+    }
 }

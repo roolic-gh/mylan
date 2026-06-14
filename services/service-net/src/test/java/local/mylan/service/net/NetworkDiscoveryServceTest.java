@@ -37,11 +37,15 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import local.mylan.common.utils.ConfUtils;
 import local.mylan.common.utils.InetAddressList;
+import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
 import local.mylan.service.api.events.Event;
+import local.mylan.service.api.model.Device;
+import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
+import local.mylan.service.api.model.HavingCredentials;
 import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -196,6 +200,11 @@ class NetworkDiscoveryServceTest {
         @Override
         public DeviceProtocol protocol() {
             return protocol;
+        }
+
+        @Override
+        public DeviceAccountState validateCredentials(final Device device, final HavingCredentials account) {
+            return null;
         }
     }
 }

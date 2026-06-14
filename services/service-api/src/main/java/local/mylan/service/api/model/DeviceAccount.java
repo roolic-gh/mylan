@@ -15,7 +15,7 @@
  */
 package local.mylan.service.api.model;
 
-public class DeviceAccount {
+public class DeviceAccount implements HavingCredentials {
     private Integer accountId;
     private Integer userId;
     private Integer deviceId;
@@ -75,6 +75,7 @@ public class DeviceAccount {
         this.deviceIdentifier = deviceIdentifier;
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
@@ -83,6 +84,7 @@ public class DeviceAccount {
         this.username = username;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }

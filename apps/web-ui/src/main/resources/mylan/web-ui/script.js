@@ -145,6 +145,45 @@ class App {
         this.client.getAccountList((accounts) => this.ui.drawResourceAccountList(accounts, this));
     }
 
+    createAccount() {
+        this.ui.openNewAccountModal();
+    }
+
+    editAccount(account) {
+        this.ui.openEditAccountModal(account);
+    }
+
+    processAccount() {
+        const account = this.ui.accountFromModal();
+        const callback = (response) => {
+            this.ui.closeModal("account-modal");
+            this.listResourcesAccounts();
+        };
+        this.client.createOrUpdateAccount(account, callback);
+    }
+
+    unlockAccount() {
+        this.client.unlockAccount(this.ui.unlockRequestFromModal(), (response) => {
+            report("Account unlocked.")
+            this.ui.closeModal("unlock-account-modal");
+            this.listResourcesAccounts();
+        });
+    }
+
+    lockAccount(account) {
+        this.client.lockAccount(account.accountId, (response) => {
+            report("Account locked.")
+            this.listResourcesAccounts();
+        });
+    }
+
+    deleteAccount(account){
+        this.client.deleteAccount(account.accountId, (response) => {
+            report("Account deleted.")
+            this.listResourcesAccounts();
+        });
+    }
+
     listResourcesShares() {
         this.client.getShareList((shares) => this.ui.drawResourceShareList(shares, this));
     }
@@ -243,6 +282,7 @@ class MaterialUi {
             onOpenStart: M.updateTextFields, onOpenEnd: modalFocusFirst
         });
         byId("password-input").onkeydown = (evt) => onEnterClickButton(evt, "login-button");
+        byId("unlock-key-input").onkeydown = (evt) => onEnterClickButton(evt, "unlock-button");
     }
 
     applyUser(user) {
@@ -267,14 +307,22 @@ class MaterialUi {
     drawResourceDevicesList(devices, app) {
         const devicesTable = buildTableFromTemplate("resources-devices-template", devices,
             (device) => "rsrc-device-tr-" + device.deviceId,
-            (device) => [device.deviceId, device.identifier, 
-                device.ipAddresses.map(ipa => ipa.ipAddress).join(", "), 
-                device.protocol, device.state]);
+            (device) => [device.deviceId, device.identifier,
+            device.ipAddresses.map(ipa => ipa.ipAddress).join(", "),
+            device.protocol, device.state]);
         byId("resources-devices").replaceChildren(devicesTable);
     }
 
     setDeviceSelectors(devices) {
-
+        const deviceSelector = byId("account-device-input");
+        devices.filter(device => device.protocol != "LOCAL")
+            .forEach(device => {
+                const option = document.createElement("option");
+                option.value = device.deviceId;
+                option.text = device.identifier + " (" + device.protocol + ")";
+                deviceSelector.add(option);
+            });
+        M.FormSelect.init(deviceSelector, {});
     }
 
     drawResourceAccountList(accounts, app) {
@@ -282,17 +330,64 @@ class MaterialUi {
             (acc) => "rsrc-acc-tr-" + acc.accountId,
             (acc) => [
                 acc.accountId, acc.username + " @ " + acc.deviceIdentifier,
-                acc.lockable ? acc.lockState : "--",
+                acc.lockState == "HAS_NO_LOCK" ? "--" : acc.lockState,
                 acc.state,
                 [
-                    button("Browse", () => app.browseAcc(acc)),
-                    acc.lockable && acc.lockState == "UNLOCKED" ? button("Lock", () => app.lockAccount()) : "",
-                    acc.lockable && acc.lockState == "LOCKED" ? button("Unlock", () => app.unlockAccount()) : "",
+                    acc.lockState != "LOCKED" ? button("Browse", () => app.browseAcc(acc)) : "",
+                    acc.lockState == "UNLOCKED" ? button("Lock", () => app.lockAccount(acc)) : "",
+                    acc.lockState == "LOCKED" ? button("Unlock", () => app.ui.openUnlockModal(acc)) : "",
                     button("Edit", () => app.editAccount(acc)),
                     button("Delete", () => app.deleteAccount(acc))
                 ]
             ]);
         byId("resources-accounts").replaceChildren(devicesTable);
+    }
+
+    accountFromModal() {
+        return {
+            accountId: byId("account-id-input").value,
+            deviceId: byId("account-device-input").value,
+            username: byId("account-username-input").value,
+            password: byId("account-password-input").value,
+            key: byId("account-key-input").value,
+            validate: byId("account-validate-input").checked
+        };
+    }
+
+    setAccountToModal(account) {
+        byId("account-id-input").value = account.accountId;
+        byId("account-device-input").value = account.deviceId;
+        byId("account-username-input").value = account.username;
+        byId("account-password-input").value = "";
+        byId("account-key-input").value = "";
+        byId("account-validate-input").checked = true;
+    }
+
+    openNewAccountModal() {
+        this.setAccountToModal({ accountId: "", username: "", deviceId: "" });
+        byId("account-modal-header").innerHTML = "New Account";
+        byId("account-modal-action-btn").text = "Create Account";
+        this.openModal("account-modal");
+    }
+
+    openEditAccountModal(account) {
+        this.setAccountToModal(account);
+        byId("account-modal-header").innerHTML = "Edit Account";
+        byId("account-modal-action-btn").text = "Update Account";
+        this.openModal("account-modal");
+    }
+
+    openUnlockModal(account) {
+        byId("unlock-account-id-input").value = account.accountId;
+        byId("unlock-key-input").value = "";
+        this.openModal("unlock-account-modal");
+    }
+
+    unlockRequestFromModal() {
+        return {
+            accountId: byId("unlock-account-id-input").value,
+            key: byId("unlock-key-input").value
+        };
     }
 
     drawResourceShareList(shares, app) {
@@ -330,7 +425,7 @@ class MaterialUi {
     }
 
     openModal(id) {
-        M.Modal.getInstance(byId(id)).close();
+        M.Modal.getInstance(byId(id)).open();
     }
 
     closeModal(id) {
@@ -383,10 +478,35 @@ class Client {
     }
 
     getAccountList(callback) {
-        callback([{
-            accountId: 1, username: "username", deviceId: 1, deviceIdentifier: "ROOLIC-TEST",
-            lockable: true, lockState: "UNLOCKED", state: "UNKNOWN"
-        }]);
+        this.request("GET", "/nav/accounts", callback);
+    }
+
+    createOrUpdateAccount(account, callback) {
+        const path = "/nav/res/account" + (account.accountId ? "/" + account.accountId : "");
+        const method = account.accountId ? "PATCH" : "POST";
+        if (account.validate) {
+            this.validateAccount(account, (response) => {
+                this.request(method, path, callback, account);
+            });
+        } else {
+            this.request("POST", path, callback, account);
+        }
+    }
+
+    validateAccount(account, callback) {
+        this.request("POST", "/nav/account/validate", callback, account);
+    }
+
+    unlockAccount(req, callback) {
+        this.request("POST", "/nav/account/" + req.accountId + "/unlock", callback, req);
+    }
+
+    lockAccount(accountId, callback) {
+         this.request("POST", "/nav/account/" + accountId + "/lock", callback);
+    }
+
+    deleteAccount(accountId, callback) {
+         this.request("DELETE", "/nav/res/account/" + accountId, callback);
     }
 
     getShareList(callback) {
@@ -427,6 +547,7 @@ class Client {
     }
 
     async request(method, path, callback, body) {
+        console.log("fetch request: " + method + " " + path);
         var headers = new Headers();
         if (this.token != null) {
             headers.append("Authorization", "Bearer " + this.token);

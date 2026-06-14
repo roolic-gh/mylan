@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.net;
+package local.mylan.service.api.exceptions;
 
-import java.net.InetAddress;
-import javax.annotation.Nullable;
-import local.mylan.service.api.model.DeviceProtocol;
+import java.io.Serial;
 
-public interface DeviceAccessor {
+public class NoConnectionException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 3144420039375299501L;
 
-    @Nullable
-    String extractDeviceName(InetAddress address);
-
-    DeviceProtocol protocol();
+    public NoConnectionException(String message) {
+        super(message);
+    }
 }

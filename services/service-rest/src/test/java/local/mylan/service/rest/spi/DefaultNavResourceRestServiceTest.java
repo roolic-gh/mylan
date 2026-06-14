@@ -81,12 +81,10 @@ class DefaultNavResourceRestServiceTest {
 
     private static final DeviceAccount ACCOUNT1_IN =
         deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, PASSWORD1, KEY1);
-    private static final DeviceAccount ACCOUNT1_OUT =
-        deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, null, null);
+    private static final DeviceAccount ACCOUNT1_OUT = deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1);
     private static final DeviceAccount ACCOUNT2_IN =
         deviceAccount(ACCOUNT_ID2, USER_ID2, DEVICE_ID2, USERNAME2, PASSWORD2, KEY2);
-    private static final DeviceAccount ACCOUNT2_OUT =
-        deviceAccount(ACCOUNT_ID2, USER_ID2, DEVICE_ID2, USERNAME2, null, null);
+    private static final DeviceAccount ACCOUNT2_OUT = deviceAccount(ACCOUNT_ID2, USER_ID2, DEVICE_ID2, USERNAME2);
 
     @Mock
     NavResourceService navResourceService;

@@ -25,11 +25,21 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.DeviceAccountLockState;
+import local.mylan.service.api.model.DeviceAccountState;
+import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceState;
+import local.mylan.service.spi.model.EncryptedDeviceAccountWithCredentials;
 
 public final class NavResourceTestUtils {
+
+    private static final TestEncryptionService ENC_SVC_INSTANCE = new TestEncryptionService();
+    private static final EncryptedDeviceAccountWithCredentials.Encryptor ENCRYPTOR =
+        ENC_SVC_INSTANCE.credentialsEncryptor();
+    private static final EncryptedDeviceAccountWithCredentials.Decryptor DECRYPTOR =
+        ENC_SVC_INSTANCE.credentialsDecryptor();
 
     private NavResourceTestUtils() {
         // utility class
@@ -78,6 +88,11 @@ public final class NavResourceTestUtils {
     // device accounts
 
     public static DeviceAccount deviceAccount(final Integer accountId, final Integer userId, final Integer deviceId,
+        final String username) {
+        return deviceAccount(accountId, userId, deviceId, username, (String) null, null);
+    }
+
+    public static DeviceAccount deviceAccount(final Integer accountId, final Integer userId, final Integer deviceId,
         final String username, final String password, final String key) {
         final var account = new DeviceAccount(deviceId, username, password, key);
         account.setAccountId(accountId);
@@ -85,9 +100,36 @@ public final class NavResourceTestUtils {
         return account;
     }
 
+    public static DeviceAccount deviceAccount(final Integer accountId, final Integer userId, final Integer deviceId,
+        final String username, final DeviceAccountState state, final DeviceAccountLockState lockState) {
+        final var account = new DeviceAccount(deviceId, username, null);
+        account.setAccountId(accountId);
+        account.setUserId(userId);
+        account.setState(state);
+        account.setLockState(lockState);
+        return account;
+    }
+
+    public static DeviceAccountWithCredentials accountWithCreds(final Integer accountId, final Integer userId,
+        final Integer deviceId, final String username, final String password, final String key){
+        final var account = new EncryptedDeviceAccountWithCredentials(ENCRYPTOR, DECRYPTOR, key!= null);
+        account.setAccountId(accountId);
+        account.setUserId(userId);
+        account.setDeviceId(deviceId);
+        account.setUsername(username);
+        account.setPassword(ENCRYPTOR.encrypt(password, key));
+        return account;
+    }
+
     public static void assertAccountList(final List<DeviceAccount> expected, final List<DeviceAccount> actual) {
         assertList(expected, actual, DeviceAccount::getAccountId, NavResourceTestUtils::assertAccount);
     }
+
+    public static void assertAccountListWithStates(final List<DeviceAccount> expected,
+        final List<DeviceAccount> actual) {
+        assertList(expected, actual, DeviceAccount::getAccountId, NavResourceTestUtils::assertAccountWithStates);
+    }
+
 
     public static void assertAccount(final DeviceAccount expected, final DeviceAccount actual) {
         assertAccount(expected, actual, false);
@@ -111,6 +153,12 @@ public final class NavResourceTestUtils {
         }
     }
 
+    public static void assertAccountWithStates(final DeviceAccount expected, final DeviceAccount actual) {
+        assertAccount(expected, actual);
+        assertEquals(expected.getState(), actual.getState());
+        assertEquals(expected.getLockState(), actual.getLockState());
+    }
+
     // utility
 
     public static <K, V> void assertList(final List<V> expectedList, final List<V> actualList,
@@ -131,7 +179,7 @@ public final class NavResourceTestUtils {
     }
 
     @FunctionalInterface
-    interface ValueAsserter<V> {
+    public interface ValueAsserter<V> {
         void assertValue(V expected, V actual);
     }
 }

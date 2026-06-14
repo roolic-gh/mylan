@@ -15,25 +15,9 @@
  */
 package local.mylan.service.api.model;
 
-public interface DeviceAccountWithCredentials extends HavingCredentials {
+public interface HavingCredentials {
 
-    Integer getAccountId();
+    String getUsername();
 
-    Integer getUserId();
-
-    Integer getDeviceId();
-
-    String getDeviceIdentifier();
-
-    void setDeviceIdentifier(String deviceIdentifier);
-
-    DeviceAccountLockState getLockState();
-
-    void lock();
-
-    void unlock(String key);
-
-    DeviceAccountState getState();
-
-    void setState (DeviceAccountState state);
+    String getPassword();
 }

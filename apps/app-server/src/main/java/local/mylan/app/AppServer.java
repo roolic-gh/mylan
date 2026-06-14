@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import local.mylan.service.api.DiscoveryService;
+import local.mylan.service.api.NavigationService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
 import local.mylan.service.net.NetworkDiscoveryService;
@@ -53,6 +54,7 @@ final class AppServer {
     private DataServiceProvider dataServiceProvider;
     private NotificationService notificationService;
     private DiscoveryService discoveryService;
+    private NavigationService navigationService;
     private HttpServer server;
 
     AppServer(final Path confDir, final Path workDir) {
@@ -75,7 +77,7 @@ final class AppServer {
 
         // networking
         discoveryService = new NetworkDiscoveryService(confDir, notificationService);
-        final var navService = new NetworkNavigationService(confDir, navResourceService, notificationService);
+        navigationService = new NetworkNavigationService(confDir, navResourceService, notificationService);
 
         // rest endpoints
         final var userRestService = new DefaultUserRestService(userService);
@@ -83,7 +85,7 @@ final class AppServer {
             userRestService,
             new DefaultDiscoveryRestService(discoveryService, notificationService),
             new DefaultNavResourceRestService(navResourceService),
-            new DefaultNavigationRestService(navService)
+            new DefaultNavigationRestService(navigationService)
         ));
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest", List.of(
             UserRestService.class, DiscoveryRestService.class,
@@ -135,6 +137,9 @@ final class AppServer {
         }
         if (discoveryService != null) {
             discoveryService.stop();
+        }
+        if (navigationService != null) {
+            navigationService.stop();
         }
     }
 }

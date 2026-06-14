@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import local.mylan.service.api.EncryptionService;
 import local.mylan.service.api.NavResourceService;
@@ -345,8 +346,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         entity.setDeviceId(deviceEntity.getDeviceId());
         entity.setUserId(userEntity.getUserId());
         // encrypt password
-        entity.setPassword(encryptor.encrypt(account.getPassword(), account.getKey()));
-        entity.setKey(account.getKey() == null ? null : LOCKED_INDICATOR);
+        encryptPassword(entity, account);
         try {
             inTransaction(session -> session.persist(entity));
             notificationService.raiseEvent(new DeviceAccountCrudEvent(entity.getAccountId(), CrudOperation.CREATE));
@@ -357,13 +357,18 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         }
     }
 
+    private void encryptPassword(final DeviceAccountEntity entity, final DeviceAccount account) {
+        final var key = Optional.ofNullable(account.getKey()).orElse("");
+        entity.setPassword(encryptor.encrypt(account.getPassword(),key.isEmpty() ? null : key));
+        entity.setKey(key.isEmpty() ? null : LOCKED_INDICATOR);
+    }
+
     @Override
     public DeviceAccount updateAccount(final Integer userId, final DeviceAccount account) {
         final var entity = validAccountEntity(account.getAccountId());
         validateOwner(userId, entity.getUserId(), "Account can be updated by owner only");
         entity.setUsername(account.getUsername());
-        entity.setPassword(encryptor.encrypt(account.getPassword(), account.getKey()));
-        entity.setKey(account.getKey() == null ? null : LOCKED_INDICATOR);
+        encryptPassword(entity, account);
         inTransaction(session -> session.merge(entity));
         notificationService.raiseEvent(new DeviceAccountCrudEvent(account.getAccountId(), CrudOperation.UPDATE));
         return MAPPER.fromEntity(entity);

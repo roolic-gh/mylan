@@ -15,21 +15,27 @@
  */
 package local.mylan.service.net.accessors;
 
+import com.google.common.net.InetAddresses;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import local.mylan.service.api.DeviceAccessor;
+import local.mylan.service.api.exceptions.NoConnectionException;
+import local.mylan.service.api.model.Device;
+import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.net.DeviceAccessor;
+import local.mylan.service.api.model.HavingCredentials;
 import local.mylan.transport.smb.SmbClient;
+import local.mylan.transport.smb.protocol.details.UserCredentials;
 
 public class SmbDeviceAccessor implements DeviceAccessor {
 
-    private final SmbClient client;
+    private final SmbClient checkClient;
 
     public SmbDeviceAccessor(final Path confDir) {
-        client = new SmbClient(confDir);
+        checkClient = new SmbClient(confDir);
     }
 
     @Override
@@ -41,7 +47,7 @@ public class SmbDeviceAccessor implements DeviceAccessor {
     public String extractDeviceName(final InetAddress address) {
 
         try {
-            final var conn = client.connect(address).get(2, TimeUnit.SECONDS);
+            final var conn = checkClient.connect(address).get(2, TimeUnit.SECONDS);
             try {
                 // Netbios name of a server is taken from a server response (NTLM authorization flow)
                 // then stored as server name property within a client connection details
@@ -56,5 +62,44 @@ public class SmbDeviceAccessor implements DeviceAccessor {
             // ignore
         }
         return null;
+    }
+
+    @Override
+    public DeviceAccountState validateCredentials(final Device device, final HavingCredentials creds) {
+        try {
+            final var conn = checkClient.connect(getInetAddress(device)).get(2, TimeUnit.SECONDS);
+            try {
+                final var session = conn.newSession(credentials(creds)).get(5, TimeUnit.SECONDS);
+                session.close();
+                return DeviceAccountState.VALID;
+            } catch (Exception e) {
+                return DeviceAccountState.INVALID;
+            } finally {
+                conn.close();
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new NoConnectionException("Cannot connect device " + device.getIdentifier());
+        }
+    }
+
+    private static InetAddress getInetAddress(final Device device) {
+        if (device.getIpAddresses() == null || device.getIpAddresses().isEmpty()) {
+            throw new NoConnectionException("Device %s has no IP address assignes".formatted(device.getIdentifier()));
+        }
+        return InetAddresses.forString(device.getIpAddresses().getFirst().getIpAddress());
+    }
+
+    private static UserCredentials credentials(final HavingCredentials havingCredentials) {
+        return new UserCredentials() {
+            @Override
+            public String username() {
+                return havingCredentials.getUsername();
+            }
+
+            @Override
+            public String password() {
+                return havingCredentials.getPassword();
+            }
+        };
     }
 }

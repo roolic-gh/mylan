@@ -17,7 +17,7 @@ package local.mylan.service.api.model;
 
 import com.google.common.base.Objects;
 
-public class UserCredentials {
+public class UserCredentials implements HavingCredentials {
     private String username;
     private String password;
 
@@ -30,6 +30,7 @@ public class UserCredentials {
         this.password = password;
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
@@ -38,6 +39,7 @@ public class UserCredentials {
         this.username = username;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }

@@ -46,7 +46,7 @@ final class RestConverter {
         final var encoding = Encoding.fromMediaType(request.headers().get(HttpHeaderNames.CONTENT_TYPE));
         try (InputStream in = new ByteBufInputStream(request.content())) {
             return encoding.objectMapper().readValue(in, type);
-        } catch (IOException e) {
+        } catch (IOException | JacksonException e) {
             throw new IllegalArgumentException("Request body is not a valid %s".formatted(encoding.name()), e);
         }
     }

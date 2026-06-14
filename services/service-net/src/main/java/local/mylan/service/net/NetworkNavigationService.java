@@ -27,14 +27,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NavigationService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
+import local.mylan.service.api.exceptions.NoDataException;
+import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.DeviceAccountLockState;
 import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
@@ -55,6 +61,8 @@ public final class NetworkNavigationService implements NavigationService {
         final var byDevice = CharSequence.compare(a.getDeviceIdentifier(), b.getDeviceIdentifier());
         return byDevice == 0 ? CharSequence.compare(a.getUsername(), b.getUsername()) : byDevice;
     };
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private final NavResourceService navResourceService;
     private final Set<String> pendingOnlineDeviceIdentifiers = ConcurrentHashMap.newKeySet();
@@ -94,6 +102,8 @@ public final class NetworkNavigationService implements NavigationService {
             account.setState(DeviceAccountState.UNKNOWN);
             accountMap.put(account.getAccountId(), account);
         });
+        // valide unlocked accounts
+        executor.submit(() -> accountMap.values().forEach(this::validateUpdateAccountState));
     }
 
     private static Set<DeviceAccessor> defaultAccessors(final Path confDir) {
@@ -132,6 +142,7 @@ public final class NetworkNavigationService implements NavigationService {
                 deviceMap.put(device.getDeviceId(), device);
             }
             case DELETE -> {
+                deviceMap.remove(event.deviceId());
                 // TODO clear caches cascade
             }
         }
@@ -156,10 +167,6 @@ public final class NetworkNavigationService implements NavigationService {
             ? List.of() : ipAddresses.stream().map(ipa -> new DeviceIpAddress(ipa.getIpAddress())).toList();
     }
 
-    private void onDeviceAccountCrud(final DeviceAccountCrudEvent event) {
-
-    }
-
     @Override
     public List<DeviceAccount> listUserDeviceAccounts(final Integer userId) {
         return accountMap.values().stream().filter(account -> Objects.equals(userId, account.getUserId()))
@@ -168,6 +175,7 @@ public final class NetworkNavigationService implements NavigationService {
 
     private static DeviceAccount copyAccount(final DeviceAccountWithCredentials account) {
         final var copy = new DeviceAccount();
+        copy.setAccountId(account.getAccountId());
         copy.setDeviceId(account.getDeviceId());
         copy.setDeviceIdentifier(account.getDeviceIdentifier());
         copy.setUserId(account.getUserId());
@@ -177,19 +185,96 @@ public final class NetworkNavigationService implements NavigationService {
         return copy;
     }
 
+    private static DeviceAccount copyAccount(final DeviceAccount account) {
+        final var copy = new DeviceAccount();
+        copy.setAccountId(account.getAccountId());
+        copy.setDeviceId(account.getDeviceId());
+        copy.setUserId(account.getUserId());
+        copy.setUsername(account.getUsername());
+        copy.setState(account.getState());
+        return copy;
+    }
+
     @Override
     public DeviceAccount unlockAccount(final Integer userId, final Integer accountId, final String key) {
-        return null;
+        final var account = getValidateUserAccount(userId, accountId);
+        if (account.getLockState() == DeviceAccountLockState.LOCKED) {
+            account.unlock(key);
+            if (account.getLockState() == DeviceAccountLockState.UNLOCKED) {
+                validateUpdateAccountState(account);
+            }
+        }
+        return copyAccount(account);
     }
 
     @Override
     public DeviceAccount lockAccount(final Integer userId, final Integer accountId) {
-        return null;
+        final var account = getValidateUserAccount(userId, accountId);
+        if (account.getLockState() == DeviceAccountLockState.UNLOCKED) {
+            account.lock();
+        }
+        return copyAccount(account);
+    }
+
+    private DeviceAccountWithCredentials getValidateUserAccount(final Integer userId, final Integer accountId) {
+        final var account = accountMap.get(accountId);
+        if (account == null) {
+            throw new NoDataException("Device account with id % does not exuist.".formatted(accountId));
+        }
+        if (!Objects.equals(userId, account.getUserId())) {
+            throw new UnauthorizedException("Only account owner can interact with the account.");
+        }
+        return account;
+    }
+
+    private void onDeviceAccountCrud(final DeviceAccountCrudEvent event) {
+        final var accountId = event.accountId();
+        switch (event.operation()) {
+            case CREATE, UPDATE -> {
+                final var account = navResourceService.getAccountWithCredentials(accountId);
+                final var device = deviceMap.get(account.getDeviceId());
+                account.setDeviceIdentifier(device == null ? "" : device.getIdentifier());
+                account.setState(DeviceAccountState.UNKNOWN);
+                validateUpdateAccountState(account);
+                accountMap.put(accountId, account);
+            }
+            case DELETE -> {
+                accountMap.remove(accountId);
+                // TODO delete cascase
+            }
+        }
+    }
+
+    private void validateUpdateAccountState(final DeviceAccountWithCredentials account) {
+        if (account.getLockState() == DeviceAccountLockState.LOCKED) {
+            return;
+        }
+        final var device = deviceMap.get(account.getDeviceId());
+        final var accessor = device == null ? null : accessorsMap.get(device.getProtocol());
+        if (accessor == null) {
+            return;
+        }
+        try {
+            account.setState(accessor.validateCredentials(device, account));
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     @Override
-    public boolean isValidAccount(final DeviceAccount account) {
-        return false;
+    public DeviceAccount validateAccount(final DeviceAccount account) {
+        final var device = account.getDeviceId() == null ? null : deviceMap.get(account.getDeviceId());
+        if (device == null) {
+            throw new IllegalArgumentException("Invalid device");
+        }
+        final var accessor = accessorsMap.get(device.getProtocol());
+        if (accessor == null) {
+            throw new IllegalStateException("Unsupported protocol " + device.getProtocol());
+        }
+        final var state = accessor.validateCredentials(device, account);
+        final var result = copyAccount(account);
+        result.setState(state);
+        return result;
     }
 
     @Override
@@ -215,5 +300,12 @@ public final class NetworkNavigationService implements NavigationService {
     @Override
     public NavDirectory readDeviceDirectoryByShare(final Integer userId, final Integer shareId, final String path) {
         return null;
+    }
+
+    @Override
+    public void stop() {
+        executor.shutdown();
+        accessorsMap.values().forEach(DeviceAccessor::stop);
+        LOG.info("Stopped.");
     }
 }

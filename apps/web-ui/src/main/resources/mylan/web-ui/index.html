@@ -36,7 +36,7 @@
 <!-- navbar -->
 <nav>
     <div class="nav-wrapper blue-grey darken-3">
-        <a href="#" onclick="app.dashboard()"class="left brand-logo">MyLAN</a>
+        <a href="#" onclick="app.dashboard()" class="left brand-logo">MyLAN</a>
         <ul class="right">
             <li id="bookmarks-menu-item"><a href="#" onclick="app.listBookmarks()">Bookmarks</a></li>
             <li id="resources-menu-item"><a href="#" onclick="app.listResources()">Resources</a></li>
@@ -155,7 +155,7 @@
 <template id="resources-accounts-template">
     <h2>Device Accounts</h2>
     <div class="fixed-action-btn">
-        <a class="btn-floating btn-large modal-trigger" href="#new-account-modal"><i class="material-icons">add</i></a>
+        <a class="btn-floating btn-large" href="#" onclick="app.createAccount()"><i class="material-icons">add</i></a>
     </div>
     <table>
         <thead>
@@ -163,13 +163,65 @@
             <th>ID</th>
             <th>Username @ Device</th>
             <th>Lock State</th>
-            <th>Status</th>
+            <th>State</th>
             <th>&nbsp</th>
         </tr>
         </thead>
         <tbody></tbody>
     </table>
 </template>
+
+<div id="account-modal" class="modal">
+    <div class="modal-content">
+        <h4 id="account-modal-header">Header</h4>
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="account-device-input"></select>
+                <label for="account-device-input">Device</label>
+            </div>
+            <div class="input-field col m6 s12">
+                <input id="account-username-input" type="text" class="validate">
+                <label for="account-username-input">Username</label>
+            </div>
+            <div class="input-field col m6 s12">
+                <input id="account-password-input" type="password" class="validate">
+                <label for="account-password-input">Password</label>
+            </div>
+            <div class="input-field col m6 s12">
+                <input id="account-key-input" type="password" class="validate">
+                <label for="account-key-input">Lock PIN (optional)</label>
+            </div>
+            <div class="input-field col m6 s12">
+                <label>
+                    <input id="account-validate-input" type="checkbox" class="filled-in" checked="checked">
+                    <span>Validate</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" id="account-modal-action-btn" onclick="app.processAccount()">Action</a>
+        <a href="#" class="modal-close btn-flat">Close</a>
+        <input id="account-id-input" type="hidden" />
+    </div>
+</div>
+
+<div id="unlock-account-modal" class="modal">
+    <div class="modal-content">
+        <h4>Unlock account</h4>
+        <div class="row">
+            <div class="input-field col s12">
+                <input id="unlock-key-input" type="password" class="validate">
+                <label for="unlock-key-input">PIN</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" id="unlock-button" onclick="app.unlockAccount()">Unlock</a>
+        <a href="#" class="modal-close btn-flat">Close</a>
+        <input id="unlock-account-id-input" type="hidden" />
+    </div>
+</div>
 
 <template id="resources-shares-template">
     <h2>Shared Resources</h2>

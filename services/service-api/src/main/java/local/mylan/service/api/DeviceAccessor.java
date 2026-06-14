@@ -13,19 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.rest.api;
+package local.mylan.service.api;
 
-import local.mylan.service.api.model.DeviceAccount;
+import java.net.InetAddress;
+import javax.annotation.Nullable;
+import local.mylan.service.api.model.Device;
+import local.mylan.service.api.model.DeviceAccountState;
+import local.mylan.service.api.model.DeviceProtocol;
+import local.mylan.service.api.model.HavingCredentials;
 
-public class DeviceAccountRequest extends DeviceAccount {
+public interface DeviceAccessor {
 
-    private boolean validate;
+    DeviceProtocol protocol();
 
-    public boolean isValidate() {
-        return validate;
-    }
+    @Nullable
+    String extractDeviceName(InetAddress address);
 
-    public void setValidate(final boolean validate) {
-        this.validate = validate;
+    DeviceAccountState validateCredentials(Device device, HavingCredentials account);
+
+    default void stop(){
     }
 }
