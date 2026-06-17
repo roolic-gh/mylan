@@ -23,16 +23,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <script src="${LIBS_CONTEXT}/materialize.min.js"></script>
     <script src="${LIBS_CONTEXT}/sse.js"></script>
-    <script src="${SELF_CONTEXT}/script.js"></script>
-    <script language="JavaScript">
-        var app = null;
+    <script type="module">
+        import {App} from "./app.js";
         document.addEventListener("DOMContentLoaded", (event) => {
-            app = new App(".", "${REST_CONTEXT}", "${SSE_CONTEXT}");
-            app.init();
+            window.app = new App(".", "${REST_CONTEXT}", "${SSE_CONTEXT}");
+            window.app.init();
         });
     </script>
 </head>
 <body id="mylan">
+
 <!-- navbar -->
 <nav>
     <div class="nav-wrapper blue-grey darken-3">
@@ -49,6 +49,9 @@
             <li id="login-menu-item"><a href="#login-modal" class="modal-trigger">
                 <i class="left large material-icons">login</i>Login</a></li>
         </ul>
+    <div id="progress-bar" class="progress hide">
+        <div class="indeterminate"></div>
+    </div>
     </div>
 </nav>
 <ul id="user-dropdown" class="dropdown-content">
