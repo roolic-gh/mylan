@@ -5,8 +5,8 @@
 ### Overview
 
 While number of LAN users is not expected to be large the user subsystem design is 
-*simplified*. The major purpose of user account is make possible to store the data and 
-settings (preferences) on server side on per-user basis. 
+*simplified*. The main purposes of user account are defining resource ownership
+and making possible to persist user settings/preferences on server side.
 
 *Unauthenticated* user (client) is allowed and granted access to resources shared for
 everybody. *Authenticated* user (client) is eligible to manage **own** data (settings),
@@ -31,7 +31,7 @@ Following rules are applied (behavior expected) for user accounts
 
 - Initially (on account creation) and after password reset the password is same as username.
 - Password can be changed by owner only.
-- Paccword can be reset by administrator only.
+- Password can be reset by administrator only.
 
 
 
