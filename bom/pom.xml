@@ -65,7 +65,12 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>netty-smb</artifactId>
+                <artifactId>net-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>smb-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
