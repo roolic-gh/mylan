@@ -45,6 +45,9 @@ public @interface SmbClientConf {
 
     // Global Details
 
+    @ConfProperty("smb.client.connection-timout")
+    int connectionTimoutMillis() default 1000;
+
     @ConfProperty("smb.client.require-signing")
     boolean requireMessageSigning() default false;
 

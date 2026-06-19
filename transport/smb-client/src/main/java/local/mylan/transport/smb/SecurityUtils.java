@@ -28,7 +28,7 @@ import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
-import local.mylan.transport.smb.protocol.SmbException;
+import local.mylan.transport.smb.exceptions.SmbException;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
 import org.bouncycastle.crypto.macs.HMac;

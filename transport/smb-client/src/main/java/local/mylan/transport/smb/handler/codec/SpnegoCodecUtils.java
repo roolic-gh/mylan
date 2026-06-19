@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import local.mylan.transport.smb.protocol.SmbException;
+import local.mylan.transport.smb.exceptions.SmbException;
 import local.mylan.transport.smb.protocol.details.NtlmMessageSignature;
 import local.mylan.transport.smb.protocol.spnego.ContainsSelfEncoded;
 import local.mylan.transport.smb.protocol.spnego.MechListMIC;

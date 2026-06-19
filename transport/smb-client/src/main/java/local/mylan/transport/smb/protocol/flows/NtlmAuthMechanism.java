@@ -51,8 +51,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import local.mylan.transport.smb.Utils;
+import local.mylan.transport.smb.exceptions.SmbAuthorizationException;
 import local.mylan.transport.smb.protocol.Flags;
-import local.mylan.transport.smb.protocol.SmbException;
 import local.mylan.transport.smb.protocol.details.NtlmClientDetails;
 import local.mylan.transport.smb.protocol.details.NtlmMessageSignature;
 import local.mylan.transport.smb.protocol.details.SessionDetails;
@@ -177,27 +177,27 @@ public class NtlmAuthMechanism implements AuthMechanism {
     private NtlmAuthenticateMessage handleChallenge(final NtlmChallengeMessage challengeMsg) {
         // validate what's being supported by current implementation
         if (!challengeMsg.negotiateFlags().get(NTLMSSP_NEGOTIATE_NTLM)) {
-            throw new SmbException("Server does not support NTLM authentication");
+            throw new SmbAuthorizationException("Server does not support NTLM authentication");
         }
         if (sessDetails.anonymous() && !challengeMsg.negotiateFlags().get(NTLMSSP_NEGOTIATE_ANONIMOUS)) {
-            throw new SmbException("Server does not support anonymous access");
+            throw new SmbAuthorizationException("Server does not support anonymous access");
         }
         if (challengeMsg.targetInfo() == null) {
-            throw new SmbException("Server did not provide target information within Challenge message");
+            throw new SmbAuthorizationException("Server did not provide target information within Challenge message");
         }
 
         // Below addresses MS-NLMP #3.1.5.1.2 Client Receives a CHALLENGE_MESSAGE from the Server.
 
         // validate challenge message
         if (details.clientRequire128bitEncryption() && !challengeMsg.negotiateFlags().get(NTLMSSP_NEGOTIATE_128)) {
-            throw new SmbException("Server is not supporting 128 bit encription");
+            throw new SmbAuthorizationException("Server is not supporting 128 bit encription");
         }
         if (details.ntlmV2()
             && (challengeMsg.targetInfo().netbiosComputerName() == null
             || challengeMsg.targetInfo().netbiosComputerName() == null)
             && challengeMsg.targetInfo().flags() != null
             && challengeMsg.targetInfo().flags().asIntValue() != 0) {
-            throw new SmbException("Server did not provide target information within Challenge message ");
+            throw new SmbAuthorizationException("Server did not provide target information within Challenge message ");
         }
         details.setNegFlags(challengeMsg.negotiateFlags());
 
@@ -334,11 +334,11 @@ public class NtlmAuthMechanism implements AuthMechanism {
         try {
             final var passw = nonnullPassw(creds).toUpperCase(Locale.US).getBytes(US_ASCII);
             if (passw.length > 14) {
-                throw new SmbException("password is too long (max 14 ascii chars allowed)");
+                throw new SmbAuthorizationException("password is too long (max 14 ascii chars allowed)");
             }
             System.arraycopy(passw, 0, passwFixed, 0, passw.length);
         } catch (Exception e) {
-            throw new SmbException("Unsupported password encoding", e);
+            throw new SmbAuthorizationException("Unsupported password encoding", e);
         }
         return concat(
             des(copyOf(passwFixed, 7), LMOWF1_MAGIC),
@@ -463,7 +463,7 @@ public class NtlmAuthMechanism implements AuthMechanism {
             seq.encodeTo(out, ASN1Encoding.DER);
             return ByteBufUtil.getBytes(byteBuf);
         } catch (IOException e) {
-            throw new SmbException("Error encoding mechList");
+            throw new SmbAuthorizationException("Error encoding mechList");
         }
     }
 
@@ -507,7 +507,7 @@ public class NtlmAuthMechanism implements AuthMechanism {
 
             final var encoded = enc.bytes();
             if (encoded.length != 16) {
-                throw new SmbException("Unexpected MechListMIC length (%d, expected %d)");
+                throw new SmbAuthorizationException("Unexpected MechListMIC length (%d, expected %d)");
             }
             final var byteBuf = Unpooled.wrappedBuffer(encoded);
             final var version = byteBuf.getIntLE(0);

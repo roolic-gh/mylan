@@ -16,11 +16,11 @@
 package local.mylan.transport.smb.protocol.flows;
 
 import javax.annotation.Nonnull;
+import local.mylan.transport.smb.exceptions.SmbNegotiationException;
 import local.mylan.transport.smb.protocol.Smb2Dialect;
 import local.mylan.transport.smb.protocol.Smb2Request;
 import local.mylan.transport.smb.protocol.Smb2Response;
 import local.mylan.transport.smb.protocol.SmbError;
-import local.mylan.transport.smb.protocol.SmbException;
 import local.mylan.transport.smb.protocol.details.ClientDetails;
 import local.mylan.transport.smb.protocol.details.ConnectionDetails;
 import local.mylan.transport.smb.protocol.details.ServerDetails;
@@ -63,7 +63,7 @@ public class ClientNegotiationFlow extends AbstractClientFlow<Void> {
             if (response instanceof Smb2NegotiateResponse negotiateResponse) {
                 process(negotiateResponse);
             } else {
-                throw new SmbException("Unexpected negotiation response: " + response);
+                throw new SmbNegotiationException("Unexpected negotiation response: " + response);
             }
         } catch (Exception e) {
             completeFuture.setException(e);
@@ -76,7 +76,7 @@ public class ClientNegotiationFlow extends AbstractClientFlow<Void> {
     void process(final Smb2NegotiateResponse response) {
         final var status = response.header().status();
         if (status != SmbError.STATUS_SUCCESS) {
-            throw new SmbException("Negotiate response with error status " + status);
+            throw new SmbNegotiationException("Negotiate response with error status " + status);
         }
 
         final var maxTransactSize = response.maxTransactSize();
@@ -84,7 +84,7 @@ public class ClientNegotiationFlow extends AbstractClientFlow<Void> {
         final var maxWriteSize = response.maxWriteSize();
         if (maxTransactSize < SIZE_THRESHOLD || maxReadSize < SIZE_THRESHOLD || maxWriteSize < SIZE_THRESHOLD) {
             // terminate connection any of sizes is too small
-            throw new SmbException("Negotiated size limits are too small: " +
+            throw new SmbNegotiationException("Negotiated size limits are too small: " +
                 "maxTransactSize=%d, maxReadSize=%d, maxWriteSize=%d, expectedThreshold=%d"
                     .formatted(maxTransactSize, maxReadSize, maxWriteSize, SIZE_THRESHOLD));
         }
@@ -101,9 +101,6 @@ public class ClientNegotiationFlow extends AbstractClientFlow<Void> {
         server.setSecurityMode(response.securityMode());
         server.setCapabilities(response.capabilities());
         connDetails.setServer(server);
-
         completeFuture.set(null);
-        LOG.debug("SMB Negotiation with server {} completed; {} dialect selected.",
-            serverGuid, response.dialectRevision().identifier());
     }
 }

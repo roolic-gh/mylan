@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.smb.protocol;
+package local.mylan.transport.smb.exceptions;
 
 import java.io.Serial;
 
-public class SmbException extends RuntimeException {
+public class SmbSessionSetupException extends SmbException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public SmbException(final String message) {
+    public SmbSessionSetupException(final String message) {
         super(message);
     }
 
-    public SmbException(final String message, final Throwable cause) {
+    public SmbSessionSetupException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }

@@ -21,7 +21,7 @@ import io.netty.handler.codec.ByteToMessageCodec;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import local.mylan.transport.smb.Utils;
-import local.mylan.transport.smb.protocol.SmbException;
+import local.mylan.transport.smb.exceptions.SmbException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -36,6 +36,7 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.function.Consumer;
 import jdk.net.ExtendedSocketOptions;
@@ -122,7 +123,11 @@ public class SmbClientConnection implements Connection {
             @Override
             public void onSuccess(final Connection result) {
                 client.details().connections().put(connDetails.connectionId(), result);
-                connDetails.server().addresses().add(nettyChannel.remoteAddress());
+                final var socketAddress = nettyChannel.remoteAddress();
+                connDetails.server().addresses().add(socketAddress);
+                connDetails.setIpAddress(((InetSocketAddress)socketAddress).getAddress());
+                LOG.debug("Connected to {} --> Dialect: {}",
+                    connDetails.ipAddress(), connDetails.dialect().identifier());
             }
 
             @Override
@@ -161,6 +166,8 @@ public class SmbClientConnection implements Connection {
             protected void initChannel(final Channel channel) throws Exception {
                 channel.pipeline().addLast(new Smb2ClientCodec(connDetails), handler, errorHandler);
                 channel.closeFuture().addListener(cf -> onClose());
+                channel.config().setOption(
+                    ChannelOption.CONNECT_TIMEOUT_MILLIS, client.conf().connectionTimoutMillis());
                 channel.config().setMessageSizeEstimator(new MessageSizeEstimator() {
                     @Override
                     public Handle newHandle() {
@@ -274,6 +281,7 @@ public class SmbClientConnection implements Connection {
         if (nettyChannel != null && nettyChannel.isActive()) {
             handler.finish().addListener(() -> {
                 nettyChannel.close().addListener(future -> {
+                    LOG.debug("Disconnected from {}", connDetails.ipAddress());
                     closeFuture.set(null);
                 });
             }, MoreExecutors.directExecutor());

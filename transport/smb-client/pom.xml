@@ -57,10 +57,6 @@
             <groupId>local.mylan</groupId>
             <artifactId>common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>net-api</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

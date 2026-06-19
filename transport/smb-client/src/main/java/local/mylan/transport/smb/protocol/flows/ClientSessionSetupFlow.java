@@ -20,13 +20,13 @@ import static java.util.Objects.requireNonNull;
 import static local.mylan.transport.smb.SecurityUtils.kdfcm;
 
 import java.util.Arrays;
+import local.mylan.transport.smb.exceptions.SmbSessionSetupException;
 import local.mylan.transport.smb.protocol.Flags;
 import local.mylan.transport.smb.protocol.Smb2Dialect;
 import local.mylan.transport.smb.protocol.Smb2PacketSigner;
 import local.mylan.transport.smb.protocol.Smb2Request;
 import local.mylan.transport.smb.protocol.Smb2Response;
 import local.mylan.transport.smb.protocol.SmbError;
-import local.mylan.transport.smb.protocol.SmbException;
 import local.mylan.transport.smb.protocol.details.ConnectionDetails;
 import local.mylan.transport.smb.protocol.details.Session;
 import local.mylan.transport.smb.protocol.details.SessionDetails;
@@ -65,7 +65,7 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
             && negTokenInit.mechTypes().contains(requireNonNull(authMech).mechType())) {
             this.authMech = authMech;
         } else {
-            throw new SmbException("%s Authentication is not supported by server".formatted(authMech));
+            throw new SmbSessionSetupException("%s Authentication is not supported by server".formatted(authMech));
         }
     }
 
@@ -80,7 +80,7 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
             if (response instanceof Smb2SessionSetupResponse sessionSetupResponse) {
                 process(sessionSetupResponse);
             } else {
-                throw new SmbException("Unexpected Session Setup response: " + response);
+                throw new SmbSessionSetupException("Unexpected Session Setup response: " + response);
             }
         } catch (Exception e) {
             completeFuture.setException(e);
@@ -99,7 +99,7 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
 
         if (response.header().status() == SmbError.STATUS_SUCCESS) {
             if (!authMech.verify(response.token())) {
-                throw new SmbException("Session setup completed but token verification failed.");
+                throw new SmbSessionSetupException("Session setup completed but token verification failed.");
             }
             // set session as authenticated
             connDetails.preauthSessions().remove(sessDetails.sessionId());
@@ -135,7 +135,7 @@ public class ClientSessionSetupFlow extends AbstractClientFlow<Session> {
             completeFuture.set(session);
             return;
         }
-        throw new SmbException("Error unexpected message status: " + response.header().status());
+        throw new SmbSessionSetupException("Error unexpected message status: " + response.header().status());
     }
 
     private void setSessionKeys() {

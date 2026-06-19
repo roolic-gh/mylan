@@ -17,12 +17,12 @@ package local.mylan.transport.smb.protocol.flows;
 
 import static java.util.Objects.requireNonNull;
 
+import local.mylan.transport.smb.exceptions.SmbException;
 import local.mylan.transport.smb.protocol.Flags;
 import local.mylan.transport.smb.protocol.Smb2Dialect;
 import local.mylan.transport.smb.protocol.Smb2Request;
 import local.mylan.transport.smb.protocol.Smb2Response;
 import local.mylan.transport.smb.protocol.SmbError;
-import local.mylan.transport.smb.protocol.SmbException;
 import local.mylan.transport.smb.protocol.details.ConnectionDetails;
 import local.mylan.transport.smb.protocol.details.SessionDetails;
 import local.mylan.transport.smb.protocol.details.TreeConnect;
