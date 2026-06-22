@@ -27,4 +27,7 @@ public interface Client {
 
     ListenableFuture<Connection> connect(SocketAddress socketAddress);
 
+    ListenableFuture<Connection> getOrCreateConnection(InetAddress inetAddress);
+
+    ListenableFuture<Connection> getOrCreateConnection(SocketAddress inetAddress);
 }

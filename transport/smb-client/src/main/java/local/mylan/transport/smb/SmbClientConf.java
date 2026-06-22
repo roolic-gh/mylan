@@ -45,9 +45,6 @@ public @interface SmbClientConf {
 
     // Global Details
 
-    @ConfProperty("smb.client.connection-timout")
-    int connectionTimoutMillis() default 1000;
-
     @ConfProperty("smb.client.require-signing")
     boolean requireMessageSigning() default false;
 
@@ -76,6 +73,12 @@ public @interface SmbClientConf {
     boolean serverToClientNotificationsSupported() default false;
 
     // Connection Details
+
+    @ConfProperty("smb.client.connection-timout")
+    int connectionTimoutMillis() default 1000;
+
+    @ConfProperty("smb.client.idle-disconnect-timout")
+    int idleDisconnectTimoutMillis() default 120000;
 
     @ConfProperty("smb.client.setup-request-credits")
     int setupCreditsRequest() default 512;

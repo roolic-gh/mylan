@@ -15,7 +15,7 @@
  */
 package local.mylan.transport.smb.protocol.details;
 
-import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -74,7 +74,7 @@ public class ConnectionDetails {
     boolean supportsNotifications;
 
     // non-spec
-    private InetAddress ipAddress;
+    private SocketAddress socketAddress;
     private int setupCreditsRequest = 1;
 
     public ConnectionDetails(final UUID clientGuid, final int connectionId) {
@@ -289,11 +289,11 @@ public class ConnectionDetails {
         this.supportsNotifications = supportsNotifications;
     }
 
-    public InetAddress ipAddress() {
-        return ipAddress;
+    public SocketAddress socketAddress() {
+        return socketAddress;
     }
 
-    public void setIpAddress(final InetAddress ipAddress) {
-        this.ipAddress = ipAddress;
+    public void setSocketAddress(final SocketAddress socketAddress) {
+        this.socketAddress = socketAddress;
     }
 }

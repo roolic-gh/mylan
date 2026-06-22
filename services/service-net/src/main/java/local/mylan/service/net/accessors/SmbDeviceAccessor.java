@@ -18,24 +18,32 @@ package local.mylan.service.net.accessors;
 import com.google.common.net.InetAddresses;
 import java.net.InetAddress;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.exceptions.NoConnectionException;
 import local.mylan.service.api.model.Device;
+import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.HavingCredentials;
 import local.mylan.transport.smb.SmbClient;
+import local.mylan.transport.smb.protocol.details.Session;
 import local.mylan.transport.smb.protocol.details.UserCredentials;
 
 public class SmbDeviceAccessor implements DeviceAccessor {
 
-    private final SmbClient checkClient;
+    private final SmbClient probeClient;
+    private final SmbClient accessClient;
+    Map<DeviceAccount, Session> sessionMap = new ConcurrentHashMap<>();
+
 
     public SmbDeviceAccessor(final Path confDir) {
-        checkClient = new SmbClient(confDir);
+        probeClient = new SmbClient(confDir);
+        accessClient = new SmbClient(confDir);
     }
 
     @Override
@@ -47,7 +55,7 @@ public class SmbDeviceAccessor implements DeviceAccessor {
     public String extractDeviceName(final InetAddress address) {
 
         try {
-            final var conn = checkClient.connect(address).get(2, TimeUnit.SECONDS);
+            final var conn = probeClient.connect(address).get(2, TimeUnit.SECONDS);
             try {
                 // Netbios name of a server is taken from a server response (NTLM authorization flow)
                 // then stored as server name property within a client connection details
@@ -67,7 +75,7 @@ public class SmbDeviceAccessor implements DeviceAccessor {
     @Override
     public DeviceAccountState validateCredentials(final Device device, final HavingCredentials creds) {
         try {
-            final var conn = checkClient.connect(getInetAddress(device)).get(2, TimeUnit.SECONDS);
+            final var conn = probeClient.connect(getInetAddress(device)).get(2, TimeUnit.SECONDS);
             try {
                 final var session = conn.newSession(credentials(creds)).get(5, TimeUnit.SECONDS);
                 session.close();
@@ -89,6 +97,12 @@ public class SmbDeviceAccessor implements DeviceAccessor {
         return InetAddresses.forString(device.getIpAddresses().getFirst().getIpAddress());
     }
 
+
+    private Session getSession(final Device device, final HavingCredentials creds) {
+        accessClient.connect(getInetAddress(device));
+    }
+
+
     private static UserCredentials credentials(final HavingCredentials havingCredentials) {
         return new UserCredentials() {
             @Override
@@ -101,5 +115,10 @@ public class SmbDeviceAccessor implements DeviceAccessor {
                 return havingCredentials.getPassword();
             }
         };
+    }
+
+    @Override
+    public void stop() {
+        accessClient.details().connections().forEach((id, conn) -> conn.close());
     }
 }

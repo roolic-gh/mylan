@@ -17,6 +17,7 @@ package local.mylan.transport.smb.protocol.details;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.List;
+import local.mylan.transport.smb.protocol.srvs.SrvsShareInfo;
 
 public interface Session {
 
@@ -24,7 +25,9 @@ public interface Session {
 
     ListenableFuture<Void> close();
 
+    ListenableFuture<List<SrvsShareInfo>> enumerateShares();
+
     ListenableFuture<List<String>> shareNames(boolean forceFetch);
 
-    ListenableFuture<TreeConnect> connectShare(String name);
+    ListenableFuture<TreeConnect> getOrConnectTree(String name);
 }

@@ -68,13 +68,8 @@ public final class SmbClientSession implements Session, RequestSender {
     }
 
     @Override
-    public ListenableFuture<List<String>> shareNames(final boolean forceFetch) {
-        final var serverShares = sessDetails.connection().details().server().shares();
-        if (!forceFetch && !serverShares.isEmpty()) {
-            return Futures.immediateFuture(serverShares.stream().map(ShareDetails::pathName).toList());
-        }
-
-        final var resultFuture = SettableFuture.<List<String>>create();
+    public ListenableFuture<List<SrvsShareInfo>> enumerateShares() {
+        final var resultFuture = SettableFuture.<List<SrvsShareInfo>>create();
         Futures.addCallback(
             new SmbClientTreeConnect("IPC$", this, this).connect(),
             new FutureCallback<TreeConnect>() {
@@ -85,16 +80,9 @@ public final class SmbClientSession implements Session, RequestSender {
                     Futures.addCallback(enumSharesFlow.completeFuture(), new FutureCallback<List<SrvsShareInfo>>() {
                         @Override
                         public void onSuccess(final List<SrvsShareInfo> infos) {
-                            final var shareNames = infos.stream().filter(
-                                info -> info.type().type() == SrvsShareType.SType.STYPE_DISKTREE
-                                    && !info.type().special() && !info.type().temporary()
-                            ).map(SrvsShareInfo::netName).toList();
-                            sessDetails.connection().details().server().setShares(
-                                shareNames.stream().map(ShareDetails::new).toList());
                             treeConnect.disconnect().addListener(
-                                () -> resultFuture.set(List.copyOf(shareNames)),
-                                MoreExecutors.directExecutor()
-                            );
+                                () -> resultFuture.set(infos),
+                                MoreExecutors.directExecutor());
                         }
 
                         @Override
@@ -114,7 +102,36 @@ public final class SmbClientSession implements Session, RequestSender {
     }
 
     @Override
-    public ListenableFuture<TreeConnect> connectShare(final String name) {
+    public ListenableFuture<List<String>> shareNames(final boolean forceFetch) {
+        final var serverShares = sessDetails.connection().details().server().shares();
+        if (!forceFetch && !serverShares.isEmpty()) {
+            return Futures.immediateFuture(serverShares.stream().map(ShareDetails::pathName).toList());
+        }
+
+        final var resultFuture = SettableFuture.<List<String>>create();
+        Futures.addCallback(enumerateShares(), new FutureCallback<List<SrvsShareInfo>>() {
+            @Override
+            public void onSuccess(final List<SrvsShareInfo> infos) {
+                final var shareNames = infos.stream().filter(
+                    info -> info.type().type() == SrvsShareType.SType.STYPE_DISKTREE
+                        && !info.type().special() && !info.type().temporary()
+                ).map(SrvsShareInfo::netName).toList();
+                sessDetails.connection().details().server().setShares(
+                    shareNames.stream().map(ShareDetails::new).toList());
+                resultFuture.set(List.copyOf(shareNames));
+            }
+
+            @Override
+            public void onFailure(final Throwable throwable) {
+                resultFuture.setException(throwable);
+            }
+        }, MoreExecutors.directExecutor());
+
+        return resultFuture;
+    }
+
+    @Override
+    public ListenableFuture<TreeConnect> getOrConnectTree(final String name) {
         final var cached = sessDetails.treeConnects().get(name);
         if (cached != null) {
             return Futures.immediateFuture(cached);

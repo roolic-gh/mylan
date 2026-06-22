@@ -36,8 +36,11 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import java.net.InetSocketAddress;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import java.net.SocketAddress;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import jdk.net.ExtendedSocketOptions;
 import local.mylan.transport.smb.handler.Smb2ClientCodec;
@@ -125,9 +128,9 @@ public class SmbClientConnection implements Connection {
                 client.details().connections().put(connDetails.connectionId(), result);
                 final var socketAddress = nettyChannel.remoteAddress();
                 connDetails.server().addresses().add(socketAddress);
-                connDetails.setIpAddress(((InetSocketAddress)socketAddress).getAddress());
-                LOG.debug("Connected to {} --> Dialect: {}",
-                    connDetails.ipAddress(), connDetails.dialect().identifier());
+                connDetails.setSocketAddress(socketAddress);
+                LOG.debug("Connected #{} to {} --> Dialect: {}",
+                    connDetails.connectionId(), connDetails.socketAddress(), connDetails.dialect().identifier());
             }
 
             @Override
@@ -152,19 +155,35 @@ public class SmbClientConnection implements Connection {
     }
 
     private ChannelInitializer<Channel> newChannelInitializer() {
-        final var errorHandler = new ChannelInboundHandlerAdapter() {
+        final var eventHandler = new ChannelInboundHandlerAdapter() {
             @Override
             public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
                 super.exceptionCaught(ctx, cause);
                 // TODO proper exception handler
                 cause.printStackTrace(System.err);
             }
+
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+                if (evt instanceof IdleStateEvent) {
+                    LOG.debug("Closing connection #{} to {} by IDLE timout",
+                        connDetails.connectionId(), ctx.channel().remoteAddress());
+                    close();
+                }
+            }
         };
+        final var idleTimeout = client.conf().idleDisconnectTimoutMillis();
+        final var idleHandler =
+            idleTimeout > 0 ? new IdleStateHandler(0,0, idleTimeout, TimeUnit.MILLISECONDS) : null;
+
         return new ChannelInitializer<>() {
 
             @Override
             protected void initChannel(final Channel channel) throws Exception {
-                channel.pipeline().addLast(new Smb2ClientCodec(connDetails), handler, errorHandler);
+                if (idleHandler != null) {
+                    channel.pipeline().addLast(idleHandler);
+                }
+                channel.pipeline().addLast(new Smb2ClientCodec(connDetails), handler, eventHandler);
                 channel.closeFuture().addListener(cf -> onClose());
                 channel.config().setOption(
                     ChannelOption.CONNECT_TIMEOUT_MILLIS, client.conf().connectionTimoutMillis());
@@ -245,6 +264,14 @@ public class SmbClientConnection implements Connection {
     }
 
     @Override
+    public ListenableFuture<Session> getOrCreateSession(final UserCredentials credentials) {
+        final var existing = connDetails.sessions().values().stream()
+            .filter(sess -> Objects.equals(sess.details().userCredentials().username(), credentials.username()))
+            .findFirst().orElse(null);
+        return existing == null ? newSession(credentials) : Futures.immediateFuture(existing);
+    }
+
+    @Override
     public ListenableFuture<Session> bindSession(final Session session) {
         // FIXME set session id to previousSessionId
         return setupSession(session.details());
@@ -279,12 +306,13 @@ public class SmbClientConnection implements Connection {
     @Override
     public ListenableFuture<Void> close() {
         if (nettyChannel != null && nettyChannel.isActive()) {
-            handler.finish().addListener(() -> {
-                nettyChannel.close().addListener(future -> {
-                    LOG.debug("Disconnected from {}", connDetails.ipAddress());
-                    closeFuture.set(null);
-                });
-            }, MoreExecutors.directExecutor());
+            // try closing all the sessions
+            Futures.whenAllComplete(
+                connDetails.sessions().values().stream().map(Session::close).toList()
+            ).run(() -> handler.finish().addListener(() -> {
+                    nettyChannel.close().addListener(future -> closeFuture.set(null));
+                }, MoreExecutors.directExecutor()
+            ), MoreExecutors.directExecutor());
             return closeFuture;
         } else {
             return Futures.immediateFuture(null);
@@ -294,6 +322,9 @@ public class SmbClientConnection implements Connection {
     private void onClose() {
         if (group != null) {
             group.shutdownGracefully();
+        }
+        if (client.details().connections().remove(connDetails.connectionId()) != null) {
+            LOG.debug("Disconnected #{} from {}", connDetails.connectionId(), connDetails.socketAddress());
         }
         closeFuture.set(null);
     }

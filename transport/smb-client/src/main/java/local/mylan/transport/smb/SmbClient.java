@@ -18,6 +18,7 @@ package local.mylan.transport.smb;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.channel.Channel;
 import java.net.InetAddress;
@@ -33,7 +34,7 @@ import local.mylan.transport.smb.protocol.details.Connection;
 public class SmbClient implements Client {
     private final ClientDetails clientDetails = new ClientDetails();
     private final SmbClientConf clientConf;
-    private final AtomicInteger nextConnectionId = new AtomicInteger(1);
+    private final AtomicInteger nextConnectionId = new AtomicInteger(0);
 
     public SmbClient() {
         this((Path) null);
@@ -79,7 +80,6 @@ public class SmbClient implements Client {
 
     @Override
     public ListenableFuture<Connection> connect(final SocketAddress address) {
-        // TODO check existing connection in connections map by server address
         final var connection = new SmbClientConnection(nextConnectionId.incrementAndGet(), this);
         return connection.connect(address);
     }
@@ -88,5 +88,17 @@ public class SmbClient implements Client {
     ListenableFuture<Connection> connect(final Channel channel) {
         final var connection = new SmbClientConnection(nextConnectionId.incrementAndGet(), this);
         return connection.connect(channel);
+    }
+
+    @Override
+    public ListenableFuture<Connection> getOrCreateConnection(final InetAddress address) {
+        return getOrCreateConnection(new InetSocketAddress(requireNonNull(address), clientConf.smbServerDefaultPort()));
+    }
+
+    @Override
+    public ListenableFuture<Connection> getOrCreateConnection(final SocketAddress address) {
+        final var existing = clientDetails.connections().values().stream()
+            .filter(conn -> address.equals(conn.details().socketAddress())).findAny().orElse(null);
+        return existing == null ? connect(address) : Futures.immediateFuture(existing);
     }
 }

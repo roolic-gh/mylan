@@ -32,7 +32,8 @@ public interface Connection {
 
     ListenableFuture<Session> newSession(UserCredentials credentials);
 
-    ListenableFuture<Session> bindSession(Session session);
+    ListenableFuture<Session> getOrCreateSession(UserCredentials credentials);
 
+    ListenableFuture<Session> bindSession(Session session);
 
 }
