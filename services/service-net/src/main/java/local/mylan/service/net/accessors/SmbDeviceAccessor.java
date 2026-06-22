@@ -30,7 +30,6 @@ import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.HavingCredentials;
-import local.mylan.service.api.model.NavDirectory;
 import local.mylan.transport.smb.SmbClient;
 import local.mylan.transport.smb.protocol.details.Session;
 import local.mylan.transport.smb.protocol.details.UserCredentials;
@@ -110,11 +109,6 @@ public class SmbDeviceAccessor implements DeviceAccessor {
                 return havingCredentials.getPassword();
             }
         };
-    }
-
-    @Override
-    public NavDirectory listDirectory(final Device device, final HavingCredentials account, final String path) {
-        return null;
     }
 
     @Override
