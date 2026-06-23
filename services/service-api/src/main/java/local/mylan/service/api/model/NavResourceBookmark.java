@@ -17,7 +17,6 @@ package local.mylan.service.api.model;
 
 public class NavResourceBookmark extends NavResource {
 
-    private Long bookmarkId;
     private Integer userId;
 
     public NavResourceBookmark() {
@@ -27,14 +26,6 @@ public class NavResourceBookmark extends NavResource {
     public NavResourceBookmark(final Integer userId, NavResource navResource) {
         super(navResource);
         this.userId = userId;
-    }
-
-    public Long getBookmarkId() {
-        return bookmarkId;
-    }
-
-    public void setBookmarkId(final Long bookmarkId) {
-        this.bookmarkId = bookmarkId;
     }
 
     public Integer getUserId() {

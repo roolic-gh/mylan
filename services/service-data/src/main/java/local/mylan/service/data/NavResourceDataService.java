@@ -441,10 +441,10 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
                     session.persist(newEntity);
                     continue;
                 }
-                if (!entity.getDisplayName().equals(share.getResourceName())
+                if (!entity.getDisplayName().equals(share.getName())
                     || entity.getShareType() != share.getShareType()) {
                     // update properties
-                    entity.setDisplayName(share.getResourceName());
+                    entity.setDisplayName(share.getName());
                     entity.setShareType(share.getShareType());
                     session.merge(entity);
                 }
@@ -475,7 +475,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         requireNonNull(share);
         final var entity = validShareEntity(share.getShareId());
         validateOwner(userId, entity.getUserId(), "Shared resource can be edited by owner only");
-        entity.setDisplayName(share.getResourceName());
+        entity.setDisplayName(share.getName());
         entity.setShareType(share.getShareType());
         inTransaction(session -> session.merge(entity));
     }

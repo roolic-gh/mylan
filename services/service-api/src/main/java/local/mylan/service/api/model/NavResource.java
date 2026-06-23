@@ -19,7 +19,8 @@ public class NavResource {
 
     private Integer accountId;
     private Long shareId;
-    private String resourceName;
+    private Long bookmarkId;
+    private String name;
     private String path;
 
     public NavResource() {
@@ -29,8 +30,13 @@ public class NavResource {
     public NavResource(final NavResource other) {
         accountId = other.accountId;
         shareId = other.shareId;
-        resourceName = other.resourceName;
+        name = other.name;
         path = other.path;
+    }
+
+    public NavResource(final String name, final String path) {
+        this.name = name;
+        this.path = path;
     }
 
     public NavResource(final Integer accountId, final String path) {
@@ -40,7 +46,7 @@ public class NavResource {
 
     public NavResource(final Integer accountId, final String resourceName, final String path) {
         this.accountId = accountId;
-        this.resourceName = resourceName;
+        this.name = resourceName;
         this.path = path;
     }
 
@@ -49,9 +55,9 @@ public class NavResource {
         this.path = path;
     }
 
-    public NavResource(final Long shareId, final String resourceName, final String path) {
+    public NavResource(final Long shareId, final String name, final String path) {
         this.shareId = shareId;
-        this.resourceName = resourceName;
+        this.name = name;
         this.path = path;
     }
 
@@ -71,12 +77,20 @@ public class NavResource {
         this.shareId = shareId;
     }
 
-    public String getResourceName() {
-        return resourceName;
+    public Long getBookmarkId() {
+        return bookmarkId;
     }
 
-    public void setResourceName(final String resourceName) {
-        this.resourceName = resourceName;
+    public void setBookmarkId(final Long bookmarkId) {
+        this.bookmarkId = bookmarkId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(final String name) {
+        this.name = name;
     }
 
     public String getPath() {

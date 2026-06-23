@@ -26,6 +26,7 @@ import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountLockState;
 import local.mylan.service.api.model.DeviceAccountState;
+import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.rest.api.NavigationRestService;
@@ -98,5 +99,10 @@ public class DefaultNavigationRestService implements NavigationRestService {
     @Override
     public List<NavResourceBookmark> listUserBookmarks(final UserContext userCtx) {
         return List.of();
+    }
+
+    @Override
+    public NavDirectory readAccountDir(final Integer accountId, final String path, final UserContext userCtx) {
+        return navigationService.readDeviceDirectoryByAccount(userIdFrom(userCtx), accountId, path);
     }
 }

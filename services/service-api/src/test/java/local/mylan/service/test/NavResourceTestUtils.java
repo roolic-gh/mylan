@@ -16,8 +16,10 @@
 package local.mylan.service.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,9 @@ import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceState;
+import local.mylan.service.api.model.NavDirectory;
+import local.mylan.service.api.model.NavFile;
+import local.mylan.service.api.model.NavResource;
 import local.mylan.service.spi.model.EncryptedDeviceAccountWithCredentials;
 
 public final class NavResourceTestUtils {
@@ -111,8 +116,8 @@ public final class NavResourceTestUtils {
     }
 
     public static DeviceAccountWithCredentials accountWithCreds(final Integer accountId, final Integer userId,
-        final Integer deviceId, final String username, final String password, final String key){
-        final var account = new EncryptedDeviceAccountWithCredentials(ENCRYPTOR, DECRYPTOR, key!= null);
+        final Integer deviceId, final String username, final String password, final String key) {
+        final var account = new EncryptedDeviceAccountWithCredentials(ENCRYPTOR, DECRYPTOR, key != null);
         account.setAccountId(accountId);
         account.setUserId(userId);
         account.setDeviceId(deviceId);
@@ -129,7 +134,6 @@ public final class NavResourceTestUtils {
         final List<DeviceAccount> actual) {
         assertList(expected, actual, DeviceAccount::getAccountId, NavResourceTestUtils::assertAccountWithStates);
     }
-
 
     public static void assertAccount(final DeviceAccount expected, final DeviceAccount actual) {
         assertAccount(expected, actual, false);
@@ -157,6 +161,42 @@ public final class NavResourceTestUtils {
         assertAccount(expected, actual);
         assertEquals(expected.getState(), actual.getState());
         assertEquals(expected.getLockState(), actual.getLockState());
+    }
+
+    // navigation
+
+    public static void assertNavDirectory(final NavDirectory template, final NavDirectory actual, final String path,
+        final Map<String, Long> shareIdMap, final Map<String, Long> bookmarkIdMap) {
+
+        assertNotNull(actual);
+        assertEquals(path, actual.getPath());
+        if (template.getSubDirs() != null) {
+            assertList(template.getSubDirs(), actual.getSubDirs(), NavDirectory::getName,
+                (exp, act) -> assertNavDirElement(exp, act, path + '/', shareIdMap, bookmarkIdMap));
+        } else {
+            assertTrue(actual.getSubDirs() == null || actual.getSubDirs().isEmpty());
+        }
+        if (template.getFiles() != null) {
+            assertList(template.getFiles(), actual.getFiles(), NavFile::getName,
+                (exp, act) -> assertNavDirElement(exp, act, path + '/', shareIdMap, bookmarkIdMap));
+        } else {
+            assertTrue(actual.getFiles() == null || actual.getFiles().isEmpty());
+        }
+    }
+
+    private static void assertNavDirElement(final NavResource expected, final NavResource actual,
+        final String pathPrefix, final Map<String, Long> shareIdMap, final Map<String, Long> bookmarkIdMap) {
+
+        assertNotNull(actual);
+        final var itemPath = pathPrefix + expected.getName();
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(itemPath, actual.getPath());
+        if (expected instanceof NavFile expFile) {
+            final var actFile = assertInstanceOf(NavFile.class, actual);
+            assertEquals(expFile.getSize(), actFile.getSize());
+        }
+        assertEquals(shareIdMap.get(itemPath), actual.getShareId());
+        assertEquals(bookmarkIdMap.get(itemPath), actual.getBookmarkId());
     }
 
     // utility

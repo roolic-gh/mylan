@@ -19,14 +19,46 @@ import java.util.List;
 
 public class NavDirectory extends NavResource {
 
-    private List<String> subDirs;
+    private NavResource topResource;
+    private DeviceAccount account;
+
+    private List<NavDirectory> subDirs;
     private List<NavFile> files;
 
-    public List<String> getSubDirs() {
+    public NavDirectory() {
+        // default
+    }
+
+    public NavDirectory(final String name) {
+        setName(name);
+    }
+
+    public NavDirectory(final List<NavDirectory> subDirs, final List<NavFile> files) {
+        this.subDirs = subDirs;
+        this.files = files;
+    }
+
+    public DeviceAccount getAccount() {
+        return account;
+    }
+
+    public void setAccount(final DeviceAccount account) {
+        this.account = account;
+    }
+
+    public NavResource getTopResource() {
+        return topResource;
+    }
+
+    public void setTopResource(final NavResource topResource) {
+        this.topResource = topResource;
+    }
+
+    public List<NavDirectory> getSubDirs() {
         return subDirs;
     }
 
-    public void setSubDirs(final List<String> subDirs) {
+    public void setSubDirs(final List<NavDirectory> subDirs) {
         this.subDirs = subDirs;
     }
 

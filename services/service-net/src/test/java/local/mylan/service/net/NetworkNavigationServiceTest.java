@@ -29,6 +29,7 @@ import static local.mylan.service.test.NavResourceTestUtils.accountWithCreds;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountListWithStates;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountWithStates;
 import static local.mylan.service.test.NavResourceTestUtils.assertDeviceList;
+import static local.mylan.service.test.NavResourceTestUtils.assertNavDirectory;
 import static local.mylan.service.test.NavResourceTestUtils.device;
 import static local.mylan.service.test.NavResourceTestUtils.deviceAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.List;
+import java.util.Map;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NavigationService;
@@ -49,11 +51,12 @@ import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
-import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountState;
+import local.mylan.service.api.model.NavDirectory;
+import local.mylan.service.api.model.NavFile;
 import local.mylan.service.test.TestNotificationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,6 +96,12 @@ class NetworkNavigationServiceTest {
     private static final Integer ACCOUNT_ID3 = 103;
     private static final Integer ACCOUNT_ID4 = 105;
     private static final Integer ACCOUNT_ID5 = 105;
+
+    private static final String DIR_PATH = "/path/to/dir";
+    private static final String SUBDIR1 = "subdir1";
+    private static final String SUBDIR2 = "subdir2";
+    private static final String FILENAME1 = "filename1";
+    private static final String FILENAME2 = "filename2";
 
     @Mock
     DeviceAccessor accessor;
@@ -208,7 +217,7 @@ class NetworkNavigationServiceTest {
             service.listUserDeviceAccounts(USER_ID1));
 
         // unlock error cases
-        assertThrows(NoDataException.class, () -> service.unlockAccount(USER_ID2, ACCOUNT_ID5, KEY));
+        assertThrows(IllegalArgumentException.class, () -> service.unlockAccount(USER_ID2, ACCOUNT_ID5, KEY));
         assertThrows(UnauthorizedException.class, () -> service.unlockAccount(USER_ID2, ACCOUNT_ID1, KEY));
 
         // unlock bad key, no state changed
@@ -223,7 +232,7 @@ class NetworkNavigationServiceTest {
         assertAccountListWithStates(List.of(unlocked), service.listUserDeviceAccounts(USER_ID1));
 
         // lock -- error cases
-        assertThrows(NoDataException.class, () -> service.lockAccount(USER_ID2, ACCOUNT_ID5));
+        assertThrows(IllegalArgumentException.class, () -> service.lockAccount(USER_ID2, ACCOUNT_ID5));
         assertThrows(UnauthorizedException.class, () -> service.lockAccount(USER_ID2, ACCOUNT_ID1));
 
         // lock with lock status only update
@@ -280,4 +289,27 @@ class NetworkNavigationServiceTest {
         assertEquals(expectedState, actual.getState());
     }
 
+    @Test
+    void readDirByAccount() {
+        // setup device, account etc
+        final var device = device(DEVICE_ID1, DEVICE_NAME1, SMB, List.of(IP1), null);
+        final var account = accountWithCreds(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, PASSWORD1, null);
+        doReturn(List.of(device)).when(navResourceService).getAllDevices();
+        doReturn(List.of(account)).when(navResourceService).getAllAccountsWithCredentials();
+
+        // accessor
+        doReturn(SMB).when(accessor).protocol();
+        doReturn(VALID).when(accessor).validateCredentials(device, account);
+        final var dir = new NavDirectory(
+            List.of(new NavDirectory(SUBDIR1), new NavDirectory(SUBDIR2)),
+            List.of(new NavFile(FILENAME1, 1024), new NavFile(FILENAME2, 1025))
+        );
+        doReturn(dir).when(accessor).listDirectory(device, account, DIR_PATH);
+
+        // test
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor));
+        final var result = service.readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, DIR_PATH);
+        // TODO add shares and bookmarks identified
+        assertNavDirectory(dir, result, DIR_PATH, Map.of(), Map.of());
+    }
 }

@@ -631,7 +631,7 @@ class NavResourceDataServiceTest {
             } else {
                 // id + name only provided
                 assertNotNull(actualShare);
-                assertEquals(expectedShare.getResourceName(), actualShare.getResourceName());
+                assertEquals(expectedShare.getName(), actualShare.getName());
             }
         }
     }
@@ -642,7 +642,7 @@ class NavResourceDataServiceTest {
         if (expected.getShareId() != null) {
             assertEquals(expected.getShareId(), actual.getShareId());
         }
-        assertEquals(expected.getResourceName(), actual.getResourceName());
+        assertEquals(expected.getName(), actual.getName());
 
         if (expected.getAccountId() == null) {
             assertEquals(localAccountId, actual.getAccountId());

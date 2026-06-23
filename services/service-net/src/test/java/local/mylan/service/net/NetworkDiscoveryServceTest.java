@@ -46,6 +46,7 @@ import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.HavingCredentials;
+import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -204,6 +205,11 @@ class NetworkDiscoveryServceTest {
 
         @Override
         public DeviceAccountState validateCredentials(final Device device, final HavingCredentials account) {
+            return null;
+        }
+
+        @Override
+        public NavDirectory listDirectory(final Device device, final HavingCredentials creds, final String path) {
             return null;
         }
     }

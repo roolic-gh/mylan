@@ -21,6 +21,7 @@ import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.HavingCredentials;
+import local.mylan.service.api.model.NavDirectory;
 
 public interface DeviceAccessor {
 
@@ -29,7 +30,9 @@ public interface DeviceAccessor {
     @Nullable
     String extractDeviceName(InetAddress address);
 
-    DeviceAccountState validateCredentials(Device device, HavingCredentials account);
+    DeviceAccountState validateCredentials(Device device, HavingCredentials creds);
+
+    NavDirectory listDirectory(Device device, HavingCredentials creds, String path);
 
     default void stop(){
     }

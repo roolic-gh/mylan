@@ -17,12 +17,14 @@ package local.mylan.service.rest.api;
 
 import java.util.List;
 import local.mylan.common.annotations.rest.PathParameter;
+import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
 import local.mylan.service.api.UserContext;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 
@@ -43,6 +45,9 @@ public interface NavigationRestService {
 
     @RequestMapping(method = "POST", path = "/nav/account/{id}/lock")
     DeviceAccount lockAccount(@PathParameter("id") Integer accountId, UserContext userCtx);
+
+    @RequestMapping(method = "GET", path = "/nav/account/{id}/dir")
+    NavDirectory readAccountDir(@PathParameter("id") Integer accountId, @QueryParameter(name="path") String path, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/shares/all")
     List<NavResourceShare> listShares(UserContext userCtx);

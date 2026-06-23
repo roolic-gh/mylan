@@ -15,22 +15,24 @@
  */
 package local.mylan.service.net.accessors;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.google.common.net.InetAddresses;
 import java.net.InetAddress;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.exceptions.NoConnectionException;
+import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
-import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountState;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.HavingCredentials;
+import local.mylan.service.api.model.NavDirectory;
 import local.mylan.transport.smb.SmbClient;
+import local.mylan.transport.smb.exceptions.SmbAuthorizationException;
+import local.mylan.transport.smb.exceptions.SmbSessionSetupException;
 import local.mylan.transport.smb.protocol.details.Session;
 import local.mylan.transport.smb.protocol.details.UserCredentials;
 
@@ -38,8 +40,10 @@ public class SmbDeviceAccessor implements DeviceAccessor {
 
     private final SmbClient probeClient;
     private final SmbClient accessClient;
-    Map<DeviceAccount, Session> sessionMap = new ConcurrentHashMap<>();
-
+    // TODO make configurable
+    private final int connTimeout = 2;
+    private final int sessTimeout = 5;
+    private final int opTimeout = 60;
 
     public SmbDeviceAccessor(final Path confDir) {
         probeClient = new SmbClient(confDir);
@@ -53,13 +57,12 @@ public class SmbDeviceAccessor implements DeviceAccessor {
 
     @Override
     public String extractDeviceName(final InetAddress address) {
-
         try {
-            final var conn = probeClient.connect(address).get(2, TimeUnit.SECONDS);
+            final var conn = probeClient.connect(address).get(connTimeout, SECONDS);
             try {
                 // Netbios name of a server is taken from a server response (NTLM authorization flow)
                 // then stored as server name property within a client connection details
-                conn.newAnonimousSession().get(2, TimeUnit.SECONDS);
+                conn.newAnonimousSession().get(sessTimeout, SECONDS);
             } catch (Exception e) {
                 // expected
             }
@@ -75,9 +78,9 @@ public class SmbDeviceAccessor implements DeviceAccessor {
     @Override
     public DeviceAccountState validateCredentials(final Device device, final HavingCredentials creds) {
         try {
-            final var conn = probeClient.connect(getInetAddress(device)).get(2, TimeUnit.SECONDS);
+            final var conn = probeClient.connect(getInetAddress(device)).get(connTimeout, SECONDS);
             try {
-                final var session = conn.newSession(credentials(creds)).get(5, TimeUnit.SECONDS);
+                final var session = conn.newSession(credentials(creds)).get(sessTimeout, SECONDS);
                 session.close();
                 return DeviceAccountState.VALID;
             } catch (Exception e) {
@@ -86,13 +89,54 @@ public class SmbDeviceAccessor implements DeviceAccessor {
                 conn.close();
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new NoConnectionException("Cannot connect device " + device.getIdentifier());
+            throw new NoConnectionException("Could not connect device " + device.getIdentifier());
         }
+    }
+
+    @Override
+    public NavDirectory listDirectory(final Device device, final HavingCredentials creds, final String path) {
+        final var session = getSession(device, creds);
+        final var sharePath = SmbUtils.sharePath(path);
+        try {
+            if (sharePath.shareName().isEmpty()) {
+                final var shareNames = session.shareNames(true).get(opTimeout, SECONDS);
+                return SmbUtils.navDirFromShareNames(shareNames);
+            }
+            final var tree = session.getOrConnectTree(sharePath.shareName()).get(opTimeout, SECONDS);
+            final var open = tree.openFile(sharePath.subPath()).get(opTimeout, SECONDS);
+            // FIXME limit by qty
+            final var files = open.queryDirectory().get(opTimeout, SECONDS);
+            open.close();
+            return SmbUtils.navDirFromFileInfo(files);
+
+        } catch (ExecutionException | TimeoutException | InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private Session getSession(final Device device, final HavingCredentials creds) {
+        try {
+            final var conn = accessClient.getOrCreateConnection(getInetAddress(device)).get(connTimeout, SECONDS);
+            return conn.getOrCreateSession(credentials(creds)).get(sessTimeout, SECONDS);
+        } catch (ExecutionException e) {
+            final var cause = e.getCause();
+            if (cause instanceof SmbSessionSetupException || cause instanceof SmbAuthorizationException) {
+                throw new UnauthorizedException("Invalid credentials for device " + device.getIdentifier());
+            }
+            throw new IllegalStateException(cause);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new IllegalStateException("Cannot read from device "+ device.getIdentifier(), e);
+        }
+    }
+
+    @Override
+    public void stop() {
+        accessClient.details().connections().forEach((id, conn) -> conn.close());
     }
 
     private static InetAddress getInetAddress(final Device device) {
         if (device.getIpAddresses() == null || device.getIpAddresses().isEmpty()) {
-            throw new NoConnectionException("Device %s has no IP address assignes".formatted(device.getIdentifier()));
+            throw new NoConnectionException("Device %s has no IP address assigned.".formatted(device.getIdentifier()));
         }
         return InetAddresses.forString(device.getIpAddresses().getFirst().getIpAddress());
     }
@@ -109,10 +153,5 @@ public class SmbDeviceAccessor implements DeviceAccessor {
                 return havingCredentials.getPassword();
             }
         };
-    }
-
-    @Override
-    public void stop() {
-        accessClient.details().connections().forEach((id, conn) -> conn.close());
     }
 }

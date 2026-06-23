@@ -36,7 +36,6 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
-import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
@@ -197,7 +196,7 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public DeviceAccount unlockAccount(final Integer userId, final Integer accountId, final String key) {
-        final var account = getValidateUserAccount(userId, accountId);
+        final var account = validUserAccount(accountId, userId);
         if (account.getLockState() == DeviceAccountLockState.LOCKED) {
             account.unlock(key);
             if (account.getLockState() == DeviceAccountLockState.UNLOCKED) {
@@ -209,22 +208,11 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public DeviceAccount lockAccount(final Integer userId, final Integer accountId) {
-        final var account = getValidateUserAccount(userId, accountId);
+        final var account = validUserAccount(accountId, userId);
         if (account.getLockState() == DeviceAccountLockState.UNLOCKED) {
             account.lock();
         }
         return copyAccount(account);
-    }
-
-    private DeviceAccountWithCredentials getValidateUserAccount(final Integer userId, final Integer accountId) {
-        final var account = accountMap.get(accountId);
-        if (account == null) {
-            throw new NoDataException("Device account with id % does not exuist.".formatted(accountId));
-        }
-        if (!Objects.equals(userId, account.getUserId())) {
-            throw new UnauthorizedException("Only account owner can interact with the account.");
-        }
-        return account;
     }
 
     private void onDeviceAccountCrud(final DeviceAccountCrudEvent event) {
@@ -263,14 +251,8 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public DeviceAccount validateAccount(final DeviceAccount account) {
-        final var device = account.getDeviceId() == null ? null : deviceMap.get(account.getDeviceId());
-        if (device == null) {
-            throw new IllegalArgumentException("Invalid device");
-        }
-        final var accessor = accessorsMap.get(device.getProtocol());
-        if (accessor == null) {
-            throw new IllegalStateException("Unsupported protocol " + device.getProtocol());
-        }
+        final var device = validDevice(account.getDeviceId());
+        final var accessor = validAccessor(device.getProtocol());
         final var state = accessor.validateCredentials(device, account);
         final var result = copyAccount(account);
         result.setState(state);
@@ -294,7 +276,13 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public NavDirectory readDeviceDirectoryByAccount(final Integer userId, final Integer accountId, final String path) {
-        return null;
+        final var account = ensureUnlocked(validUserAccount(accountId, userId));
+        final var device = validDevice(account.getDeviceId());
+        final var accessor = validAccessor(device.getProtocol());
+        final var dir = accessor.listDirectory(device, account, path);
+        dir.setAccount(copyAccount(account));
+        setDirPaths(dir, path);
+        return dir;
     }
 
     @Override
@@ -307,5 +295,55 @@ public final class NetworkNavigationService implements NavigationService {
         executor.shutdown();
         accessorsMap.values().forEach(DeviceAccessor::stop);
         LOG.info("Stopped.");
+    }
+
+    private Device validDevice(final Integer deviceId) {
+        final var device = deviceId == null ? null : deviceMap.get(deviceId);
+        if (device == null) {
+            throw new IllegalArgumentException("Invalid device ID %s.".formatted(deviceId));
+        }
+        return device;
+    }
+
+    private DeviceAccessor validAccessor(final DeviceProtocol protocol) {
+        final var accessor = accessorsMap.get(protocol);
+        if (accessor == null) {
+            throw new IllegalStateException("Unsupported protocol %s.".formatted(protocol));
+        }
+        return accessor;
+    }
+
+    private DeviceAccountWithCredentials validAccount(final Integer accountId) {
+        final var account = accountMap.get(accountId);
+        if (account == null) {
+            throw new IllegalArgumentException("Device account with id % does not exuist.".formatted(accountId));
+        }
+        return account;
+    }
+
+    private DeviceAccountWithCredentials validUserAccount(final Integer accountId, final Integer userId) {
+        final var account = validAccount(accountId);
+        if (!Objects.equals(userId, account.getUserId())) {
+            throw new UnauthorizedException("Only account owner can interact with the account.");
+        }
+        return account;
+    }
+
+    private static DeviceAccountWithCredentials ensureUnlocked(final DeviceAccountWithCredentials account) {
+        if (account.getLockState() == DeviceAccountLockState.LOCKED) {
+            throw new IllegalStateException("Account is locked.");
+        }
+        return account;
+    }
+
+    private static void setDirPaths(final NavDirectory dir, final String path) {
+        dir.setPath(path);
+        final var pathPrefix = path == null || path.isEmpty() || "/".equals(path) ? "/" : path + '/';
+        if (dir.getSubDirs() != null) {
+            dir.getSubDirs().forEach(navDir -> navDir.setPath(pathPrefix + navDir.getName()));
+        }
+        if(dir.getFiles() != null){
+            dir.getFiles().forEach(file -> file.setPath(pathPrefix + file.getName()));
+        }
     }
 }

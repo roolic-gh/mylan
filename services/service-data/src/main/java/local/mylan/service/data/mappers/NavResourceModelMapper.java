@@ -55,20 +55,21 @@ public interface NavResourceModelMapper {
     @Mapping(target = "lockState", ignore = true)
     DeviceAccount fromEntity(DeviceAccountEntity entity);
 
-    @Mapping(target = "displayName", source = "resourceName")
+    @Mapping(target = "displayName", source = "name")
     @Mapping(target = "accountId", ignore = true)
     @Mapping(target = "account", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "user", ignore = true)
     NavResourceShareEntity toEntity(NavResourceShare model);
 
-    @Mapping(target = "resourceName", source = "displayName")
+    @Mapping(target = "bookmarkId", ignore = true)
+    @Mapping(target = "name", source = "displayName")
     NavResourceShare fromEntity(NavResourceShareEntity entity);
 
     default NavResourceShare fromEntityMin(NavResourceShareEntity entity) {
         return entity == null ? null : new NavResourceShare(entity.getShareId(), entity.getDisplayName());
     }
 
-    @Mapping(target = "resourceName", ignore = true)
+    @Mapping(target = "name", ignore = true)
     NavResourceBookmark fromEntity(NavResourceBookmarkEntity entity);
 }

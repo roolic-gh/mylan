@@ -39,6 +39,7 @@ import local.mylan.service.api.exceptions.UnauthenticatedException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.User;
 import local.mylan.service.rest.api.NavigationRestService;
 import local.mylan.service.rest.api.UnlockRequest;
@@ -77,6 +78,8 @@ class DefaultNavigationRestServiceTest {
     private static final Integer ACCOUNT_ID1 = 2001;
     private static final Integer ACCOUNT_ID2 = 2002;
     private static final Integer ACCOUNT_INVALID = 2006;
+
+    private static final String PATH = "path/to/resources";
 
     @Mock
     NavigationService navigationService;
@@ -138,5 +141,12 @@ class DefaultNavigationRestServiceTest {
         final var account = deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, VALID, UNLOCKED);
         doReturn(account).when(navigationService).lockAccount(USER_ID1, ACCOUNT_ID1);
         assertEquals(account, restService.lockAccount(ACCOUNT_ID1, USER_CTX1));
+    }
+
+    @Test
+    void readDirByAccount() {
+        final var navDir = new NavDirectory("test-dir1");
+        doReturn(navDir).when(navigationService).readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, PATH);
+        assertEquals(navDir, restService.readAccountDir(ACCOUNT_ID1, PATH, USER_CTX1));
     }
 }

@@ -17,15 +17,16 @@ package local.mylan.service.api.model;
 
 public class NavFile extends NavResource {
 
-    private String filename;
+    private long size;
     private FileType type;
 
-    public String getFilename() {
-        return filename;
+    public NavFile() {
+        // default
     }
 
-    public void setFilename(final String filename) {
-        this.filename = filename;
+    public NavFile(final String name, final long size) {
+        setName(name);
+        this.size = size;
     }
 
     public FileType getType() {
@@ -34,5 +35,13 @@ public class NavFile extends NavResource {
 
     public void setType(final FileType type) {
         this.type = type;
+    }
+
+    public long getSize() {
+        return size;
+    }
+
+    public void setSize(final long size) {
+        this.size = size;
     }
 }
