@@ -79,7 +79,7 @@ class RestRequestHandler {
             }
         } catch (InvocationTargetException e) {
             final var cause = e.getCause();
-            LOG.error("Exception processing request {}", ctx.contextPath(), e);
+            LOG.error("Exception processing request {}", ctx.contextPath(), cause);
             final var content = RestConverter.toResponseBody(new ErrorMessage(cause.getMessage()), encoding);
             // todo response code by exception type
             sendResponse(ctx, responseWithContent(ctx.protocolVersion(), INTERNAL_SERVER_ERROR,

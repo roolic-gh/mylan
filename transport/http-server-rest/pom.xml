@@ -84,10 +84,6 @@
             <artifactId>http-server-ext</artifactId>
         </dependency>
         <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>service-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>swagger-ui</artifactId>
         </dependency>
