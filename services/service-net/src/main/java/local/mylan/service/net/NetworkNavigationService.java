@@ -18,7 +18,10 @@ package local.mylan.service.net;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,8 +30,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import local.mylan.common.utils.ConfUtils;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NavigationService;
@@ -46,6 +51,7 @@ import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceState;
 import local.mylan.service.api.model.NavDirectory;
+import local.mylan.service.api.model.NavFile;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.net.accessors.SmbDeviceAccessor;
@@ -62,6 +68,8 @@ public final class NetworkNavigationService implements NavigationService {
     };
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final NetworkNavigationServiceConf conf;
+    private final Cache<NavKey, NavDirectory> navDirectoryCache;
 
     private final NavResourceService navResourceService;
     private final Set<String> pendingOnlineDeviceIdentifiers = ConcurrentHashMap.newKeySet();
@@ -71,25 +79,32 @@ public final class NetworkNavigationService implements NavigationService {
 
     public NetworkNavigationService(final Path confDir, final NavResourceService navResourceService,
         final NotificationService notificationService) {
-        this(navResourceService, notificationService, defaultAccessors(confDir));
+
+        this(navResourceService, notificationService, defaultAccessors(confDir),
+            ConfUtils.loadConfiguration(NetworkNavigationServiceConf.class, confDir));
     }
 
     @VisibleForTesting
     NetworkNavigationService(final NavResourceService navResourceService, final NotificationService notificationService,
-        final Collection<? extends DeviceAccessor> accessors) {
+        final Collection<? extends DeviceAccessor> accessors, final NetworkNavigationServiceConf conf) {
 
         this.navResourceService = navResourceService;
+        this.conf = conf;
         accessorsMap = accessors.stream().collect(toMap(DeviceAccessor::protocol, accr -> accr));
 
         notificationService.registerEventListener(DiscoveryDevicesEvent.class, this::onDiscovery);
         notificationService.registerEventListener(DeviceCrudEvent.class, this::onDeviceCrud);
         notificationService.registerEventListener(DeviceAccountCrudEvent.class, this::onDeviceAccountCrud);
 
-        initCaches();
+        navDirectoryCache = CacheBuilder.newBuilder()
+            .maximumSize(conf.dirCacheMaxSize())
+            .expireAfterWrite(Duration.ofSeconds(conf.dirCacheExpireSeconds()))
+            .build();
+        loadCaches();
         LOG.info("Initialized.");
     }
 
-    private void initCaches() {
+    private void loadCaches() {
         navResourceService.getAllDevices().forEach(device -> {
             device.setState(DeviceState.OFFLINE);
             deviceMap.put(device.getDeviceId(), device);
@@ -278,11 +293,34 @@ public final class NetworkNavigationService implements NavigationService {
     public NavDirectory readDeviceDirectoryByAccount(final Integer userId, final Integer accountId, final String path) {
         final var account = ensureUnlocked(validUserAccount(accountId, userId));
         final var device = validDevice(account.getDeviceId());
-        final var accessor = validAccessor(device.getProtocol());
-        final var dir = accessor.listDirectory(device, account, path);
+        final var dir = readDirectory(device, account, path);
         dir.setAccount(copyAccount(account));
         setDirPaths(dir, path);
         return dir;
+    }
+
+    private NavDirectory readDirectory(final Device device, final DeviceAccountWithCredentials account,
+        final String path) {
+
+        final var accessor = validAccessor(device.getProtocol());
+        if (conf.dirCacheEnabled()) {
+            final var key = new NavKey(account.getAccountId(),
+                path == null || path.isEmpty() || "/".equals(path) ? "" : path);
+            try {
+                return copyDirectory(navDirectoryCache.get(key, () -> accessor.listDirectory(device, account, path)));
+            } catch (ExecutionException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return accessor.listDirectory(device, account, path);
+    }
+
+    private static NavDirectory copyDirectory(final NavDirectory dir) {
+        final var subdirs = dir.getSubDirs() == null ? null :
+            dir.getSubDirs().stream().map(sd -> new NavDirectory(sd.getName())).toList();
+        final var files = dir.getFiles() == null ? null :
+            dir.getFiles().stream().map(fl -> new NavFile(fl.getName(), fl.getSize(), fl.getModified())).toList();
+        return new NavDirectory(subdirs, files);
     }
 
     @Override
@@ -294,6 +332,7 @@ public final class NetworkNavigationService implements NavigationService {
     public void stop() {
         executor.shutdown();
         accessorsMap.values().forEach(DeviceAccessor::stop);
+        navDirectoryCache.cleanUp();
         LOG.info("Stopped.");
     }
 
@@ -342,8 +381,11 @@ public final class NetworkNavigationService implements NavigationService {
         if (dir.getSubDirs() != null) {
             dir.getSubDirs().forEach(navDir -> navDir.setPath(pathPrefix + navDir.getName()));
         }
-        if(dir.getFiles() != null){
+        if (dir.getFiles() != null) {
             dir.getFiles().forEach(file -> file.setPath(pathPrefix + file.getName()));
         }
+    }
+
+    private record NavKey(Integer accountId, String path) {
     }
 }

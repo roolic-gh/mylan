@@ -18,18 +18,15 @@ package local.mylan.service.net;
 import local.mylan.common.annotations.conf.ConfFile;
 import local.mylan.common.annotations.conf.ConfProperty;
 
-@ConfFile("net-discovery.conf")
-public @interface NetworkDiscoveryServiceConf {
+@ConfFile("net-navigation.conf")
+public @interface NetworkNavigationServiceConf {
 
-    @ConfProperty("remote.discover.threads")
-    int threads() default 10;
+    @ConfProperty("dir.cache.enabled")
+    boolean dirCacheEnabled() default true;
 
-    @ConfProperty("remote.discover.delay")
-    long rediscoverDelaySeconds() default 60L;
+    @ConfProperty("dir.cache.max-size")
+    long dirCacheMaxSize() default 100;
 
-    @ConfProperty("remote.discover.interval")
-    long rediscoverIntervalSeconds() default 3600L;
-
-    @ConfProperty("remote.discover.subnets")
-    String subnets() default "192.168.0.0/23";
+    @ConfProperty("dir.cache.expire")
+    long dirCacheExpireSeconds() default 600;
 }

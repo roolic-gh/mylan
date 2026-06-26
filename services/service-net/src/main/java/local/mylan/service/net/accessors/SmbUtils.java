@@ -45,8 +45,13 @@ final class SmbUtils {
             .map(fi -> new NavDirectory(fi.fileName())).toList();
         final var files = filtered.stream().map(FileDirectoryInformation.class::cast)
             .filter(fi -> !fi.fileAttributes().get(FileAttributeFlags.FILE_ATTRIBUTE_DIRECTORY))
-            .map(fi -> new NavFile(fi.fileName(), fi.endOfFile())).toList();
+            .map(fi -> new NavFile(fi.fileName(), fi.endOfFile(),
+                unixMillisFromFiletime(fi.lastWriteTime()))).toList();
         return new NavDirectory(dirs, files);
+    }
+
+    public static long unixMillisFromFiletime(final long filetime) {
+        return (filetime - 116_444_736_000_000_000L)/10_000L;
     }
 
     static String nameFromPath(final String path) {

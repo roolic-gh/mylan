@@ -194,6 +194,7 @@ public final class NavResourceTestUtils {
         if (expected instanceof NavFile expFile) {
             final var actFile = assertInstanceOf(NavFile.class, actual);
             assertEquals(expFile.getSize(), actFile.getSize());
+            assertEquals(expFile.getModified(), actFile.getModified());
         }
         assertEquals(shareIdMap.get(itemPath), actual.getShareId());
         assertEquals(bookmarkIdMap.get(itemPath), actual.getBookmarkId());

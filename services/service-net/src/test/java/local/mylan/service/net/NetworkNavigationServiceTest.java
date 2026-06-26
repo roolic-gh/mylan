@@ -44,6 +44,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Map;
+import local.mylan.common.utils.ConfUtils;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.NavigationService;
@@ -103,6 +104,9 @@ class NetworkNavigationServiceTest {
     private static final String FILENAME1 = "filename1";
     private static final String FILENAME2 = "filename2";
 
+    private static final NetworkNavigationServiceConf CONF =
+        ConfUtils.loadConfiguration(NetworkNavigationServiceConf.class);
+
     @Mock
     DeviceAccessor accessor;
     @Mock
@@ -146,7 +150,7 @@ class NetworkNavigationServiceTest {
             .when(navResourceService).getDevice(DEVICE_ID3);
 
         // start service
-        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor));
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
 
         // all devices marked offline initially
         assertDeviceList(List.of(
@@ -194,7 +198,7 @@ class NetworkNavigationServiceTest {
         doReturn(VALID).when(accessor).validateCredentials(device1, account4);
 
         // test
-        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor));
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
 
         // account 1 is the only account to be verified on start: has accessor for device,
         verify(accessor, timeout(2000).times(1)).validateCredentials(device1, account1);
@@ -267,7 +271,7 @@ class NetworkNavigationServiceTest {
         doReturn(INVALID).when(accessor).validateCredentials(device1, account2);
 
         // test
-        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor));
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
         assertAccountState(account1, VALID, service.validateAccount(account1));
         assertAccountState(account2, INVALID, service.validateAccount(account2));
 
@@ -300,14 +304,15 @@ class NetworkNavigationServiceTest {
         // accessor
         doReturn(SMB).when(accessor).protocol();
         doReturn(VALID).when(accessor).validateCredentials(device, account);
+        final var now = System.currentTimeMillis();
         final var dir = new NavDirectory(
             List.of(new NavDirectory(SUBDIR1), new NavDirectory(SUBDIR2)),
-            List.of(new NavFile(FILENAME1, 1024), new NavFile(FILENAME2, 1025))
+            List.of(new NavFile(FILENAME1, 1024, now), new NavFile(FILENAME2, 1025, now))
         );
         doReturn(dir).when(accessor).listDirectory(device, account, DIR_PATH);
 
         // test
-        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor));
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
         final var result = service.readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, DIR_PATH);
         // TODO add shares and bookmarks identified
         assertNavDirectory(dir, result, DIR_PATH, Map.of(), Map.of());
