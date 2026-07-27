@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-import {byId, report, reportError} from "./utils.js";
+import { byId } from "./utils.js";
 
 export class MaterialUi {
     selfContext = null;
@@ -56,12 +56,11 @@ export class MaterialUi {
         byId("edit-displayname-input").value = user.displayName;
     }
 
-    drawResourcesTabs() {
+    drawResourcesTabs(app, navId) {
         setContent(byId("resources-tabs-template").content.cloneNode(true));
-        const tabs = M.Tabs.init(byId("resources-tabs"), { onShow: (div) => localStorage.setItem("rsrc-tab", div.id) });
-        const prevTabId = localStorage.getItem("rsrc-tab");
-        if (prevTabId != null) {
-            tabs.select(prevTabId);
+        const tabs = M.Tabs.init(byId("resources-tabs"), { onShow: (div) => app.setNav(div.id) });
+        if (navId) {
+            tabs.select(navId);
         }
     }
 
@@ -90,11 +89,12 @@ export class MaterialUi {
         const devicesTable = buildTableFromTemplate("resources-accounts-template", accounts,
             (acc) => "rsrc-acc-tr-" + acc.accountId,
             (acc) => [
-                acc.accountId, acc.username + " @ " + acc.deviceIdentifier,
+                acc.accountId,
+                acc.username + " @ " + acc.deviceIdentifier,
                 acc.lockState == "HAS_NO_LOCK" ? "--" : acc.lockState,
                 acc.state,
                 [
-                    acc.lockState != "LOCKED" ? button("Browse", () => app.browseAcc(acc)) : "",
+                    acc.lockState != "LOCKED" ? button("Browse", () => app.browseAccount(acc.accountId, "")) : "",
                     acc.lockState == "UNLOCKED" ? button("Lock", () => app.lockAccount(acc)) : "",
                     acc.lockState == "LOCKED" ? button("Unlock", () => app.ui.openUnlockModal(acc)) : "",
                     button("Edit", () => app.editAccount(acc)),
@@ -185,6 +185,36 @@ export class MaterialUi {
         setContent(usersTable);
     }
 
+    drawDir(dir, app) {
+        if (dir.account) {
+            const accountId = dir.account.accountId;
+            const top = accountLink(dir.account, ()=> app.browseAccount(accountId, ""));
+            this.drawDirDetails(dir, app, true, top, (path) => app.browseAccount(accountId, path));
+        }
+    }
+
+    drawDirDetails(dir, app, canShare, topBreadcrumb, browseFunc) {
+        const content = byId("nav-dir-template").content.cloneNode(true);
+        const bcCont = content.querySelector(".breadcrumbs-container");
+        breadcrumbs(topBreadcrumb, dir.path, browseFunc).forEach(bcItem => bcCont.append(bcItem));
+        const tbody = content.querySelector("tbody");
+        if (dir.subDirs) {
+            dir.subDirs.forEach(sd => {
+                const folderLink = linkElement(sd.name, () => browseFunc(sd.path), "folder");
+                const row = elementNode("tr", [elementNode("td", [folderLink])])
+                tbody.append(row);
+            });
+        }
+        if (dir.files) {
+            dir.files.forEach(file => {
+                const row = elementNode("tr", [elementText("td", file.name)])
+                tbody.append(row);
+            });
+        }
+        setContent(content);
+    }
+
+
     openModal(id) {
         M.Modal.getInstance(byId(id)).open();
     }
@@ -195,13 +225,13 @@ export class MaterialUi {
 
     notifyPasswordChangeRequired() {
         M.toast({ html: "Password change is required" });
-        this.openModal('change-password-modal')
+        this.openModal("change-password-modal")
     }
 }
 
 function buildTableFromTemplate(templateId, items, toId, toCells) {
     const fragment = byId(templateId).content.cloneNode(true);
-    const tbody = fragment.querySelector('tbody');
+    const tbody = fragment.querySelector("tbody");
     items.forEach((item) => tbody.append(buildTableRow(toId(item), toCells(item))))
     return fragment;
 }
@@ -211,11 +241,11 @@ function setContent(newContent) {
 }
 
 function setVisible(id, visible) {
-    byId(id).style.display = visible ? '' : 'none';
-}
-
-function buildTable(headers, rows) {
-    return elementNode('table', [elementNode('thead', [buildTableRow(headers)]), elementNode('tbody', rows)]);
+    if (visible) {
+        byId(id).classList.remove("hide");
+    } else {
+        byId(id).classList.add("hide");
+    }
 }
 
 function buildTableRow(id, items) {
@@ -244,6 +274,42 @@ function button(label, onclick, cls) {
     return btn;
 }
 
+function accountLink(acc, onclick) {
+    return linkElement(acc.username + " @ " + acc.deviceIdentifier, onclick, "account");
+}
+
+function linkElement(text, onclick, cls) {
+    const link = elementText("a", text);
+    link.classList.add(cls);
+    link.onclick = onclick;
+    return link;
+}
+
+function icon(iconId, classes) {
+    const elm = elementText("i", iconId);
+    elm.classList.add("material-icons");
+    if (classes) {
+        elm.classList.add(classes);
+    } else {
+        elm.classList.add("tiny");
+    }
+    return elm;
+}
+
+function breadcrumbs(topElm, path, pathFunc) {
+    const bcs = [topElm];
+    if (path) {
+        var curPath = "";
+        for (const pathItem of path.split("/")) {
+            if (pathItem) {
+                curPath += "/" + pathItem;
+                const linkPath = curPath;
+                bcs.push(linkElement(pathItem, () => pathFunc(linkPath), "folder"));
+            }
+        }
+    }
+    return bcs;
+}
 
 function modalFocusFirst(elm) {
     var input = elm.querySelector("input");

@@ -104,15 +104,27 @@ export class App {
         const navId = getNav();
         if ("users" === navId) {
             this.listUsers();
-        } else if ("resources" === navId) {
-            this.listResources();
+        } else if (navId.startsWith("resources")) {
+            this.listResources(navId);
         } else if ("bookmarks" === navId) {
             this.listBookmarks();
         } else if ("recent" === navId) {
             this.listRecent();
+
+        } else if (navId.startsWith("browse-")) {
+            const subs = navId.substring(7).split("/", 3);
+            if (subs[0] === "account") {
+                this.browseAccount(subs[1], '/' + subs[2]);
+            } else {
+                this.dashboard()
+            }
         } else {
             this.dashboard();
         }
+    }
+
+    setNav(navId) {
+        setNav(navId);
     }
 
     dashboard() {
@@ -127,9 +139,13 @@ export class App {
         setNav("recent");
     }
 
-    listResources() {
-        setNav("resources");
-        this.ui.drawResourcesTabs(this);
+    listResources(navId) {
+        if (navId) {
+            this.ui.drawResourcesTabs(this, navId);
+        } else {
+            setNav("resources");
+            this.ui.drawResourcesTabs(this, null);
+        }
         this.listResourcesDevices();
         this.listResourcesAccounts();
         this.listResourcesShares();
@@ -190,6 +206,13 @@ export class App {
         });
     }
 
+    browseAccount(accountId, path) {
+        this.client.readDirByAccount(accountId, path, (response) => {
+            setNav("browse-account/" + accountId + (path ? path : "/"));
+            this.ui.drawDir(response, this);
+        });
+    }
+
     listResourcesShares() {
         this.client.getShareList((shares) => this.ui.drawResourceShareList(shares, this));
     }
@@ -244,5 +267,5 @@ function getNav() {
     if (search != null && search.length > 1) {
         return search.substring(1);
     }
-    return null;
+    return "";
 }

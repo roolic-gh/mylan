@@ -7,6 +7,10 @@ body {
     background: none;
 }
 
+a:hover{
+    cursor: pointer;
+}
+
 .tabs .tab a {
     color: black;
 }
@@ -24,4 +28,36 @@ body {
 
 .tabs .indicator {
     background-color: teal;
+}
+
+.breadcrumbs-container a {
+    color: black;
+    font-size: 18px;
+    vertical-align: middle;
+}
+
+.breadcrumbs-container .folder::before {
+    content: '\e675'; /* drive_file_move */
+    margin-left: 20px;
+}
+
+.account::before, .folder::before {
+    display: inline-block;
+    font-family: "Material Icons";
+    font-weight: normal;
+    font-style: normal;
+    margin: 0 10px 0 0;
+    vertical-align: middle;
+}
+
+.account{
+    font-weight: bold;
+}
+
+.account::before {
+    content: '\e7fd';  /* person */
+}
+
+.folder::before {
+    content: '\e2c8';  /* folder_open */
 }

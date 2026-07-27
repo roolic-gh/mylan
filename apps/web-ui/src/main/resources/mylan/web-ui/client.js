@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-import {byId, report, reportError} from "./utils.js";
+import { byId, report, reportError } from "./utils.js";
 
 export class Client {
     restContext = null;
@@ -87,6 +87,11 @@ export class Client {
 
     deleteAccount(accountId, callback) {
         this.request("DELETE", "/nav/res/account/" + accountId, callback);
+    }
+
+    readDirByAccount(accountId, path, callback) {
+        const params = new URLSearchParams({ path: path }).toString();
+        this.request("GET", "/nav/account/" + accountId + "/dir?" + params, callback);
     }
 
     getShareList(callback) {
