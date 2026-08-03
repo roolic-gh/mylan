@@ -31,25 +31,25 @@ import local.mylan.service.rest.api.NavResourceRestService;
 
 public class DefaultNavResourceRestService implements NavResourceRestService {
 
-    private final NavResourceService navResoourceService;
+    private final NavResourceService navResourceService;
 
-    public DefaultNavResourceRestService(final NavResourceService navResoourceService) {
-        this.navResoourceService = navResoourceService;
+    public DefaultNavResourceRestService(final NavResourceService navResourceService) {
+        this.navResourceService = navResourceService;
     }
 
     @Override
     public List<Device> getDevices() {
-        return navResoourceService.getAllDevices();
+        return navResourceService.getAllDevices();
     }
 
     @Override
     public List<DeviceAccount> listDeviceAccounts(final UserContext userCtx) {
-        return navResoourceService.getUserAccounts(userIdFrom(userCtx));
+        return navResourceService.getUserAccounts(userIdFrom(userCtx));
     }
 
     @Override
     public DeviceAccount getDeviceAccount(final Integer accountId, final UserContext userCtx) {
-        final var account = navResoourceService.getAccount(accountId);
+        final var account = navResourceService.getAccount(accountId);
         if (account == null) {
             throw new NoDataException("Account with requested id does not exists");
         }
@@ -61,7 +61,7 @@ public class DefaultNavResourceRestService implements NavResourceRestService {
 
     @Override
     public DeviceAccount createDeviceAccount(final DeviceAccount account, final UserContext userCtx) {
-        return navResoourceService.createAccount(userIdFrom(userCtx), account);
+        return navResourceService.createAccount(userIdFrom(userCtx), account);
     }
 
     @Override
@@ -69,21 +69,57 @@ public class DefaultNavResourceRestService implements NavResourceRestService {
         final UserContext userCtx) {
 
         account.setAccountId(accountId);
-        return navResoourceService.updateAccount(userIdFrom(userCtx), account);
+        return navResourceService.updateAccount(userIdFrom(userCtx), account);
     }
 
     @Override
     public void deleteDeviceAccount(final Integer accountId, final UserContext userCtx) {
-        navResoourceService.removeAccount(userIdFrom(userCtx), accountId);
+        navResourceService.removeAccount(userIdFrom(userCtx), accountId);
     }
 
     @Override
     public List<NavResourceShare> listUserShares(final UserContext userCtx) {
-        return List.of();
+        return navResourceService.getSharedResources(userIdFrom(userCtx));
+    }
+
+    @Override
+    public NavResourceShare createUserShare(final NavResourceShare share, final UserContext userCtx) {
+        return navResourceService.createSharedResource(userIdFrom(userCtx), share);
+    }
+
+    @Override
+    public NavResourceShare updateUserShare(final Long shareId, final NavResourceShare share,
+        final UserContext userCtx) {
+
+        share.setShareId(shareId);
+        return navResourceService.updateSharedResource(userIdFrom(userCtx), share);
+    }
+
+    @Override
+    public void removeUserShare(final Long shareId, final UserContext userCtx) {
+        navResourceService.removeSharedResource(userIdFrom(userCtx), shareId);
     }
 
     @Override
     public List<NavResourceBookmark> listUserBookmarks(final UserContext userCtx) {
-        return List.of();
+        return navResourceService.getBookmarks(userIdFrom(userCtx));
+    }
+
+    @Override
+    public NavResourceBookmark createUserBookmark(final NavResourceBookmark bookmark, final UserContext userCtx) {
+        return navResourceService.createBookmark(userIdFrom(userCtx), bookmark);
+    }
+
+    @Override
+    public NavResourceBookmark updateUserBookmark(final Long bookmarkId, final NavResourceBookmark bookmark,
+        final UserContext userCtx) {
+
+        bookmark.setBookmarkId(bookmarkId);
+        return navResourceService.updateBookmark(userIdFrom(userCtx), bookmark);
+    }
+
+    @Override
+    public void removeUserBookmark(final Long bookmarkId, final UserContext userCtx) {
+        navResourceService.removeBookmark(userIdFrom(userCtx), bookmarkId);
     }
 }

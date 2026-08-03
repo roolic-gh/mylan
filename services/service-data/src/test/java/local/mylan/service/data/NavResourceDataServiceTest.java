@@ -19,22 +19,32 @@ import static local.mylan.service.data.NavResourceDataService.LOCAL_ACCOUNT_USER
 import static local.mylan.service.data.NavResourceDataService.LOCAL_DEVICE_IDENTIFIER;
 import static local.mylan.service.data.TestUtils.setupSessionFactory;
 import static local.mylan.service.data.TestUtils.tearDownSessionFactory;
+import static local.mylan.service.test.NavResourceTestUtils.assertBookmark;
+import static local.mylan.service.test.NavResourceTestUtils.assertBookmarkList;
+import static local.mylan.service.test.NavResourceTestUtils.assertList;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByAccount;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByShare;
+import static local.mylan.service.test.NavResourceTestUtils.share;
 import static local.mylan.service.test.NavResourceTestUtils.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.service.api.NavResourceService;
 import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
+import local.mylan.service.api.events.Event;
+import local.mylan.service.api.events.UserBookmarkCrudEvent;
+import local.mylan.service.api.events.UserShareCrudEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -43,7 +53,6 @@ import local.mylan.service.api.model.DeviceAccountLockState;
 import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.api.model.ShareType;
@@ -54,6 +63,7 @@ import local.mylan.service.data.entities.NavResourceBookmarkEntity;
 import local.mylan.service.data.entities.NavResourceShareEntity;
 import local.mylan.service.data.entities.UserEntity;
 import local.mylan.service.spi.DefaultEncryptionService;
+import local.mylan.service.test.NavResourceTestUtils;
 import local.mylan.service.test.TestNotificationService;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -104,9 +114,16 @@ class NavResourceDataServiceTest {
     private static final String SHARE_PATH_1 = "/share/path/1";
     private static final String SHARE_PATH_2 = "/share/path/2";
     private static final String SHARE_PATH_3 = "/share/path/3";
-    private static final String BOOKMARK_PATH_1 = "/bookmark/path/1";
-    private static final String BOOKMARK_PATH_2 = "/bookmark/path/2";
-    private static final String BOOKMARK_PATH_3 = "/bookmark/path/3";
+    private static final String BKM_NAME_1 = "bookmark-name-1";
+    private static final String BKM_NAME_2 = "bookmark-name-2";
+    private static final String BKM_NAME_3 = "bookmark-name-3";
+    private static final String BKM_NAME_X = "bookmark-name-X";
+    private static final String BKM_PATH_1 = "/bookmark/path/1";
+    private static final String BKM_PATH_2 = "/bookmark/path/2";
+    private static final String BKM_PATH_3 = "/bookmark/path/3";
+
+    private static final boolean IS_FILE = true;
+    private static final boolean IS_DIR = false;
 
     @TempDir
     static Path tempDir;
@@ -492,11 +509,11 @@ class NavResourceDataServiceTest {
     @Test
     @Order(31)
     void syncLocalShares() {
-        final var local1 = new NavResourceShare(null, SHARE_LOCAL_1, SHARE_PATH_1, ShareType.ALL);
-        final var local2 = new NavResourceShare(null, SHARE_LOCAL_2, SHARE_PATH_2, ShareType.ALL);
-        final var local2upd = new NavResourceShare(null, SHARE_NAME_X, SHARE_PATH_2, ShareType.REGISTERED);
-        final var local2final = new NavResourceShare(null, SHARE_LOCAL_2, SHARE_PATH_2, ShareType.REGISTERED);
-        final var local3 = new NavResourceShare(null, SHARE_LOCAL_3, SHARE_PATH_3, ShareType.ALL);
+        final var local1 = share(null, null, SHARE_LOCAL_1, SHARE_PATH_1, IS_DIR, ShareType.ALL);
+        final var local2 = share(null, null, SHARE_LOCAL_2, SHARE_PATH_2, IS_DIR, ShareType.ALL);
+        final var local2upd = share(null, null, SHARE_NAME_X, SHARE_PATH_2, IS_DIR, ShareType.REGISTERED);
+        final var local2final = share(null, null, SHARE_LOCAL_2, SHARE_PATH_2, IS_DIR, ShareType.REGISTERED);
+        final var local3 = share(null, null, SHARE_LOCAL_3, SHARE_PATH_3, IS_FILE, ShareType.ALL);
 
         // no shares
         final var initial = navResourceService.getAllSharedResources();
@@ -507,13 +524,13 @@ class NavResourceDataServiceTest {
         final var expected1 = List.of(local1, local2);
         navResourceService.syncLocalSharedResources(expected1);
         final var actual1 = navResourceService.getAllSharedResources();
-        assertSharesByPath(expected1, actual1);
+        assertLocalShares(expected1, actual1);
 
         // 2nd sync -> 1 removed, 1 udated, 1 inserted
         final var expected2 = List.of(local2upd, local3);
         navResourceService.syncLocalSharedResources(expected2);
         final var actual2 = navResourceService.getAllSharedResources();
-        assertSharesByPath(expected2, actual2);
+        assertLocalShares(expected2, actual2);
         // assert 2nd entry updated -> id is same
         final var original = byPath(actual1, SHARE_PATH_2);
         final var updated = byPath(actual2, SHARE_PATH_2);
@@ -523,9 +540,13 @@ class NavResourceDataServiceTest {
         final var expected3 = List.of(local1, local2final);
         navResourceService.syncLocalSharedResources(expected3);
         final var actual3 = navResourceService.getAllSharedResources();
-        assertSharesByPath(expected3, actual3);
+        assertLocalShares(expected3, actual3);
         localShareAll = byPath(actual3, SHARE_PATH_1);
         localShareReg = byPath(actual3, SHARE_PATH_2);
+    }
+
+    private static void assertLocalShares(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
+        assertList(expected, actual, NavResourceShare::getPath, NavResourceDataServiceTest::assertShare);
     }
 
     private static NavResourceShare byPath(final List<NavResourceShare> list, final String path) {
@@ -535,17 +556,17 @@ class NavResourceDataServiceTest {
     @Test
     @Order(32)
     void createShare() {
-        final var inShare1 = new NavResourceShare(account1.getAccountId(), SHARE_NAME_1, SHARE_PATH_1, ShareType.ALL);
+        final var inShare1 = share(null, account1.getAccountId(), SHARE_NAME_1, SHARE_PATH_1, IS_DIR, ShareType.ALL);
         share1 = navResourceService.createSharedResource(userId1, inShare1);
         assertShare(inShare1, share1);
 
         final var inShare2 =
-            new NavResourceShare(account2.getAccountId(), SHARE_NAME_2, SHARE_PATH_2, ShareType.REGISTERED);
+            share(null, account2.getAccountId(), SHARE_NAME_2, SHARE_PATH_2, IS_FILE, ShareType.REGISTERED);
         share2 = navResourceService.createSharedResource(userId2, inShare2);
         assertShare(inShare2, share2);
 
         final var inShare3 =
-            new NavResourceShare(account2.getAccountId(), SHARE_NAME_3, SHARE_PATH_3, ShareType.ALL);
+            share(null, account2.getAccountId(), SHARE_NAME_3, SHARE_PATH_3, IS_DIR, ShareType.ALL);
 
         // non-existing user
         assertThrows(IllegalArgumentException.class, () -> navResourceService.createSharedResource(-1, inShare3));
@@ -557,40 +578,52 @@ class NavResourceDataServiceTest {
 
         // non-existing account
         assertThrows(IllegalArgumentException.class, () -> navResourceService.createSharedResource(userId2,
-            new NavResourceShare(-1, SHARE_NAME_X, SHARE_PATH_1, ShareType.ALL)));
+            share(null, -1, SHARE_NAME_X, SHARE_PATH_1, IS_DIR, ShareType.ALL)));
         // local account is not allowed
         assertThrows(IllegalArgumentException.class, () -> navResourceService.createSharedResource(userId2,
-            new NavResourceShare(localAccountId, SHARE_NAME_X, SHARE_PATH_1, ShareType.ALL)));
+            share(null, localAccountId, SHARE_NAME_X, SHARE_PATH_1, IS_DIR, ShareType.ALL)));
+
+        // events
+        assertShareEvents(List.of(share1, share2, share3), CrudOperation.CREATE, notificationService.getEvents());
     }
 
     @Test
     @Order(33)
     void updateShare() {
-        final var update =
-            new NavResourceShare(account2.getAccountId(), SHARE_NAME_X, SHARE_PATH_1, ShareType.REGISTERED);
-        update.setShareId(share3.getShareId());
+        final var shareId = share3.getShareId();
+        final var accountId = account2.getAccountId();
+        final var update = share(shareId, accountId, SHARE_NAME_X, SHARE_PATH_1, IS_FILE, ShareType.REGISTERED);
+        final var updateInvalid = share(-1L, accountId, SHARE_NAME_X, SHARE_PATH_1, IS_FILE, ShareType.REGISTERED);
+
+        // non-existent share
+        assertThrows(IllegalArgumentException.class,
+            () -> navResourceService.updateSharedResource(userId1, updateInvalid));
         // user is not the owner
         assertThrows(UnauthorizedException.class, () -> navResourceService.updateSharedResource(userId1, update));
         // success
-        navResourceService.updateSharedResource(userId2, update);
-        // only share name and share type expected to be updated, path to remain same
-        final var expected =
-            new NavResourceShare(account2.getAccountId(), SHARE_NAME_X, SHARE_PATH_3, ShareType.REGISTERED);
-        expected.setShareId(share3.getShareId());
-        assertShare(expected, navResourceService.getSharedResource(share3.getShareId()));
+        final var updated = navResourceService.updateSharedResource(userId2, update);
+        // only share name and share type expected to be updated, path and file flag to remain same
+        final var expected = share(shareId, accountId, SHARE_NAME_X, SHARE_PATH_3, IS_DIR, ShareType.REGISTERED);
+        assertShare(expected, updated);
+        // event
+        assertShareEvents(List.of(expected), CrudOperation.UPDATE, notificationService.getEvents());
     }
 
     @Test
     @Order(34)
     void removeShare() {
+        final var shareId = share3.getShareId();
         // non-existing share remove omitted with no errors
         navResourceService.removeSharedResource(userId1, -1L);
         // user is not the owner
         assertThrows(UnauthorizedException.class,
-            () -> navResourceService.removeSharedResource(userId1, share3.getShareId()));
+            () -> navResourceService.removeSharedResource(userId1, shareId));
         // success
-        navResourceService.removeSharedResource(userId2, share3.getShareId());
-        assertNull(navResourceService.getSharedResource(share3.getShareId()));
+        navResourceService.removeSharedResource(userId2, shareId);
+        assertNull(navResourceService.getSharedResource(shareId));
+        // event
+        assertEquals(List.of(new UserShareCrudEvent(shareId, null, CrudOperation.DELETE)),
+            notificationService.getEvents());
     }
 
     @Test
@@ -600,144 +633,144 @@ class NavResourceDataServiceTest {
         final var expectedReg = List.of(localShareAll, localShareReg, share1, share2);
         final var expectedGuest = List.of(localShareAll, share1);
 
-        assertSharesById(expectedReg, navResourceService.getAllSharedResources(), true);
-        assertSharesById(expectedGuest, navResourceService.getSharedResources(null), false);
-        assertSharesById(expectedReg, navResourceService.getSharedResources(userId1), false);
-        assertSharesById(expectedReg, navResourceService.getSharedResources(userId2), false);
-    }
-
-    private static void assertSharesByPath(final List<NavResourceShare> expected,
-        final List<NavResourceShare> actual) {
-        assertSharesByKey(expected, actual, NavResourceShare::getPath, true);
-    }
-
-    private static void assertSharesById(final List<NavResourceShare> expected, final List<NavResourceShare> actual,
-        final boolean full) {
-        assertSharesByKey(expected, actual, NavResourceShare::getShareId, full);
-    }
-
-    private static void assertSharesByKey(final List<NavResourceShare> expected, final List<NavResourceShare> actual,
-        final Function<NavResourceShare, Object> keyExtractor, final boolean full) {
-
-        assertNotNull(actual);
-        assertEquals(expected.size(), actual.size());
-        final var expectedMap = toMap(expected, keyExtractor);
-        final var actualMap = toMap(actual, keyExtractor);
-        for (var entry : expectedMap.entrySet()) {
-            final var expectedShare = entry.getValue();
-            final var actualShare = actualMap.get(entry.getKey());
-            if (full) {
-                assertShare(expectedShare, actualShare);
-            } else {
-                // id + name only provided
-                assertNotNull(actualShare);
-                assertEquals(expectedShare.getName(), actualShare.getName());
-            }
-        }
+        assertShareList(expectedReg, navResourceService.getAllSharedResources());
+        assertShareList(expectedGuest, navResourceService.getSharedResources(null));
+        assertShareList(expectedReg, navResourceService.getSharedResources(userId1));
+        assertShareList(expectedReg, navResourceService.getSharedResources(userId2));
     }
 
     private static void assertShare(final NavResourceShare expected, final NavResourceShare actual) {
-        assertNotNull(actual);
-        assertNotNull(actual.getShareId());
-        if (expected.getShareId() != null) {
-            assertEquals(expected.getShareId(), actual.getShareId());
-        }
-        assertEquals(expected.getName(), actual.getName());
+        NavResourceTestUtils.assertShare(expected, actual, localAccountId);
+    }
 
-        if (expected.getAccountId() == null) {
-            assertEquals(localAccountId, actual.getAccountId());
-        } else {
-            assertEquals(expected.getAccountId(), actual.getAccountId());
+    private static void assertShareList(final List<NavResourceShare> expected,
+        final List<NavResourceShare> actual) {
+        NavResourceTestUtils.assertShareList(expected, actual, localAccountId);
+    }
+
+    private static void assertShareEvents(final List<NavResourceShare> expShares, final CrudOperation expOperation,
+        final List<Event> events) {
+
+        assertNotNull(events);
+        assertEquals(expShares.size(), events.size());
+        final var actShares = new ArrayList<NavResourceShare>();
+        for (var event : events) {
+            final var casted = assertInstanceOf(UserShareCrudEvent.class, event);
+            assertEquals(casted.id(), casted.share().getShareId());
+            assertEquals(expOperation, casted.operation());
+            actShares.add(casted.share());
         }
-        assertEquals(expected.getPath(), actual.getPath());
-        assertEquals(expected.getShareType(), actual.getShareType());
+        assertShareList(expShares, actShares);
     }
 
     @Test
     @Order(41)
     void createBookmark() {
-        final var resourceAccount1 = new NavResource(account1.getAccountId(), BOOKMARK_PATH_1);
-        final var resourceAccount2 = new NavResource(account2.getAccountId(), BOOKMARK_PATH_1);
-        final var resourceShare1 = new NavResource(share1.getShareId(), BOOKMARK_PATH_2);
-        final var resourceShare2 = new NavResource(share2.getShareId(), BOOKMARK_PATH_2);
-        final var resourceLocal1 = new NavResource(localShareAll.getShareId(), BOOKMARK_PATH_3);
-        final var resourceLocal2 = new NavResource(localShareReg.getShareId(), BOOKMARK_PATH_3);
+        final var bookmarkByAcc1 = bookmarkByAccount(account1.getAccountId(), BKM_NAME_1, BKM_PATH_1, IS_DIR);
+        final var bookmarkByAcc2 = bookmarkByAccount(account2.getAccountId(), BKM_NAME_1, BKM_PATH_1, IS_DIR);
+        final var bookmarkByShare1 = bookmarkByShare(share1.getShareId(), BKM_NAME_2, BKM_PATH_2, IS_DIR);
+        final var bookmarkByShare2 = bookmarkByShare(share2.getShareId(), BKM_NAME_2, BKM_PATH_2, IS_DIR);
+        final var bookmarkByLocal1 = bookmarkByShare(localShareAll.getShareId(), BKM_NAME_3, BKM_PATH_3, IS_FILE);
+        final var bookmarkByLocal2 = bookmarkByShare(localShareReg.getShareId(), BKM_NAME_3, BKM_PATH_3, IS_FILE);
 
         // user1 bookmarks: 1) of own account, 2) of other user share, 3) of local share
-        bookmark1 = createAssertBookmark(userId1, resourceAccount1);
-        bookmark2 = createAssertBookmark(userId1, resourceShare2);
-        bookmark3 = createAssertBookmark(userId1, resourceLocal1);
+        bookmark1 = createAssertBookmark(userId1, bookmarkByAcc1);
+        bookmark2 = createAssertBookmark(userId1, bookmarkByShare2);
+        bookmark3 = createAssertBookmark(userId1, bookmarkByLocal1);
 
         // user2 bookmarks: 1) of own account, 2) of other user share, 3, 4) of local share
-        bookmark4 = createAssertBookmark(userId2, resourceAccount2);
-        bookmark5 = createAssertBookmark(userId2, resourceShare1);
-        bookmark6 = createAssertBookmark(userId2, resourceLocal1);
-        bookmark7 = createAssertBookmark(userId2, resourceLocal2);
+        bookmark4 = createAssertBookmark(userId2, bookmarkByAcc2);
+        bookmark5 = createAssertBookmark(userId2, bookmarkByShare1);
+        bookmark6 = createAssertBookmark(userId2, bookmarkByLocal1);
+        bookmark7 = createAssertBookmark(userId2, bookmarkByLocal2);
 
         // error cases
         // cannot bookmark to other user's account
-        assertThrows(UnauthorizedException.class, () -> navResourceService.createBookmark(userId1, resourceAccount2));
+        assertThrows(UnauthorizedException.class, () -> navResourceService.createBookmark(userId1, bookmarkByAcc2));
         // non-existent user
-        assertThrows(IllegalArgumentException.class, () -> navResourceService.createBookmark(-1, resourceShare1));
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.createBookmark(-1, bookmarkByShare1));
         // non-existent account
         assertThrows(IllegalArgumentException.class,
-            () -> navResourceService.createBookmark(userId1, new NavResource(-1, BOOKMARK_PATH_1)));
+            () -> navResourceService.createBookmark(userId1, bookmarkByAccount(-1, BKM_NAME_1, BKM_PATH_1, IS_DIR)));
         // non-existent share
         assertThrows(IllegalArgumentException.class,
-            () -> navResourceService.createBookmark(userId1, new NavResource(-1L, BOOKMARK_PATH_1)));
+            () -> navResourceService.createBookmark(userId1, bookmarkByShare(-1L, BKM_NAME_1, BKM_PATH_1, IS_DIR)));
+
+        // events
+        assertBookmarkEvents(List.of(bookmark1, bookmark2, bookmark3, bookmark4, bookmark5, bookmark6, bookmark7),
+            CrudOperation.CREATE, notificationService.getEvents());
     }
 
-    private static NavResourceBookmark createAssertBookmark(final Integer userId, final NavResource resource) {
-        final var actual = navResourceService.createBookmark(userId, resource);
-        assertBookmark(new NavResourceBookmark(userId, resource), actual);
+    private static NavResourceBookmark createAssertBookmark(final Integer userId, final NavResourceBookmark expected) {
+        final var actual = navResourceService.createBookmark(userId, expected);
+        assertBookmark(expected, actual);
+        assertEquals(userId, actual.getUserId());
         return actual;
     }
 
-    private static void assertBookmark(final NavResourceBookmark expected, final NavResourceBookmark actual) {
-        assertNotNull(actual);
-        if (expected.getBookmarkId() == null) {
-            assertNotNull(actual.getBookmarkId());
-        } else {
-            assertEquals(expected.getBookmarkId(), actual.getBookmarkId());
-        }
-        if (expected.getAccountId() != null) {
-            assertEquals(expected.getAccountId(), actual.getAccountId());
-        } else {
-            assertEquals(expected.getShareId(), actual.getShareId());
-        }
-        assertEquals(expected.getUserId(), actual.getUserId());
-        assertEquals(expected.getPath(), actual.getPath());
-    }
+    private static void assertBookmarkEvents(final List<NavResourceBookmark> expBookmarks,
+        final CrudOperation expOperation, final List<Event> events) {
 
-    @Test
-    @Order(42)
-    void removeBookmark() {
-        // non-existent bookmark remove omitted with no errors
-        navResourceService.removeBookmark(userId1, -1L);
-        // bookmark belongs to other user
-        assertThrows(UnauthorizedException.class,
-            () -> navResourceService.removeBookmark(userId1, bookmark7.getBookmarkId()));
-        // success
-        navResourceService.removeBookmark(userId2, bookmark7.getBookmarkId());
-        bookmark7 = navResourceService.getBookmark(bookmark7.getBookmarkId());
-        assertNull(bookmark7);
+        assertNotNull(events);
+        assertEquals(expBookmarks.size(), events.size());
+        final var actBookmarks = new ArrayList<NavResourceBookmark>();
+        for (var event : events) {
+            final var casted = assertInstanceOf(UserBookmarkCrudEvent.class, event);
+            assertEquals(casted.id(), casted.bookmark().getBookmarkId());
+            assertEquals(expOperation, casted.operation());
+            actBookmarks.add(casted.bookmark());
+        }
+        assertBookmarkList(expBookmarks, actBookmarks);
     }
 
     @Test
     @Order(43)
-    void getBookmarks() {
-        getAssertBookmarks(userId1, List.of(bookmark1, bookmark2, bookmark3));
-        getAssertBookmarks(userId2, List.of(bookmark4, bookmark5, bookmark6));
+    void updateBookmark() {
+        final var bookmarkId = bookmark6.getBookmarkId();
+        final var update =
+            bookmarkByShare(bookmarkId, userId1, localShareReg.getShareId(), BKM_NAME_X, BKM_PATH_1, IS_DIR);
+        final var updateInvalid =
+            bookmarkByShare(-1L, userId1, localShareReg.getShareId(), BKM_NAME_X, BKM_PATH_1, IS_DIR);
+
+        // non-existent bookmark
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.updateBookmark(userId1, updateInvalid));
+        // not-owner
+        assertThrows(UnauthorizedException.class, () -> navResourceService.updateBookmark(userId1, update));
+        // success
+        bookmark6 = navResourceService.updateBookmark(userId2, update);
+        // name only updated
+        final var expected =
+            bookmarkByShare(bookmarkId, userId2, localShareAll.getShareId(), BKM_NAME_X, BKM_PATH_3, IS_FILE);
+        assertBookmark(expected, bookmark6);
+        // event
+        assertBookmarkEvents(List.of(expected), CrudOperation.UPDATE, notificationService.getEvents());
     }
 
-    private static void getAssertBookmarks(final Integer userId, final List<NavResourceBookmark> expected) {
-        final var actual = navResourceService.getBookmarks(userId);
-        assertNotNull(actual);
-        assertEquals(expected.size(), actual.size());
-        final var actualMap = toMap(actual, NavResourceBookmark::getBookmarkId);
-        for (var expectedEntry : expected) {
-            assertBookmark(expectedEntry, actualMap.get(expectedEntry.getBookmarkId()));
-        }
+    @Test
+    @Order(43)
+    void removeBookmark() {
+        final var bookmarkId = bookmark7.getBookmarkId();
+
+        // non-existent bookmark remove omitted with no errors
+        navResourceService.removeBookmark(userId1, -1L);
+        // bookmark belongs to other user
+        assertThrows(UnauthorizedException.class,
+            () -> navResourceService.removeBookmark(userId1, bookmarkId));
+        // success
+        navResourceService.removeBookmark(userId2, bookmarkId);
+        bookmark7 = navResourceService.getBookmark(bookmarkId);
+        assertNull(bookmark7);
+
+        // event
+        assertEquals(List.of(new UserBookmarkCrudEvent(bookmarkId, null, CrudOperation.DELETE)),
+            notificationService.getEvents());
+    }
+
+    @Test
+    @Order(44)
+    void getBookmarks() {
+        assertBookmarkList(List.of(bookmark1, bookmark2, bookmark3), navResourceService.getBookmarks(userId1));
+        assertBookmarkList(List.of(bookmark4, bookmark5, bookmark6), navResourceService.getBookmarks(userId2));
     }
 
     @Test

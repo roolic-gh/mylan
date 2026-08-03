@@ -19,12 +19,19 @@ import static local.mylan.service.api.model.DeviceProtocol.NFS;
 import static local.mylan.service.api.model.DeviceProtocol.SMB;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccount;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountList;
+import static local.mylan.service.test.NavResourceTestUtils.assertBookmark;
+import static local.mylan.service.test.NavResourceTestUtils.assertBookmarkList;
 import static local.mylan.service.test.NavResourceTestUtils.assertDeviceList;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByAccount;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByShare;
 import static local.mylan.service.test.NavResourceTestUtils.device;
 import static local.mylan.service.test.NavResourceTestUtils.deviceAccount;
+import static local.mylan.service.test.NavResourceTestUtils.share;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -36,8 +43,12 @@ import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
+import local.mylan.service.api.model.NavResourceBookmark;
+import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.api.model.ShareType;
 import local.mylan.service.api.model.User;
 import local.mylan.service.rest.api.NavResourceRestService;
+import local.mylan.service.test.NavResourceTestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,17 +90,40 @@ class DefaultNavResourceRestServiceTest {
     private static final String KEY1 = "k1";
     private static final String KEY2 = "k2";
 
-    private static final DeviceAccount ACCOUNT1_IN =
-        deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, PASSWORD1, KEY1);
-    private static final DeviceAccount ACCOUNT1_OUT = deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1);
-    private static final DeviceAccount ACCOUNT2_IN =
-        deviceAccount(ACCOUNT_ID2, USER_ID2, DEVICE_ID2, USERNAME2, PASSWORD2, KEY2);
-    private static final DeviceAccount ACCOUNT2_OUT = deviceAccount(ACCOUNT_ID2, USER_ID2, DEVICE_ID2, USERNAME2);
+    private static final DeviceAccount ACCOUNT1 = deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1);
+    private static final DeviceAccount ACCOUNT2 = deviceAccount(ACCOUNT_ID2, USER_ID2, DEVICE_ID2, USERNAME2);
+
+    private static final boolean IS_FILE = true;
+    private static final boolean IS_DIR = false;
+
+    private static final String NAME_1 = "name-1";
+    private static final String NAME_2 = "name-1";
+    private static final String NAME_X = "name-X";
+    private static final String PATH_1 = "/path/1";
+    private static final String PATH_2 = "/path/2";
+
+    private static final Long SHARE_ID1 = 3001L;
+    private static final Long SHARE_ID2 = 3002L;
+    private static final NavResourceShare SHARE_1 =
+        share(SHARE_ID1, ACCOUNT_ID1, NAME_1, PATH_1, IS_DIR, ShareType.ALL);
+    private static final NavResourceShare SHARE_2 =
+        share(SHARE_ID2, ACCOUNT_ID2, NAME_2, PATH_2, IS_FILE, ShareType.REGISTERED);
+
+    private static final Long BOOKMARK_ID1 = 4001L;
+    private static final Long BOOKMARK_ID2 = 4002L;
+    private static final NavResourceBookmark BOOKMARK_1 =
+        bookmarkByAccount(BOOKMARK_ID1, USER_ID1, ACCOUNT_ID1, NAME_1, PATH_1, IS_DIR);
+    private static final NavResourceBookmark BOOKMARK_2 =
+        bookmarkByShare(BOOKMARK_ID2, USER_ID1, SHARE_ID1, NAME_2, PATH_2, IS_FILE);
 
     @Mock
     NavResourceService navResourceService;
     @Captor
     ArgumentCaptor<DeviceAccount> accountCaptor;
+    @Captor
+    ArgumentCaptor<NavResourceShare> shareCaptor;
+    @Captor
+    ArgumentCaptor<NavResourceBookmark> bookmarkCaptor;
 
     NavResourceRestService restService;
 
@@ -107,19 +141,19 @@ class DefaultNavResourceRestServiceTest {
 
     @Test
     void listAccounts() {
-        final var expected = List.of(ACCOUNT1_OUT);
+        final var expected = List.of(ACCOUNT1);
         doReturn(expected).when(navResourceService).getUserAccounts(USER_ID1);
         assertAccountList(expected, restService.listDeviceAccounts(USER_CTX1));
     }
 
     @Test
     void getAccount() {
-        doReturn(ACCOUNT1_OUT).when(navResourceService).getAccount(ACCOUNT_ID1);
-        doReturn(ACCOUNT2_OUT).when(navResourceService).getAccount(ACCOUNT_ID2);
+        doReturn(ACCOUNT1).when(navResourceService).getAccount(ACCOUNT_ID1);
+        doReturn(ACCOUNT2).when(navResourceService).getAccount(ACCOUNT_ID2);
         doReturn(null).when(navResourceService).getAccount(ACCOUNT_ID_INAVLID);
 
-        assertAccount(ACCOUNT1_OUT, restService.getDeviceAccount(ACCOUNT_ID1, USER_CTX1));
-        assertAccount(ACCOUNT2_OUT, restService.getDeviceAccount(ACCOUNT_ID2, USER_CTX2));
+        assertAccount(ACCOUNT1, restService.getDeviceAccount(ACCOUNT_ID1, USER_CTX1));
+        assertAccount(ACCOUNT2, restService.getDeviceAccount(ACCOUNT_ID2, USER_CTX2));
 
         assertThrows(UnauthorizedException.class, () -> restService.getDeviceAccount(ACCOUNT_ID1, USER_CTX2));
         assertThrows(UnauthorizedException.class, () -> restService.getDeviceAccount(ACCOUNT_ID2, USER_CTX1));
@@ -129,15 +163,15 @@ class DefaultNavResourceRestServiceTest {
     @Test
     void createAccount() {
         final var newAccount = new DeviceAccount(DEVICE_ID1, USERNAME1, PASSWORD1, KEY1);
-        doReturn(ACCOUNT1_OUT).when(navResourceService).createAccount(USER_ID1, newAccount);
-        assertAccount(ACCOUNT1_OUT, restService.createDeviceAccount(newAccount, USER_CTX1));
+        doReturn(ACCOUNT1).when(navResourceService).createAccount(USER_ID1, newAccount);
+        assertAccount(ACCOUNT1, restService.createDeviceAccount(newAccount, USER_CTX1));
     }
 
     @Test
     void updateAccount() {
         final var account = deviceAccount(null, null, DEVICE_ID1, USERNAME1, PASSWORD1, KEY1);
-        doReturn(ACCOUNT1_OUT).when(navResourceService).updateAccount(USER_ID1, account);
-        assertAccount(ACCOUNT1_OUT, restService.updateDeviceAccount(ACCOUNT_ID1, account, USER_CTX1));
+        doReturn(ACCOUNT1).when(navResourceService).updateAccount(USER_ID1, account);
+        assertAccount(ACCOUNT1, restService.updateDeviceAccount(ACCOUNT_ID1, account, USER_CTX1));
         assertEquals(ACCOUNT_ID1, account.getAccountId()); // populated before invoking the service
     }
 
@@ -145,5 +179,80 @@ class DefaultNavResourceRestServiceTest {
     void deleteAccount() {
         restService.deleteDeviceAccount(ACCOUNT_ID1, USER_CTX1);
         verify(navResourceService, times(1)).removeAccount(eq(USER_ID1), eq(ACCOUNT_ID1));
+    }
+
+    @Test
+    void listShares() {
+        final var list1 = List.of(SHARE_1);
+        final var list2 = List.of(SHARE_1, SHARE_2);
+        doReturn(list1).when(navResourceService).getSharedResources(isNull());
+        doReturn(list2).when(navResourceService).getSharedResources(USER_ID2);
+        assertShareList(list1, restService.listUserShares(GUEST_CTX));
+        assertShareList(list2, restService.listUserShares(USER_CTX2));
+    }
+
+    @Test
+    void createShare() {
+        final var newShare = share(null, ACCOUNT_ID1, NAME_1, PATH_1, IS_DIR, ShareType.ALL);
+        doReturn(SHARE_1).when(navResourceService).createSharedResource(USER_ID1, newShare);
+        assertShare(SHARE_1, restService.createUserShare(newShare, USER_CTX1));
+    }
+
+    @Test
+    void updateShare() {
+        final var updateShare = share(null, null, NAME_X, null, IS_DIR, null);
+        final var updateCheckShare = share(SHARE_ID1, null, NAME_X, null, IS_DIR, null);
+        final var updatedShare = share(SHARE_ID1, ACCOUNT_ID1, NAME_X, PATH_1, IS_DIR, ShareType.ALL);
+
+        doReturn(updatedShare).when(navResourceService).updateSharedResource(eq(USER_ID1), any());
+        assertShare(updatedShare, restService.updateUserShare(SHARE_ID1, updateShare, USER_CTX1));
+        verify(navResourceService, times(1)).updateSharedResource(eq(USER_ID1), shareCaptor.capture());
+        assertShare(updateCheckShare, shareCaptor.getValue()); // id populated by rest service
+    }
+
+    @Test
+    void removeShare() {
+        restService.removeUserShare(SHARE_ID1, USER_CTX1);
+        verify(navResourceService, times(1)).removeSharedResource(USER_ID1, SHARE_ID1);
+    }
+
+    private static void assertShare(final NavResourceShare expected, final NavResourceShare actual) {
+        NavResourceTestUtils.assertShare(expected, actual, null);
+    }
+
+    private static void assertShareList(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
+        NavResourceTestUtils.assertShareList(expected, actual, null);
+    }
+
+    @Test
+    void listBookmarks() {
+        final var list = List.of(BOOKMARK_1, BOOKMARK_2);
+        doReturn(list).when(navResourceService).getBookmarks(USER_ID1);
+        assertBookmarkList(list, restService.listUserBookmarks(USER_CTX1));
+    }
+
+    @Test
+    void createBookmark() {
+        final var newBookmark = bookmarkByAccount(ACCOUNT_ID1, NAME_1, PATH_1, IS_DIR);
+        doReturn(BOOKMARK_1).when(navResourceService).createBookmark(USER_ID1, newBookmark);
+        assertBookmark(BOOKMARK_1, restService.createUserBookmark(newBookmark, USER_CTX1));
+    }
+
+    @Test
+    void updateBookmark() {
+        final var updateBookmark = bookmarkByShare(null, USER_ID1, null, NAME_X, null, IS_DIR);
+        final var updateCheckBookmark = bookmarkByShare(BOOKMARK_ID2, USER_ID1, null, NAME_X, null, IS_DIR);
+        final var updatedBookmark = bookmarkByShare(BOOKMARK_ID2, USER_ID1, SHARE_ID1, NAME_X, PATH_2, IS_FILE);
+
+        doReturn(updatedBookmark).when(navResourceService).updateBookmark(eq(USER_ID1), any());
+        assertBookmark(updatedBookmark, restService.updateUserBookmark(BOOKMARK_ID2, updateBookmark, USER_CTX1));
+        verify(navResourceService, times(1)).updateBookmark(eq(USER_ID1), bookmarkCaptor.capture());
+        assertBookmark(updateCheckBookmark, bookmarkCaptor.getValue()); // id populated by rest service
+    }
+
+    @Test
+    void removeBookmark() {
+        restService.removeUserBookmark(BOOKMARK_ID1, USER_CTX1);
+        verify(navResourceService, times(1)).removeBookmark(USER_ID1, BOOKMARK_ID1);
     }
 }

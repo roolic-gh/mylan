@@ -73,6 +73,9 @@ public class NavResourceShareEntity {
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
+    @Column(name = "is_file", nullable = false)
+    private boolean file;
+
     @Column(name = "share_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private ShareType shareType;
@@ -131,6 +134,14 @@ public class NavResourceShareEntity {
 
     public void setDisplayName(final String displayName) {
         this.displayName = displayName;
+    }
+
+    public boolean isFile() {
+        return file;
+    }
+
+    public void setFile(final boolean file) {
+        this.file = file;
     }
 
     public ShareType getShareType() {

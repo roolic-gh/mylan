@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import local.mylan.service.api.model.Device;
@@ -36,6 +37,9 @@ import local.mylan.service.api.model.DeviceState;
 import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavFile;
 import local.mylan.service.api.model.NavResource;
+import local.mylan.service.api.model.NavResourceBookmark;
+import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.api.model.ShareType;
 import local.mylan.service.spi.model.EncryptedDeviceAccountWithCredentials;
 
 public final class NavResourceTestUtils {
@@ -161,6 +165,106 @@ public final class NavResourceTestUtils {
         assertAccount(expected, actual);
         assertEquals(expected.getState(), actual.getState());
         assertEquals(expected.getLockState(), actual.getLockState());
+    }
+
+    // shares
+
+    public static NavResourceShare share(final Long shareId, Integer accountId, final String name, final String path,
+        final boolean isFile, final ShareType shareType) {
+
+        final var share = new NavResourceShare();
+        share.setShareId(shareId);
+        share.setAccountId(accountId);
+        share.setName(name);
+        share.setPath(path);
+        share.setShareType(shareType);
+        share.setFile(isFile);
+        return share;
+    }
+
+    public static void assertShareList(final List<NavResourceShare> expected, final List<NavResourceShare> actual,
+        final Integer localAccountId) {
+
+        assertList(expected, actual, NavResourceShare::getShareId, (exp, act) -> assertShare(exp, act, localAccountId));
+    }
+
+    public static void assertShare(final NavResourceShare expected, final NavResourceShare actual,
+        final Integer localAccountId) {
+
+        assertNotNull(actual);
+        assertNotNull(actual.getShareId());
+        if (expected.getShareId() != null) {
+            assertEquals(expected.getShareId(), actual.getShareId());
+        }
+        if (expected.getAccountId() == null) {
+            assertEquals(localAccountId, actual.getAccountId());
+        } else {
+            assertEquals(expected.getAccountId(), actual.getAccountId());
+        }
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getPath(), actual.getPath());
+        assertEquals(expected.isFile(), actual.isFile());
+        assertEquals(expected.getShareType(), actual.getShareType());
+    }
+
+    // bookmarks
+
+    public static NavResourceBookmark bookmarkByAccount(final Integer accountId, final String name,
+        final String path, final boolean isFile) {
+        return newBookmark(null, null, name, path, isFile, bkm -> bkm.setAccountId(accountId));
+    }
+
+    public static NavResourceBookmark bookmarkByAccount(final Long bookmarkId, final Integer userId,
+        final Integer accountId, final String name, final String path, final boolean isFile) {
+        return newBookmark(bookmarkId, userId, name, path, isFile, bkm -> bkm.setAccountId(accountId));
+    }
+
+    public static NavResourceBookmark bookmarkByShare(final Long shareId, final String name, final String path,
+        final boolean isFile) {
+        return newBookmark(null, null, name, path, isFile, bkm -> bkm.setShareId(shareId));
+    }
+
+    public static NavResourceBookmark bookmarkByShare(final Long bookmarkId, final Integer userId,
+        final Long shareId, final String name, final String path, final boolean isFile) {
+        return newBookmark(bookmarkId, userId, name, path, isFile, bkm -> bkm.setShareId(shareId));
+    }
+
+    private static NavResourceBookmark newBookmark(final Long bookmarkId, final Integer userId,
+        final String name, final String path, final boolean isFile, final Consumer<NavResourceBookmark> updater) {
+
+        final var bookmark = new NavResourceBookmark();
+        bookmark.setBookmarkId(bookmarkId);
+        bookmark.setUserId(userId);
+        bookmark.setName(name);
+        bookmark.setPath(path);
+        bookmark.setFile(isFile);
+        updater.accept(bookmark);
+        return bookmark;
+    }
+
+    public static void assertBookmark(final NavResourceBookmark expected, final NavResourceBookmark actual) {
+        assertNotNull(actual);
+        assertNotNull(actual.getBookmarkId());
+        if (expected.getBookmarkId() != null) {
+            assertEquals(expected.getBookmarkId(), actual.getBookmarkId());
+        }
+        assertNotNull(actual.getUserId());
+        if (expected.getUserId() != null) {
+            assertEquals(expected.getUserId(), actual.getUserId());
+        }
+        if (expected.getAccountId() != null) {
+            assertEquals(expected.getAccountId(), actual.getAccountId());
+        } else {
+            assertEquals(expected.getShareId(), actual.getShareId());
+        }
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getPath(), actual.getPath());
+        assertEquals(expected.isFile(), actual.isFile());
+    }
+
+    public static void assertBookmarkList(final List<NavResourceBookmark> expected,
+        final List<NavResourceBookmark> actual) {
+        assertList(expected, actual, NavResourceBookmark::getBookmarkId, NavResourceTestUtils::assertBookmark);
     }
 
     // navigation

@@ -65,6 +65,12 @@ public class NavResourceBookmarkEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
 
+    @Column(name = "display_name", nullable = false)
+    private String displayName;
+
+    @Column(name = "is_file", nullable = false)
+    private boolean file;
+
     @Column(name = "path")
     private String path;
 
@@ -122,6 +128,22 @@ public class NavResourceBookmarkEntity {
 
     public void setUser(final UserEntity user) {
         this.user = user;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(final String displayName) {
+        this.displayName = displayName;
+    }
+
+    public boolean isFile() {
+        return file;
+    }
+
+    public void setFile(final boolean file) {
+        this.file = file;
     }
 
     public String getPath() {

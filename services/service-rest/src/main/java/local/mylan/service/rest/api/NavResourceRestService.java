@@ -36,22 +36,42 @@ public interface NavResourceRestService {
     List<DeviceAccount> listDeviceAccounts(UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/res/account/{id}")
-    DeviceAccount getDeviceAccount(@PathParameter ("id") Integer accountId, UserContext userCtx);
+    DeviceAccount getDeviceAccount(@PathParameter("id") Integer accountId, UserContext userCtx);
 
     @RequestMapping(method = "POST", path = "/nav/res/account")
     DeviceAccount createDeviceAccount(@RequestBody DeviceAccount account, UserContext userCtx);
 
     @RequestMapping(method = "PATCH", path = "/nav/res/account/{id}")
-    DeviceAccount updateDeviceAccount(@PathParameter ("id") Integer accountId,
+    DeviceAccount updateDeviceAccount(@PathParameter("id") Integer accountId,
         @RequestBody DeviceAccount account, UserContext userCtx);
 
     @RequestMapping(method = "DELETE", path = "/nav/res/account/{id}")
-    void deleteDeviceAccount(@PathParameter ("id") Integer accountId, UserContext userCtx);
+    void deleteDeviceAccount(@PathParameter("id") Integer accountId, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/res/shares")
     List<NavResourceShare> listUserShares(UserContext userCtx);
 
+    @RequestMapping(method = "POST", path = "/nav/res/share")
+    NavResourceShare createUserShare(NavResourceShare share, UserContext userCtx);
+
+    @RequestMapping(method = "PATCH", path = "/nav/res/share/{id}")
+    NavResourceShare updateUserShare(@PathParameter("id") Long shareId,
+        NavResourceShare share, UserContext userCtx);
+
+    @RequestMapping(method = "DELETE", path = "/nav/res/share/{id}")
+    void removeUserShare(@PathParameter("id") Long shareId, UserContext userCtx);
+
     @RequestMapping(method = "GET", path = "/nav/res/bookmarks")
     List<NavResourceBookmark> listUserBookmarks(UserContext userCtx);
+
+    @RequestMapping(method = "POST", path = "/nav/res/bookmark")
+    NavResourceBookmark createUserBookmark(NavResourceBookmark bookmark, UserContext userCtx);
+
+    @RequestMapping(method = "PATCH", path = "/nav/res/bookmark/{id}")
+    NavResourceBookmark updateUserBookmark(@PathParameter("id") Long bookmarkId, NavResourceBookmark bookmark,
+        UserContext userCtx);
+
+    @RequestMapping(method = "DELETE", path = "/nav/res/bookmark/{id}")
+    void removeUserBookmark(@PathParameter("id") Long bookmarkId, UserContext userCtx);
 
 }

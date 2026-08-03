@@ -22,46 +22,9 @@ public class NavResource {
     private Long bookmarkId;
     private String name;
     private String path;
+    private boolean file;
 
-    public NavResource() {
-        // default
-    }
-
-    public NavResource(final NavResource other) {
-        accountId = other.accountId;
-        shareId = other.shareId;
-        name = other.name;
-        path = other.path;
-    }
-
-    public NavResource(final String name, final String path) {
-        this.name = name;
-        this.path = path;
-    }
-
-    public NavResource(final Integer accountId, final String path) {
-        this.accountId = accountId;
-        this.path = path;
-    }
-
-    public NavResource(final Integer accountId, final String resourceName, final String path) {
-        this.accountId = accountId;
-        this.name = resourceName;
-        this.path = path;
-    }
-
-    public NavResource(final Long shareId, final String path) {
-        this.shareId = shareId;
-        this.path = path;
-    }
-
-    public NavResource(final Long shareId, final String name, final String path) {
-        this.shareId = shareId;
-        this.name = name;
-        this.path = path;
-    }
-
-    public Integer getAccountId() {
+     public Integer getAccountId() {
         return accountId;
     }
 
@@ -91,6 +54,14 @@ public class NavResource {
 
     public void setName(final String name) {
         this.name = name;
+    }
+
+    public boolean isFile() {
+        return file;
+    }
+
+    public void setFile(final boolean file) {
+        this.file = file;
     }
 
     public String getPath() {

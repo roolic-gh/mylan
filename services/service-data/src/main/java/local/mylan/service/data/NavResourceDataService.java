@@ -34,6 +34,8 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
+import local.mylan.service.api.events.UserBookmarkCrudEvent;
+import local.mylan.service.api.events.UserShareCrudEvent;
 import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -41,7 +43,6 @@ import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
 import local.mylan.service.api.model.DeviceProtocol;
-import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.data.entities.DeviceAccountEntity;
@@ -267,7 +268,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             return newDevices;
         });
         // notify new devices registered
-        newEntities.forEach(entity->
+        newEntities.forEach(entity ->
             notificationService.raiseEvent(new DeviceCrudEvent(entity.getDeviceId(), CrudOperation.CREATE)));
     }
 
@@ -359,7 +360,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
 
     private void encryptPassword(final DeviceAccountEntity entity, final DeviceAccount account) {
         final var key = Optional.ofNullable(account.getKey()).orElse("");
-        entity.setPassword(encryptor.encrypt(account.getPassword(),key.isEmpty() ? null : key));
+        entity.setPassword(encryptor.encrypt(account.getPassword(), key.isEmpty() ? null : key));
         entity.setKey(key.isEmpty() ? null : LOCKED_INDICATOR);
     }
 
@@ -406,14 +407,12 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             return fromSession(session ->
                 session.createNamedQuery(Queries.GET_SHARED_RESOURCES_FOR_GUEST, NavResourceShareEntity.class)
                     .getResultList()
-            ).stream().map(MAPPER::fromEntityMin).toList();
+            ).stream().map(MAPPER::fromEntity).toList();
         }
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_SHARED_RESOURCES_FOR_USER, NavResourceShareEntity.class)
                 .setParameter("userId", userId).getResultList()
-        ).stream().map(entity ->
-            userId.equals(entity.getUserId()) ? MAPPER.fromEntity(entity) : MAPPER.fromEntityMin(entity)
-        ).toList();
+        ).stream().map(MAPPER::fromEntity).toList();
     }
 
     @Override
@@ -467,29 +466,39 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         entity.setAccountId(accountEntity.getAccountId());
         entity.setUserId(userEntity.getUserId());
         inTransaction(session -> session.persist(entity));
-        return MAPPER.fromEntity(entity);
+        final var result = MAPPER.fromEntity(entity);
+        notificationService.raiseEvent(new UserShareCrudEvent(result.getShareId(), result, CrudOperation.CREATE));
+        return result;
     }
 
     @Override
-    public void updateSharedResource(final Integer userId, final NavResourceShare share) {
+    public NavResourceShare updateSharedResource(final Integer userId, final NavResourceShare share) {
         requireNonNull(share);
         final var entity = validShareEntity(share.getShareId());
         validateOwner(userId, entity.getUserId(), "Shared resource can be edited by owner only");
         entity.setDisplayName(share.getName());
         entity.setShareType(share.getShareType());
         inTransaction(session -> session.merge(entity));
+        final var result = MAPPER.fromEntity(entity);
+        notificationService.raiseEvent(new UserShareCrudEvent(result.getShareId(), result, CrudOperation.UPDATE));
+        return result;
     }
 
     @Override
     public void removeSharedResource(final Integer userId, final Long shareId) {
         requireNonNull(shareId, "shareId is required");
-        inTransaction(session -> {
+        final var removed = fromTransaction(session -> {
             final var entity = session.get(NavResourceShareEntity.class, shareId);
             if (entity != null) {
                 validateOwner(userId, entity.getUserId(), "Shared resource can be removed by owner only");
                 session.remove(entity);
+                return true;
             }
+            return false;
         });
+        if (removed) {
+            notificationService.raiseEvent(new UserShareCrudEvent(shareId, null, CrudOperation.DELETE));
+        }
     }
 
     @Override
@@ -507,41 +516,62 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
-    public NavResourceBookmark createBookmark(final Integer userId, final NavResource resource) {
-        requireNonNull(resource, "Bookmark resource data is required");
-        checkArgument(resource.getAccountId() != null || resource.getShareId() != null,
+    public NavResourceBookmark createBookmark(final Integer userId, final NavResourceBookmark bookmark) {
+        requireNonNull(bookmark, "Bookmark resource data is required");
+        checkArgument(bookmark.getAccountId() != null || bookmark.getShareId() != null,
             "Either accountId or shareId should be defined in bookmark resource");
 
         final var entity = new NavResourceBookmarkEntity();
         entity.setUser(validUserEntity(userId));
         entity.setUserId(userId);
-        entity.setPath(resource.getPath());
-        if (resource.getAccountId() != null) {
+        entity.setPath(bookmark.getPath());
+        entity.setDisplayName(bookmark.getName());
+        entity.setFile(bookmark.isFile());
+        if (bookmark.getAccountId() != null) {
             // by account
-            final var accountEntity = validAccountEntity(resource.getAccountId());
+            final var accountEntity = validAccountEntity(bookmark.getAccountId());
             validateOwner(userId, accountEntity.getUserId(), "Resource can be shared by account owner only");
             entity.setAccount(accountEntity);
             entity.setAccountId(accountEntity.getAccountId());
         } else {
             // by share
-            final var shareEntity = validShareEntity(resource.getShareId());
+            final var shareEntity = validShareEntity(bookmark.getShareId());
             entity.setShare(shareEntity);
             entity.setShareId(shareEntity.getShareId());
         }
         inTransaction(session -> session.persist(entity));
-        return MAPPER.fromEntity(entity);
+        final var result = MAPPER.fromEntity(entity);
+        notificationService.raiseEvent(new UserBookmarkCrudEvent(result.getBookmarkId(), result, CrudOperation.CREATE));
+        return result;
+    }
+
+    @Override
+    public NavResourceBookmark updateBookmark(final Integer userId, final NavResourceBookmark bookmark) {
+        requireNonNull(bookmark);
+        final var entity = validBookmarkEntity(bookmark.getBookmarkId());
+        validateOwner(userId, entity.getUserId(), "Bookmark can be edited by owner only");
+        entity.setDisplayName(bookmark.getName());
+        inTransaction(session -> session.merge(entity));
+        final var result = MAPPER.fromEntity(entity);
+        notificationService.raiseEvent(new UserBookmarkCrudEvent(result.getBookmarkId(), result, CrudOperation.UPDATE));
+        return result;
     }
 
     @Override
     public void removeBookmark(final Integer userId, final Long bookmarkId) {
         requireNonNull(bookmarkId, "bookmarkId is required");
-        inTransaction(session -> {
+        final var removed = fromTransaction(session -> {
             final var entity = session.get(NavResourceBookmarkEntity.class, bookmarkId);
             if (entity != null) {
                 validateOwner(userId, entity.getUserId(), "Bookmark can be removed by owner only");
                 session.remove(entity);
+                return true;
             }
+            return false;
         });
+        if (removed) {
+            notificationService.raiseEvent(new UserBookmarkCrudEvent(bookmarkId, null, CrudOperation.DELETE));
+        }
     }
 
     private UserEntity validUserEntity(final Integer userId) {
@@ -568,6 +598,12 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         requireNonNull(shareId, "shareId is required");
         return entityById(NavResourceShareEntity.class, shareId)
             .orElseThrow(() -> new IllegalArgumentException("No shared resource found with shareId = " + shareId));
+    }
+
+    private NavResourceBookmarkEntity validBookmarkEntity(final Long bookmarkId) {
+        requireNonNull(bookmarkId, "bookmarkId is required");
+        return entityById(NavResourceBookmarkEntity.class, bookmarkId)
+            .orElseThrow(() -> new IllegalArgumentException("No bookmark found with bookmarkId = " + bookmarkId));
     }
 
     private static void validateOwner(final Integer userId, final Integer ownerId, final String errorMessage) {

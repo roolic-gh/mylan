@@ -20,7 +20,6 @@ import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.DeviceIpAddress;
-import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 
@@ -68,7 +67,7 @@ public interface NavResourceService {
 
     NavResourceShare createSharedResource(Integer userId, NavResourceShare share);
 
-    void updateSharedResource(Integer userId, NavResourceShare share);
+    NavResourceShare updateSharedResource(Integer userId, NavResourceShare share);
 
     void removeSharedResource(Integer userId, Long shareId);
 
@@ -76,7 +75,9 @@ public interface NavResourceService {
 
     NavResourceBookmark getBookmark(Long bookmarkId);
 
-    NavResourceBookmark createBookmark(Integer userId, NavResource resource);
+    NavResourceBookmark createBookmark(Integer userId, NavResourceBookmark bookmark);
+
+    NavResourceBookmark updateBookmark(Integer userId, NavResourceBookmark bookmark);
 
     void removeBookmark(Integer userId, Long bookmarkId);
 }

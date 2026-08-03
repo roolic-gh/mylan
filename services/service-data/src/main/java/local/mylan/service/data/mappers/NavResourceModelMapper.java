@@ -66,10 +66,6 @@ public interface NavResourceModelMapper {
     @Mapping(target = "name", source = "displayName")
     NavResourceShare fromEntity(NavResourceShareEntity entity);
 
-    default NavResourceShare fromEntityMin(NavResourceShareEntity entity) {
-        return entity == null ? null : new NavResourceShare(entity.getShareId(), entity.getDisplayName());
-    }
-
-    @Mapping(target = "name", ignore = true)
+    @Mapping(target = "name", source = "displayName")
     NavResourceBookmark fromEntity(NavResourceBookmarkEntity entity);
 }
