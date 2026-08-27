@@ -34,5 +34,6 @@ public interface Queries {
     String GET_LOCAL_SHARED_RESOURCES = "get-local-shared-resources";
     String GET_SHARED_RESOURCES_FOR_USER = "get-shared-resources-for-user";
     String GET_SHARED_RESOURCES_FOR_GUEST = "get-shared-resources-for-guest";
+    String GET_ALL_BOOKMARKS = "get-all-bookmarks";
     String GET_USER_BOOKMARKS = "get-user-bookmarks";
 }

@@ -502,6 +502,13 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     }
 
     @Override
+    public List<NavResourceBookmark> getAllBookmarks() {
+        return fromSession(session ->
+            session.createNamedQuery(Queries.GET_ALL_BOOKMARKS, NavResourceBookmarkEntity.class).getResultList()
+        ).stream().map(MAPPER::fromEntity).toList();
+    }
+
+    @Override
     public List<NavResourceBookmark> getBookmarks(final Integer userId) {
         requireNonNull(userId, "userId is required");
         return fromSession(session ->

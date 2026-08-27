@@ -29,6 +29,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+@NamedQuery(name = Queries.GET_ALL_BOOKMARKS, resultClass = NavResourceBookmarkEntity.class,
+query = "SELECT b FROM NavResourceBookmarkEntity b")
 @NamedQuery(name = Queries.GET_USER_BOOKMARKS, resultClass = NavResourceBookmarkEntity.class,
 query = "SELECT b FROM NavResourceBookmarkEntity b WHERE b.userId = :userId")
 

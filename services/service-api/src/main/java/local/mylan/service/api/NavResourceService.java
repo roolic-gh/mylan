@@ -71,6 +71,8 @@ public interface NavResourceService {
 
     void removeSharedResource(Integer userId, Long shareId);
 
+    List<NavResourceBookmark> getAllBookmarks();
+
     List<NavResourceBookmark> getBookmarks(Integer userId);
 
     NavResourceBookmark getBookmark(Long bookmarkId);

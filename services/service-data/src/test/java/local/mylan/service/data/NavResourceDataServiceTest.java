@@ -769,6 +769,8 @@ class NavResourceDataServiceTest {
     @Test
     @Order(44)
     void getBookmarks() {
+        assertBookmarkList(List.of(bookmark1, bookmark2, bookmark3, bookmark4, bookmark5, bookmark6),
+            navResourceService.getAllBookmarks());
         assertBookmarkList(List.of(bookmark1, bookmark2, bookmark3), navResourceService.getBookmarks(userId1));
         assertBookmarkList(List.of(bookmark4, bookmark5, bookmark6), navResourceService.getBookmarks(userId2));
     }
