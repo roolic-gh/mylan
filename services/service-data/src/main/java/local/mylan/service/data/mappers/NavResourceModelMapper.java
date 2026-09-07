@@ -63,9 +63,11 @@ public interface NavResourceModelMapper {
     NavResourceShareEntity toEntity(NavResourceShare model);
 
     @Mapping(target = "bookmarkId", ignore = true)
+    @Mapping(target = "deviceIdentifier", ignore = true)
     @Mapping(target = "name", source = "displayName")
     NavResourceShare fromEntity(NavResourceShareEntity entity);
 
     @Mapping(target = "name", source = "displayName")
+    @Mapping(target = "deviceIdentifier", ignore = true)
     NavResourceBookmark fromEntity(NavResourceBookmarkEntity entity);
 }

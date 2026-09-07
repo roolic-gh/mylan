@@ -21,6 +21,7 @@ import static local.mylan.service.api.model.DeviceAccountLockState.UNLOCKED;
 import static local.mylan.service.api.model.DeviceAccountState.INVALID;
 import static local.mylan.service.api.model.DeviceAccountState.UNKNOWN;
 import static local.mylan.service.api.model.DeviceAccountState.VALID;
+import static local.mylan.service.api.model.DeviceProtocol.LOCAL;
 import static local.mylan.service.api.model.DeviceProtocol.NFS;
 import static local.mylan.service.api.model.DeviceProtocol.SMB;
 import static local.mylan.service.api.model.DeviceState.OFFLINE;
@@ -28,10 +29,15 @@ import static local.mylan.service.api.model.DeviceState.ONLINE;
 import static local.mylan.service.test.NavResourceTestUtils.accountWithCreds;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountListWithStates;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountWithStates;
+import static local.mylan.service.test.NavResourceTestUtils.assertBookmarkList;
 import static local.mylan.service.test.NavResourceTestUtils.assertDeviceList;
 import static local.mylan.service.test.NavResourceTestUtils.assertNavDirectory;
+import static local.mylan.service.test.NavResourceTestUtils.assertShareList;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByAccount;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByShare;
 import static local.mylan.service.test.NavResourceTestUtils.device;
 import static local.mylan.service.test.NavResourceTestUtils.deviceAccount;
+import static local.mylan.service.test.NavResourceTestUtils.share;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -52,12 +58,17 @@ import local.mylan.service.api.events.CrudOperation;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
+import local.mylan.service.api.events.UserBookmarkCrudEvent;
+import local.mylan.service.api.events.UserShareCrudEvent;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.DeviceAccountState;
+import local.mylan.service.api.model.DeviceAccountWithCredentials;
 import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavFile;
+import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.api.model.ShareType;
 import local.mylan.service.test.TestNotificationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,13 +82,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class NetworkNavigationServiceTest {
 
+    private static final Integer DEVICE_ID_LOCAL = 11111;
     private static final Integer DEVICE_ID1 = 1;
     private static final Integer DEVICE_ID2 = 2;
     private static final Integer DEVICE_ID3 = 3;
     private static final Integer DEVICE_INVALID = 1001;
+    private static final String DEVICE_NAME_LOCAL = "SERVER";
     private static final String DEVICE_NAME1 = "NAME1";
     private static final String DEVICE_NAME2 = "NAME2";
     private static final String DEVICE_NAME3 = "NAME3";
+
     private static final String IP1 = "192.168.1.101";
     private static final String IP2 = "192.168.1.102";
     private static final String IP3 = "192.168.1.103";
@@ -89,14 +103,52 @@ class NetworkNavigationServiceTest {
     private static final String PASSWORD2 = "Pa$SW0rd";
     private static final String KEY = "key";
 
+    private static final Integer USER_ID_GUEST = null;
     private static final Integer USER_ID1 = 1001;
     private static final Integer USER_ID2 = 1002;
 
+    private static final Integer ACCOUNT_ID_LOCAL = 100;
     private static final Integer ACCOUNT_ID1 = 101;
     private static final Integer ACCOUNT_ID2 = 102;
     private static final Integer ACCOUNT_ID3 = 103;
     private static final Integer ACCOUNT_ID4 = 105;
     private static final Integer ACCOUNT_ID5 = 105;
+
+    private static final boolean IS_FILE = true;
+    private static final boolean IS_DIR = false;
+    private static final String NAME_UPDATED = "name-updated";
+
+    private static final Long SHARE_ID_LOCAL = 200L;
+    private static final Long SHARE_ID1 = 201L;
+    private static final Long SHARE_ID2 = 202L;
+    private static final Long SHARE_ID3 = 203L;
+    private static final Long SHARE_ID4 = 204L;
+    private static final String SHARE_NAME_LOCAL = "share-local";
+    private static final String SHARE_NAME1 = "share-1";
+    private static final String SHARE_NAME2 = "share-2";
+    private static final String SHARE_NAME3 = "share-3";
+    private static final String SHARE_NAME4 = "share-4";
+    private static final String SHARE_PATH_LOCAL = "/share/local";
+    private static final String SHARE_PATH1 = "/share/1";
+    private static final String SHARE_PATH2 = "/share/2";
+    private static final String SHARE_PATH3 = "/share/3";
+    private static final String SHARE_PATH4 = "/share/4";
+
+    private static final Long BKM_ID0 = 300L;
+    private static final Long BKM_ID1 = 301L;
+    private static final Long BKM_ID2 = 302L;
+    private static final Long BKM_ID3 = 303L;
+    private static final Long BKM_ID4 = 304L;
+    private static final String BKM_NAME0 = "bookmark-0";
+    private static final String BKM_NAME1 = "bookmark-1";
+    private static final String BKM_NAME2 = "bookmark-2";
+    private static final String BKM_NAME3 = "bookmark-3";
+    private static final String BKM_NAME4 = "bookmark-4";
+    private static final String BKM_PATH0 = "/bookmark/0";
+    private static final String BKM_PATH1 = "/bookmark/1";
+    private static final String BKM_PATH2 = "/bookmark/2";
+    private static final String BKM_PATH3 = "/bookmark/3";
+    private static final String BKM_PATH4 = "/bookmark/4";
 
     private static final String DIR_PATH = "/path/to/dir";
     private static final String SUBDIR1 = "subdir1";
@@ -253,6 +305,10 @@ class NetworkNavigationServiceTest {
         // delete account
         notificationService.raiseEvent(new DeviceAccountCrudEvent(ACCOUNT_ID3, CrudOperation.DELETE));
         assertAccountListWithStates(List.of(account2exp, account4exp), service.listUserDeviceAccounts(USER_ID2));
+
+        // cascade on device remove
+        notificationService.raiseEvent(new DeviceCrudEvent(DEVICE_ID1, CrudOperation.DELETE));
+        assertAccountListWithStates(List.of(account2exp), service.listUserDeviceAccounts(USER_ID2));
     }
 
     @Test
@@ -294,6 +350,155 @@ class NetworkNavigationServiceTest {
     }
 
     @Test
+    void shareStates() {
+        // setup devices
+        final var device = device(DEVICE_ID1, DEVICE_NAME1, SMB, List.of(IP1), null);
+        doReturn(List.of(device, localDevice())).when(navResourceService).getAllDevices();
+
+        // existing accounts
+        final var account1 = accountWithCreds(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, PASSWORD1, null);
+        final var account2 = accountWithCreds(ACCOUNT_ID2, USER_ID2, DEVICE_ID1, USERNAME2, PASSWORD2, null);
+        doReturn(List.of(localAccount(), account1, account2))
+            .when(navResourceService).getAllAccountsWithCredentials();
+
+        // accessor
+        doReturn(SMB).when(accessor).protocol();
+        doReturn(VALID).when(accessor).validateCredentials(device, account1);
+        doReturn(VALID).when(accessor).validateCredentials(device, account2);
+
+        // existing shares
+        doReturn(List.of(
+            localShare(),
+            share(SHARE_ID1, ACCOUNT_ID1, SHARE_NAME1, SHARE_PATH1, IS_DIR, ShareType.REGISTERED),
+            share(SHARE_ID2, ACCOUNT_ID2, SHARE_NAME2, SHARE_PATH2, IS_DIR, ShareType.NONE),
+            share(SHARE_ID3, ACCOUNT_ID2, SHARE_NAME3, SHARE_PATH3, IS_FILE, ShareType.REGISTERED)
+        )).when(navResourceService).getAllSharedResources();
+        final var localShare = localShareWithDevice();
+        final var share1 =
+            share(SHARE_ID1, ACCOUNT_ID1, SHARE_NAME1, SHARE_PATH1, IS_DIR, ShareType.REGISTERED, DEVICE_NAME1);
+        final var share2 =
+            share(SHARE_ID2, ACCOUNT_ID2, SHARE_NAME2, SHARE_PATH2, IS_DIR, ShareType.NONE, DEVICE_NAME1);
+        final var share3 =
+            share(SHARE_ID3, ACCOUNT_ID2, SHARE_NAME3, SHARE_PATH3, IS_FILE, ShareType.REGISTERED, DEVICE_NAME1);
+
+        // test
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
+
+        // validate initial
+        assertShares(List.of(localShare), service.listShares(USER_ID_GUEST));
+        assertShares(List.of(localShare, share1, share3), service.listShares(USER_ID1));
+        assertShares(List.of(localShare, share1, share2, share3), service.listShares(USER_ID2));
+
+        assertShares(List.of(share1), service.listUserShares(USER_ID1));
+        assertShares(List.of(share2, share3), service.listUserShares(USER_ID2));
+
+        // share events: #1 modified, share #3 removed, share #4 added
+        notificationService.raiseEvent(new UserShareCrudEvent(SHARE_ID1,
+            share(SHARE_ID1, ACCOUNT_ID1, NAME_UPDATED, SHARE_PATH1, IS_DIR, ShareType.NONE), CrudOperation.UPDATE));
+        notificationService.raiseEvent(new UserShareCrudEvent(SHARE_ID3, null, CrudOperation.DELETE));
+        notificationService.raiseEvent(new UserShareCrudEvent(SHARE_ID4,
+            share(SHARE_ID4, ACCOUNT_ID1, SHARE_NAME4, SHARE_PATH4, IS_DIR, ShareType.ALL), CrudOperation.CREATE));
+
+        final var share1updated =
+            share(SHARE_ID1, ACCOUNT_ID1, NAME_UPDATED, SHARE_PATH1, IS_DIR, ShareType.NONE, DEVICE_NAME1);
+        final var share4 =
+            share(SHARE_ID4, ACCOUNT_ID1, SHARE_NAME4, SHARE_PATH4, IS_DIR, ShareType.ALL, DEVICE_NAME1);
+
+        // validate updated
+        assertShares(List.of(localShare, share4), service.listShares(USER_ID_GUEST));
+        assertShares(List.of(localShare, share1updated, share4), service.listShares(USER_ID1));
+        assertShares(List.of(localShare, share2, share4), service.listShares(USER_ID2));
+
+        assertShares(List.of(share1updated, share4), service.listUserShares(USER_ID1));
+        assertShares(List.of(share2), service.listUserShares(USER_ID2));
+
+        // cascade on account remove
+        notificationService.raiseEvent(new DeviceAccountCrudEvent(ACCOUNT_ID2, CrudOperation.DELETE));
+        assertEquals(List.of(), service.listUserShares(USER_ID2));
+
+        // cascade on device remove
+        notificationService.raiseEvent(new DeviceCrudEvent(DEVICE_ID1, CrudOperation.DELETE));
+        assertEquals(List.of(), service.listUserShares(USER_ID1));
+    }
+
+    private static void assertShares(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
+        assertShareList(expected, actual, ACCOUNT_ID_LOCAL);
+    }
+
+    @Test
+    void bookmarkStates() {
+        // setup devices
+        final var device = device(DEVICE_ID1, DEVICE_NAME1, SMB, List.of(IP1), null);
+        doReturn(List.of(device, localDevice())).when(navResourceService).getAllDevices();
+
+        // existing accounts
+        final var account1 = accountWithCreds(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, PASSWORD1, null);
+        final var account2 = accountWithCreds(ACCOUNT_ID2, USER_ID2, DEVICE_ID1, USERNAME2, PASSWORD2, null);
+        doReturn(List.of(localAccount(), account1, account2))
+            .when(navResourceService).getAllAccountsWithCredentials();
+
+        // accessor
+        doReturn(SMB).when(accessor).protocol();
+        doReturn(VALID).when(accessor).validateCredentials(device, account1);
+        doReturn(VALID).when(accessor).validateCredentials(device, account2);
+
+        // existing shares
+        doReturn(List.of(
+            localShare(),
+            share(SHARE_ID1, ACCOUNT_ID1, SHARE_NAME1, SHARE_PATH1, IS_DIR, ShareType.NONE),
+            share(SHARE_ID2, ACCOUNT_ID2, SHARE_NAME2, SHARE_PATH2, IS_DIR, ShareType.REGISTERED)
+        )).when(navResourceService).getAllSharedResources();
+
+        // existing bookmarks
+        doReturn(List.of(
+            bookmarkByShare(BKM_ID0, USER_ID1, SHARE_ID_LOCAL, BKM_NAME0, BKM_PATH0, IS_FILE),
+            bookmarkByAccount(BKM_ID1, USER_ID1, ACCOUNT_ID1, BKM_NAME1, BKM_PATH1, IS_DIR),
+            bookmarkByShare(BKM_ID2, USER_ID1, SHARE_ID2, BKM_NAME2, BKM_PATH2, IS_DIR),
+            bookmarkByShare(BKM_ID3, USER_ID1, SHARE_ID2, BKM_NAME3, BKM_PATH3, IS_DIR)
+        )).when(navResourceService).getAllBookmarks();
+
+        final var bookmark0 =
+            bookmarkByShare(BKM_ID0, USER_ID1, SHARE_ID_LOCAL, BKM_NAME0, BKM_PATH0, IS_FILE, DEVICE_NAME_LOCAL);
+        final var bookmark1 =
+            bookmarkByAccount(BKM_ID1, USER_ID1, ACCOUNT_ID1, BKM_NAME1, BKM_PATH1, IS_DIR, DEVICE_NAME1);
+        final var bookmark2 =
+            bookmarkByShare(BKM_ID2, USER_ID1, SHARE_ID2, BKM_NAME2, BKM_PATH2, IS_DIR, DEVICE_NAME1);
+        final var bookmark3 =
+            bookmarkByShare(BKM_ID3, USER_ID1, SHARE_ID2, BKM_NAME3, BKM_PATH3, IS_DIR, DEVICE_NAME1);
+
+        // test
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
+        assertBookmarkList(List.of(bookmark0, bookmark1, bookmark2, bookmark3), service.listUserBookmarks(USER_ID1));
+
+        // bookmark events: #1 updated, #3 removed, #4 added
+        notificationService.raiseEvent(new UserBookmarkCrudEvent(BKM_ID1,
+            bookmarkByAccount(BKM_ID1, USER_ID1, ACCOUNT_ID1, NAME_UPDATED, BKM_PATH1, IS_DIR), CrudOperation.UPDATE));
+        notificationService.raiseEvent(new UserBookmarkCrudEvent(BKM_ID3, null, CrudOperation.DELETE));
+        notificationService.raiseEvent(new UserBookmarkCrudEvent(BKM_ID4,
+            bookmarkByShare(BKM_ID4, USER_ID1, SHARE_ID1, BKM_NAME4, BKM_PATH4, IS_FILE), CrudOperation.UPDATE));
+
+        final var bookmark1upd =
+            bookmarkByAccount(BKM_ID1, USER_ID1, ACCOUNT_ID1, NAME_UPDATED, BKM_PATH1, IS_DIR, DEVICE_NAME1);
+        final var bookmark4 =
+            bookmarkByShare(BKM_ID4, USER_ID1, SHARE_ID1, BKM_NAME4, BKM_PATH4, IS_FILE, DEVICE_NAME1);
+
+        // validate updated
+        assertBookmarkList(List.of(bookmark0, bookmark1upd, bookmark2, bookmark4), service.listUserBookmarks(USER_ID1));
+
+        // cascade on share remove
+        notificationService.raiseEvent(new UserShareCrudEvent(SHARE_ID1, null, CrudOperation.DELETE));
+        assertBookmarkList(List.of(bookmark0, bookmark1upd, bookmark2), service.listUserBookmarks(USER_ID1));
+
+        // cascade on account remove
+        notificationService.raiseEvent(new DeviceAccountCrudEvent(ACCOUNT_ID2, CrudOperation.DELETE));
+        assertBookmarkList(List.of(bookmark0, bookmark1upd), service.listUserBookmarks(USER_ID1));
+
+        // cascade on device remove
+        notificationService.raiseEvent(new DeviceCrudEvent(DEVICE_ID1, CrudOperation.DELETE));
+        assertBookmarkList(List.of(bookmark0), service.listUserBookmarks(USER_ID1));
+    }
+
+    @Test
     void readDirByAccount() {
         // setup device, account etc
         final var device = device(DEVICE_ID1, DEVICE_NAME1, SMB, List.of(IP1), null);
@@ -316,5 +521,22 @@ class NetworkNavigationServiceTest {
         final var result = service.readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, DIR_PATH);
         // TODO add shares and bookmarks identified
         assertNavDirectory(dir, result, DIR_PATH, Map.of(), Map.of());
+    }
+
+    private static Device localDevice() {
+        return device(DEVICE_ID_LOCAL, DEVICE_NAME_LOCAL, LOCAL, List.of(), null);
+    }
+
+    private static DeviceAccountWithCredentials localAccount() {
+        return accountWithCreds(ACCOUNT_ID_LOCAL, null, DEVICE_ID_LOCAL, "", "", null);
+    }
+
+    private static NavResourceShare localShare() {
+        return share(SHARE_ID_LOCAL, ACCOUNT_ID_LOCAL, SHARE_NAME_LOCAL, SHARE_PATH_LOCAL, IS_DIR, ShareType.ALL);
+    }
+
+    private static NavResourceShare localShareWithDevice() {
+        return share(SHARE_ID_LOCAL, ACCOUNT_ID_LOCAL, SHARE_NAME_LOCAL, SHARE_PATH_LOCAL, IS_DIR, ShareType.ALL,
+            DEVICE_NAME_LOCAL);
     }
 }

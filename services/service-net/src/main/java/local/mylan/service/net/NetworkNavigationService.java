@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import local.mylan.common.utils.ConfUtils;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.NavResourceService;
@@ -41,6 +42,9 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.events.DeviceAccountCrudEvent;
 import local.mylan.service.api.events.DeviceCrudEvent;
 import local.mylan.service.api.events.DiscoveryDevicesEvent;
+import local.mylan.service.api.events.Registration;
+import local.mylan.service.api.events.UserBookmarkCrudEvent;
+import local.mylan.service.api.events.UserShareCrudEvent;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
@@ -52,8 +56,10 @@ import local.mylan.service.api.model.DeviceProtocol;
 import local.mylan.service.api.model.DeviceState;
 import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavFile;
+import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.service.api.model.ShareType;
 import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +82,9 @@ public final class NetworkNavigationService implements NavigationService {
     private final Map<DeviceProtocol, DeviceAccessor> accessorsMap;
     private final Map<Integer, Device> deviceMap = new ConcurrentHashMap<>();
     private final Map<Integer, DeviceAccountWithCredentials> accountMap = new ConcurrentHashMap<>();
+    private final Map<Long, NavResourceShare> shareMap = new ConcurrentHashMap<>();
+    private final Map<Long, NavResourceBookmark> bookmarkMap = new ConcurrentHashMap<>();
+    private final List<Registration> registrations;
 
     public NetworkNavigationService(final Path confDir, final NavResourceService navResourceService,
         final NotificationService notificationService) {
@@ -92,9 +101,13 @@ public final class NetworkNavigationService implements NavigationService {
         this.conf = conf;
         accessorsMap = accessors.stream().collect(toMap(DeviceAccessor::protocol, accr -> accr));
 
-        notificationService.registerEventListener(DiscoveryDevicesEvent.class, this::onDiscovery);
-        notificationService.registerEventListener(DeviceCrudEvent.class, this::onDeviceCrud);
-        notificationService.registerEventListener(DeviceAccountCrudEvent.class, this::onDeviceAccountCrud);
+        registrations = List.of(
+            notificationService.registerEventListener(DiscoveryDevicesEvent.class, this::onDiscovery),
+            notificationService.registerEventListener(DeviceCrudEvent.class, this::onDeviceCrud),
+            notificationService.registerEventListener(DeviceAccountCrudEvent.class, this::onDeviceAccountCrud),
+            notificationService.registerEventListener(UserShareCrudEvent.class, this::onUserShareCrud),
+            notificationService.registerEventListener(UserBookmarkCrudEvent.class, this::onUserBookmarkCrud)
+        );
 
         navDirectoryCache = CacheBuilder.newBuilder()
             .maximumSize(conf.dirCacheMaxSize())
@@ -104,6 +117,10 @@ public final class NetworkNavigationService implements NavigationService {
         LOG.info("Initialized.");
     }
 
+    private static Set<DeviceAccessor> defaultAccessors(final Path confDir) {
+        return Set.of(new SmbDeviceAccessor(confDir));
+    }
+
     private void loadCaches() {
         navResourceService.getAllDevices().forEach(device -> {
             device.setState(DeviceState.OFFLINE);
@@ -111,17 +128,36 @@ public final class NetworkNavigationService implements NavigationService {
         });
 
         navResourceService.getAllAccountsWithCredentials().forEach(account -> {
-            final var device = deviceMap.get(account.getDeviceId());
-            account.setDeviceIdentifier(device == null ? "" : device.getIdentifier());
-            account.setState(DeviceAccountState.UNKNOWN);
+            setDeviceIdentifier(account);
             accountMap.put(account.getAccountId(), account);
         });
         // valide unlocked accounts
         executor.submit(() -> accountMap.values().forEach(this::validateUpdateAccountState));
+
+        navResourceService.getAllSharedResources().forEach(share -> {
+            setDeviceIdentifier(share);
+            shareMap.put(share.getShareId(), share);
+        });
+        navResourceService.getAllBookmarks().forEach(bookmark -> {
+            setDeviceIdentifier(bookmark);
+            bookmarkMap.put(bookmark.getBookmarkId(), bookmark);
+        });
     }
 
-    private static Set<DeviceAccessor> defaultAccessors(final Path confDir) {
-        return Set.of(new SmbDeviceAccessor(confDir));
+    private void setDeviceIdentifier(final DeviceAccountWithCredentials account) {
+        final var device = deviceMap.get(account.getDeviceId());
+        account.setDeviceIdentifier(device == null ? "" : device.getIdentifier());
+        account.setState(DeviceAccountState.UNKNOWN);
+    }
+
+    private void setDeviceIdentifier(final NavResource navResource) {
+        if (navResource.getAccountId() != null) {
+            final var account = accountMap.get(navResource.getAccountId());
+            navResource.setDeviceIdentifier(account == null ? "" : account.getDeviceIdentifier());
+        } else if (navResource.getShareId() != null) {
+            final var share = shareMap.get(navResource.getShareId());
+            navResource.setDeviceIdentifier(share == null ? "" : share.getDeviceIdentifier());
+        }
     }
 
     private void onDiscovery(final DiscoveryDevicesEvent event) {
@@ -157,7 +193,17 @@ public final class NetworkNavigationService implements NavigationService {
             }
             case DELETE -> {
                 deviceMap.remove(event.deviceId());
-                // TODO clear caches cascade
+                onDeviceRemoved(event.deviceId());
+            }
+        }
+    }
+
+    private void onDeviceRemoved(final Integer deviceId) {
+        for (var it = accountMap.entrySet().iterator(); it.hasNext(); ) {
+            final var entry = it.next();
+            if (Objects.equals(entry.getValue().getDeviceId(), deviceId)) {
+                it.remove();
+                onAccountRemoved(entry.getKey());
             }
         }
     }
@@ -235,17 +281,27 @@ public final class NetworkNavigationService implements NavigationService {
         switch (event.operation()) {
             case CREATE, UPDATE -> {
                 final var account = navResourceService.getAccountWithCredentials(accountId);
-                final var device = deviceMap.get(account.getDeviceId());
-                account.setDeviceIdentifier(device == null ? "" : device.getIdentifier());
+                setDeviceIdentifier(account);
                 account.setState(DeviceAccountState.UNKNOWN);
                 validateUpdateAccountState(account);
                 accountMap.put(accountId, account);
             }
             case DELETE -> {
                 accountMap.remove(accountId);
-                // TODO delete cascase
+                onAccountRemoved(accountId);
             }
         }
+    }
+
+    private void onAccountRemoved(final Integer accountId) {
+        for (var it = shareMap.entrySet().iterator(); it.hasNext(); ) {
+            final var entry = it.next();
+            if (Objects.equals(entry.getValue().getAccountId(), accountId)) {
+                it.remove();
+                onShareRemoved(entry.getKey());
+            }
+        }
+        bookmarkMap.entrySet().removeIf(entry -> Objects.equals(entry.getValue().getAccountId(), accountId));
     }
 
     private void validateUpdateAccountState(final DeviceAccountWithCredentials account) {
@@ -274,23 +330,76 @@ public final class NetworkNavigationService implements NavigationService {
         return result;
     }
 
+    private Set<Integer> userAccountIds(final Integer userId) {
+        return accountMap.entrySet().stream()
+            .filter(entry -> Objects.equals(entry.getValue().getUserId(), userId))
+            .map(Map.Entry::getKey).collect(Collectors.toSet());
+    }
+
     @Override
     public List<NavResourceShare> listShares(final Integer userId) {
-        return List.of();
+        if (userId == null) {
+            return shareMap.values().stream()
+                .filter(share -> share.getShareType() == ShareType.ALL).toList();
+        }
+        final var accountIds = userAccountIds(userId);
+        return shareMap.values().stream()
+            .filter(share -> accountIds.contains(share.getAccountId()) ||
+                share.getShareType() == ShareType.ALL
+                || share.getShareType() == ShareType.REGISTERED)
+            .toList();
     }
 
     @Override
     public List<NavResourceShare> listUserShares(final Integer userId) {
-        return List.of();
+        if (userId == null) {
+            return List.of();
+        }
+        final var accountIds = userAccountIds(userId);
+        return shareMap.values().stream()
+            .filter(share -> accountIds.contains(share.getAccountId())).toList();
+    }
+
+    private void onUserShareCrud(final UserShareCrudEvent event) {
+        final var shareId = event.id();
+        switch (event.operation()) {
+            case CREATE, UPDATE -> {
+                final var share = event.share();
+                setDeviceIdentifier(share);
+                shareMap.put(shareId, share);
+            }
+            case DELETE -> {
+                shareMap.remove(shareId);
+                onShareRemoved(shareId);
+            }
+        }
+    }
+
+    private void onShareRemoved(final Long shareId) {
+        bookmarkMap.entrySet().removeIf(entry -> Objects.equals(entry.getValue().getShareId(), shareId));
     }
 
     @Override
     public List<NavResourceBookmark> listUserBookmarks(final Integer userId) {
-        return List.of();
+        return bookmarkMap.values().stream()
+            .filter(bookmark -> Objects.equals(bookmark.getUserId(), userId)).toList();
+    }
+
+    private void onUserBookmarkCrud(final UserBookmarkCrudEvent event) {
+        final var bookmarkId = event.id();
+        switch (event.operation()) {
+            case CREATE, UPDATE -> {
+                final var bookmark = event.bookmark();
+                setDeviceIdentifier(bookmark);
+                bookmarkMap.put(bookmarkId, bookmark);
+            }
+            case DELETE -> bookmarkMap.remove(bookmarkId);
+        }
     }
 
     @Override
-    public NavDirectory readDeviceDirectoryByAccount(final Integer userId, final Integer accountId, final String path) {
+    public NavDirectory readDeviceDirectoryByAccount(final Integer userId, final Integer accountId,
+        final String path) {
         final var account = ensureUnlocked(validUserAccount(accountId, userId));
         final var device = validDevice(account.getDeviceId());
         final var dir = readDirectory(device, account, path);
@@ -307,7 +416,8 @@ public final class NetworkNavigationService implements NavigationService {
             final var key = new NavKey(account.getAccountId(),
                 path == null || path.isEmpty() || "/".equals(path) ? "" : path);
             try {
-                return copyDirectory(navDirectoryCache.get(key, () -> accessor.listDirectory(device, account, path)));
+                return copyDirectory(
+                    navDirectoryCache.get(key, () -> accessor.listDirectory(device, account, path)));
             } catch (ExecutionException e) {
                 throw new IllegalStateException(e);
             }
@@ -331,6 +441,7 @@ public final class NetworkNavigationService implements NavigationService {
     @Override
     public void stop() {
         executor.shutdown();
+        registrations.forEach(Registration::terminate);
         accessorsMap.values().forEach(DeviceAccessor::stop);
         navDirectoryCache.cleanUp();
         LOG.info("Stopped.");

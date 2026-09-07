@@ -182,6 +182,14 @@ public final class NavResourceTestUtils {
         return share;
     }
 
+    public static NavResourceShare share(final Long shareId, Integer accountId, final String name, final String path,
+        final boolean isFile, final ShareType shareType, final String deviceIdentifier) {
+
+        final var share = share(shareId, accountId, name, path, isFile, shareType);
+        share.setDeviceIdentifier(deviceIdentifier);
+        return share;
+    }
+
     public static void assertShareList(final List<NavResourceShare> expected, final List<NavResourceShare> actual,
         final Integer localAccountId) {
 
@@ -201,6 +209,9 @@ public final class NavResourceTestUtils {
         } else {
             assertEquals(expected.getAccountId(), actual.getAccountId());
         }
+        if (expected.getDeviceIdentifier() != null) {
+            assertEquals(expected.getDeviceIdentifier(), actual.getDeviceIdentifier());
+        }
         assertEquals(expected.getName(), actual.getName());
         assertEquals(expected.getPath(), actual.getPath());
         assertEquals(expected.isFile(), actual.isFile());
@@ -219,6 +230,15 @@ public final class NavResourceTestUtils {
         return newBookmark(bookmarkId, userId, name, path, isFile, bkm -> bkm.setAccountId(accountId));
     }
 
+    public static NavResourceBookmark bookmarkByAccount(final Long bookmarkId, final Integer userId,
+        final Integer accountId, final String name, final String path, final boolean isFile,
+        final String deviceIdentifier) {
+        return newBookmark(bookmarkId, userId, name, path, isFile, bkm -> {
+            bkm.setAccountId(accountId);
+            bkm.setDeviceIdentifier(deviceIdentifier);
+        });
+    }
+
     public static NavResourceBookmark bookmarkByShare(final Long shareId, final String name, final String path,
         final boolean isFile) {
         return newBookmark(null, null, name, path, isFile, bkm -> bkm.setShareId(shareId));
@@ -227,6 +247,16 @@ public final class NavResourceTestUtils {
     public static NavResourceBookmark bookmarkByShare(final Long bookmarkId, final Integer userId,
         final Long shareId, final String name, final String path, final boolean isFile) {
         return newBookmark(bookmarkId, userId, name, path, isFile, bkm -> bkm.setShareId(shareId));
+    }
+
+    public static NavResourceBookmark bookmarkByShare(final Long bookmarkId, final Integer userId,
+        final Long shareId, final String name, final String path, final boolean isFile,
+        final String deviceIdentifier) {
+
+        return newBookmark(bookmarkId, userId, name, path, isFile, bkm -> {
+            bkm.setShareId(shareId);
+            bkm.setDeviceIdentifier(deviceIdentifier);
+        });
     }
 
     private static NavResourceBookmark newBookmark(final Long bookmarkId, final Integer userId,
@@ -256,6 +286,9 @@ public final class NavResourceTestUtils {
             assertEquals(expected.getAccountId(), actual.getAccountId());
         } else {
             assertEquals(expected.getShareId(), actual.getShareId());
+        }
+        if (expected.getDeviceIdentifier() != null) {
+            assertEquals(expected.getDeviceIdentifier(), actual.getDeviceIdentifier());
         }
         assertEquals(expected.getName(), actual.getName());
         assertEquals(expected.getPath(), actual.getPath());

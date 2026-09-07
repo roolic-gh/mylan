@@ -16,5 +16,5 @@
 package local.mylan.service.api.model;
 
 public enum ShareType {
-    ALL, REGISTERED, SELECTED
+    ALL, REGISTERED, SELECTED, NONE
 }

@@ -18,18 +18,27 @@ package local.mylan.service.api.model;
 public class NavResource {
 
     private Integer accountId;
+    private String deviceIdentifier;
     private Long shareId;
     private Long bookmarkId;
     private String name;
     private String path;
     private boolean file;
 
-     public Integer getAccountId() {
+    public Integer getAccountId() {
         return accountId;
     }
 
     public void setAccountId(final Integer accountId) {
         this.accountId = accountId;
+    }
+
+    public String getDeviceIdentifier() {
+        return deviceIdentifier;
+    }
+
+    public void setDeviceIdentifier(final String deviceIdentifier) {
+        this.deviceIdentifier = deviceIdentifier;
     }
 
     public Long getShareId() {
