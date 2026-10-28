@@ -21,6 +21,7 @@ import java.util.Optional;
 import local.mylan.service.api.EncryptionService;
 import local.mylan.service.api.NotificationService;
 import local.mylan.service.api.UserService;
+import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
@@ -46,7 +47,8 @@ public class UserDataService extends AbstractDataService implements UserService 
     private final NotificationService notificationService;
 
     public UserDataService(final SessionFactory sessionFactory, final EncryptionService encryptionService,
-            final NotificationService notificationService) {
+        final NotificationService notificationService) {
+
         super(sessionFactory);
         this.encryptionService = encryptionService;
         this.notificationService = notificationService;
@@ -56,7 +58,7 @@ public class UserDataService extends AbstractDataService implements UserService 
     void checkAdminUserExists() {
         final var found = fromSession(session ->
             session.createNamedQuery(Queries.GET_ACTIVE_ADMINS_COUNT, Long.class).uniqueResult());
-        if (found <1) {
+        if (found < 1) {
             // TODO handle default admin is disabled case
             LOG.warn("No Admin user found in database, creating default...");
             createUser(new User(ADMIN_USERNAME, ADMIN_DISPLAYNAME, true));
@@ -77,14 +79,15 @@ public class UserDataService extends AbstractDataService implements UserService 
     @Override
     public void resetUserPassword(final Integer userId) {
         final var userEntity = fromSession(session -> session.get(UserEntity.class, userId));
-        final int updated = fromTransaction(session ->
+        if (userEntity == null) {
+            throw new NoDataException("User not found.");
+        }
+        inTransaction(session ->
             session.createNamedMutationQuery(Queries.RESET_USER_PASSWORD)
                 .setParameter("userId", userId)
                 .setParameter("password", toHash(userEntity.getUsername()))
-                .executeUpdate());
-        if (updated < 1) {
-            // TODO throw dedicated exception if no entries updated
-        }
+                .executeUpdate()
+        );
     }
 
     @Override
@@ -96,7 +99,7 @@ public class UserDataService extends AbstractDataService implements UserService 
                 .setParameter("newPassword", toHash(newPassword))
                 .executeUpdate());
         if (updated < 1) {
-            // TODO throw dedicated exception if no entries updated
+            throw new NoDataException("Ivalid user and/or password.");
         }
     }
 
@@ -140,7 +143,7 @@ public class UserDataService extends AbstractDataService implements UserService 
             if (existing != null && !existing.isDisabled()) {
                 existing.setDisplayName(user.getDisplayName());
                 session.persist(existing);
-            };
+            }
             return existing;
         });
         return MAPPER.fromEntity(entity);
@@ -154,23 +157,18 @@ public class UserDataService extends AbstractDataService implements UserService 
                 .setParameter("disabled", status.isDisabled())
                 .executeUpdate());
         if (updated < 1) {
-            // TODO throw dedicated exception if no entries updated
+            throw new NoDataException("User not found");
         }
     }
 
     @Override
     public void deleteUser(final Integer userId) {
-        final boolean deleted = fromTransaction(session -> {
-                final var existing = session.get(UserEntity.class, userId);
-                if (existing != null && existing.isDisabled()) {
-                    session.remove(existing);
-                    return true;
-                }
-                return false;
-            });
-        if (!deleted) {
-            // TODO throw dedicated exception if no entries deeted
-        }
+        inTransaction(session -> {
+            final var existing = session.get(UserEntity.class, userId);
+            if (existing != null && existing.isDisabled()) {
+                session.remove(existing);
+            }
+        });
     }
 
     private String toHash(final String password) {

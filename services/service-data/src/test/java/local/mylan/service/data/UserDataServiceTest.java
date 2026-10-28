@@ -22,9 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import local.mylan.service.api.UserService;
+import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
@@ -45,6 +47,7 @@ public class UserDataServiceTest {
     private static final String USERNAME1 = "username1";
     private static final String USERNAME2 = "username2";
     private static final String PASSWORD = "pa$$W0rd";
+    private static final String PASSWORD2 = "pa5$w0rd";
     private static final String NAME1 = "name-1";
     private static final String NAME2 = "name-2";
     private static final boolean IS_ADMIN = true;
@@ -105,6 +108,11 @@ public class UserDataServiceTest {
             userService.getUserByCredentials(new UserCredentials(USERNAME1, PASSWORD)).orElseThrow();
         assertEquals(userId, checkLogin.getUserId());
         assertFalse(userService.userMustChangePassword(userId));
+
+        // no password match once updated
+        assertThrows(NoDataException.class, ()-> userService.changeUserPassword(userId, USERNAME1, PASSWORD2 ));
+        // non-existing user
+        assertThrows(NoDataException.class, ()-> userService.changeUserPassword(-1, USERNAME1, PASSWORD));
     }
 
     @Test
@@ -117,6 +125,9 @@ public class UserDataServiceTest {
             userService.getUserByCredentials(new UserCredentials(USERNAME1, USERNAME1)).orElseThrow();
         assertEquals(userId, checkLogin.getUserId());
         assertTrue(userService.userMustChangePassword(userId));
+
+        // non-existing user
+        assertThrows(NoDataException.class, () -> userService.resetUserPassword(-1));
     }
 
     @Test
@@ -130,7 +141,7 @@ public class UserDataServiceTest {
         assertEquals(NAME2, updated.getDisplayName());
         assertFalse(updated.isAdmin());
         // nonexistent entry is not updated
-        assertNull(userService.updateUser(new User(userId + 100, USERNAME2, NAME2, IS_ADMIN)));
+        assertNull(userService.updateUser(new User(-1, USERNAME2, NAME2, IS_ADMIN)));
     }
 
     @Test
@@ -148,6 +159,10 @@ public class UserDataServiceTest {
         // enable user
         userService.updateUserStatus(new UserStatus(userId, IS_ENABLED));
         assertFalse(userService.getUserById(userId, FOR_ADMIN_PURPOSES).orElseThrow().isDisabled());
+
+        // non-existing user
+        assertThrows(NoDataException.class,
+            ()-> userService.updateUserStatus(new UserStatus(-1, IS_ENABLED)));
     }
 
     @Test
