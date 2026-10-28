@@ -14,6 +14,8 @@
   limitations under the License.
 */
 
+const idCount = { count: 0 };
+
 export function byId(id) {
     return document.getElementById(id);
 }
@@ -25,4 +27,9 @@ export function report(message) {
 export function reportError(message) {
     console.log(message);
     M.toast({ html: "Error: " + message, classes: 'red darken-2' });
+}
+
+export function nextId() {
+    idCount.count++;
+    return idCount.count;
 }

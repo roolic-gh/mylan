@@ -14,10 +14,12 @@
   limitations under the License.
 */
 
-import { byId } from "./utils.js";
+import { byId, reportError } from "./utils.js";
 
 export class MaterialUi {
     selfContext = null;
+    curUser = null;
+    curModal = null;
 
     constructor(selfContext) {
         this.selfContext = selfContext;
@@ -26,10 +28,15 @@ export class MaterialUi {
     init(app) {
         M.Dropdown.init(document.querySelectorAll(".dropdown-trigger"), {});
         M.Modal.init(document.querySelectorAll(".modal"), {
-            onOpenStart: M.updateTextFields, onOpenEnd: modalFocusFirst
+            onOpenStart: M.updateTextFields, onOpenEnd: modalFocusFirst,
+            onCloseEnd: () => { this.curModal = null }
         });
         byId("password-input").onkeydown = (evt) => onEnterClickButton(evt, "login-button");
         byId("unlock-key-input").onkeydown = (evt) => onEnterClickButton(evt, "unlock-button");
+    }
+
+    loginModal() {
+        return !this.openModal('login-modal');
     }
 
     credsFromModal() {
@@ -47,13 +54,49 @@ export class MaterialUi {
     }
 
     applyUser(user) {
+        this.curUser = user;
         setVisible("resources-menu-item", !user.isGuest);
         setVisible("bookmarks-menu-item", !user.isGuest);
         setVisible("users-menu-item", user.isAdmin);
         setVisible("registered-menu-item", !user.isGuest);
         setVisible("login-menu-item", user.isGuest);
         byId("username").textContent = user.displayName;
-        byId("edit-displayname-input").value = user.displayName;
+
+        this.closeModal();
+        this.clearCreds();
+    }
+
+    updatePasswordModal() {
+        if (!this.curModal) {
+            ['old-password-input', 'new-password-input', 'repeat-new-password-input']
+                .forEach(id => byId(id).value = "");
+        }
+        return !this.openModal('change-password-modal');
+    }
+
+    newPasswordFromModal() {
+        const oldPass = byId('old-password-input').value;
+        const newPass = byId('new-password-input').value;
+        const repPass = byId('repeat-new-password-input').value;
+        if (!oldPass || !newPass) {
+            return null;
+        }
+        if (newPass != repPass) {
+            reportError("Repeat password missmatch.")
+            return null;
+        }
+        return { userId: this.curUser.id, oldPassword: oldPass, newPassword: newPass };
+    }
+
+    updateUserProfileModal() {
+        if (!this.curModal) {
+            byId("edit-displayname-input").value = this.curUser.displayName;
+        }
+        return !this.openModal('edit-profile-modal');
+    }
+
+    userProfileFromModal() {
+        return { userId: this.curUser.id, displayName: byId('edit-displayname-input').value };
     }
 
     drawResourcesTabs(app, navId) {
@@ -188,19 +231,24 @@ export class MaterialUi {
     drawDir(dir, app) {
         if (dir.account) {
             const accountId = dir.account.accountId;
-            const top = accountLink(dir.account, ()=> app.browseAccount(accountId, ""));
+            const top = accountLink(dir.account, () => app.browseAccount(accountId, ""));
             this.drawDirDetails(dir, app, true, top, (path) => app.browseAccount(accountId, path));
         }
     }
 
     drawDirDetails(dir, app, canShare, topBreadcrumb, browseFunc) {
         const content = byId("nav-dir-template").content.cloneNode(true);
-        const bcCont = content.querySelector(".breadcrumbs-container");
-        breadcrumbs(topBreadcrumb, dir.path, browseFunc).forEach(bcItem => bcCont.append(bcItem));
+        content.querySelector(".breadcrumbs-container")
+            .replaceChildren(breadcrumbs(topBreadcrumb, dir.path, browseFunc));
+
         const tbody = content.querySelector("tbody");
         if (dir.subDirs) {
             dir.subDirs.forEach(sd => {
                 const folderLink = linkElement(sd.name, () => browseFunc(sd.path), "folder");
+                const shareInfo = sd.shareId ? icon("share") : "";
+                const bookmarkInfo = sd.bookmarkId ? icon("bookmark") : "";
+
+
                 const row = elementNode("tr", [elementNode("td", [folderLink])])
                 tbody.append(row);
             });
@@ -216,11 +264,21 @@ export class MaterialUi {
 
 
     openModal(id) {
+        // return false if already open, otherwise open and return true
+        if (this.curModal == id) {
+            return false;
+        }
+        this.closeModal(); // ensure single modal is active
         M.Modal.getInstance(byId(id)).open();
+        this.curModal = id;
+        return true;
     }
 
-    closeModal(id) {
-        M.Modal.getInstance(byId(id)).close();
+    closeModal() {
+        if (this.curModal) {
+            M.Modal.getInstance(byId(this.curModal)).close();
+            this.curModal = null;
+        }
     }
 
     notifyPasswordChangeRequired() {

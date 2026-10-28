@@ -7,7 +7,7 @@ body {
     background: none;
 }
 
-a:hover{
+a:hover {
     cursor: pointer;
 }
 
@@ -36,28 +36,36 @@ a:hover{
     vertical-align: middle;
 }
 
+.breadcrumbs-container a::before {
+    font-size: 20px;
+}
+
 .breadcrumbs-container .folder::before {
-    content: '\e675'; /* drive_file_move */
+    /* drive_file_move */
+    content: '\e675';
     margin-left: 20px;
 }
 
-.account::before, .folder::before {
+.account::before,
+.folder::before {
     display: inline-block;
     font-family: "Material Icons";
     font-weight: normal;
     font-style: normal;
-    margin: 0 10px 0 0;
+    margin: 0 8px 0 0;
     vertical-align: middle;
 }
 
-.account{
+.account {
     font-weight: bold;
 }
 
 .account::before {
-    content: '\e7fd';  /* person */
+    /* person */
+    content: '\e7fd';
 }
 
 .folder::before {
-    content: '\e2c8';  /* folder_open */
+    /* folder_open */
+    content: '\e2c8';
 }

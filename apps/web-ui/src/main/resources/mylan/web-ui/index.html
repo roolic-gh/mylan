@@ -16,289 +16,296 @@
   -->
 
 <html>
-<head><title>MyLAN</title>
-    <link rel="stylesheet" href="${LIBS_CONTEXT}/material-icons.css"/>
-    <link rel="stylesheet" href="${LIBS_CONTEXT}/materialize.min.css" media="screen,projection"/>
-    <link rel="stylesheet" href="${SELF_CONTEXT}/styles.css"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<head>
+    <title>MyLAN</title>
+    <link rel="stylesheet" href="${LIBS_CONTEXT}/material-icons.css" />
+    <link rel="stylesheet" href="${LIBS_CONTEXT}/materialize.min.css" media="screen,projection" />
+    <link rel="stylesheet" href="${SELF_CONTEXT}/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="${LIBS_CONTEXT}/materialize.min.js"></script>
     <script src="${LIBS_CONTEXT}/sse.js"></script>
     <script type="module">
-        import {App} from "./app.js";
+        import { App } from "./app.js";
         document.addEventListener("DOMContentLoaded", (event) => {
             window.app = new App(".", "${REST_CONTEXT}", "${SSE_CONTEXT}");
             window.app.init();
         });
     </script>
 </head>
+
 <body id="mylan">
 
-<!-- navbar -->
-<nav>
-    <div class="nav-wrapper blue-grey darken-3">
-        <a href="#" onclick="app.dashboard()" class="left brand-logo">MyLAN</a>
-        <ul class="right">
-            <li id="bookmarks-menu-item"><a href="#" onclick="app.listBookmarks()">Bookmarks</a></li>
-            <li id="resources-menu-item"><a href="#" onclick="app.listResources()">Resources</a></li>
-            <li id="users-menu-item"><a href="#" onclick="app.listUsers()">Users</a></li>
-            <li id="registered-menu-item">
-                <a href="#" class="dropdown-trigger column s1" data-target="user-dropdown" id="user-link">
-                    <i class="left large material-icons">account_circle</i>
-                    <span id="username">username</span>
-                    <i class="material-icons right">arrow_drop_down</i></a></li>
-            <li id="login-menu-item"><a href="#login-modal" class="modal-trigger">
-                <i class="left large material-icons">login</i>Login</a></li>
-        </ul>
-        <div id="progress-bar" class="progress hide">
-            <div class="indeterminate"></div>
-        </div>
-    </div>
-</nav>
-<ul id="user-dropdown" class="dropdown-content">
-    <li><a href="#change-password-modal" class="modal-trigger">Change password</a></li>
-    <li><a href="#edit-profile-modal" class="modal-trigger">Edit profile</a></li>
-    <li><a href="#" onclick="app.logout()">Logout</a></li>
-</ul>
-<div id="login-modal" class="modal">
-    <div class="modal-content">
-        <div class="row">
-            <div class="input-field col m4 s12">
-                <input id="username-input" type="text" class="validate">
-                <label for="username-input">Username</label>
-            </div>
-            <div class="input-field col m4 s12">
-                <input id="password-input" type="password" class="validate">
-                <label for="password-input">Password</label>
-            </div>
-            <div class="input-field col m4 s12">
-                <label>
-                    <input id="rememberme-input" type="checkbox"/>
-                    <span>Remember me</span>
-                </label>
+    <!-- navbar -->
+    <nav>
+        <div class="nav-wrapper blue-grey darken-3">
+            <a href="#" onclick="app.dashboard()" class="left brand-logo">MyLAN</a>
+            <ul class="right">
+                <li id="bookmarks-menu-item"><a href="#" onclick="app.listBookmarks()">Bookmarks</a></li>
+                <li id="resources-menu-item"><a href="#" onclick="app.listResources()">Resources</a></li>
+                <li id="users-menu-item"><a href="#" onclick="app.listUsers()">Users</a></li>
+                <li id="registered-menu-item">
+                    <a href="#" class="dropdown-trigger column s1" data-target="user-dropdown" id="user-link">
+                        <i class="left large material-icons">account_circle</i>
+                        <span id="username">username</span>
+                        <i class="material-icons right">arrow_drop_down</i></a>
+                </li>
+                <li id="login-menu-item"><a href="#" onclick="app.login()">
+                        <i class="left large material-icons">login</i>Login</a></li>
+            </ul>
+            <div id="progress-bar" class="progress hide">
+                <div class="indeterminate"></div>
             </div>
         </div>
-    </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" id="login-button" onclick="app.login()">Login</a>
-        <a href="#" class="modal-close btn-flat">Close</a>
-    </div>
-</div>
-<div id="change-password-modal" class="modal">
-    <div class="modal-content">
-        <h4>Change Password</h4>
-        <div class="row">
-            <div class="input-field col m4 s12">
-                <input id="old-password-input" type="password" class="validate">
-                <label for="old-password-input">Old Password</label>
-            </div>
-            <div class="input-field col m4 s12">
-                <input id="new-password-input" type="password" class="validate">
-                <label for="new-password-input">New Password</label>
-            </div>
-            <div class="input-field col m4 s12">
-                <input id="repeat-new-password-input" type="password" class="validate">
-                <label for="repeat-new-password-input">Repeat new password</label>
-            </div>
-        </div>
-    </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" onclick="app.updatePassword()">Update</a>
-        <a href="#" class="modal-close btn-flat">Close</a>
-    </div>
-</div>
-<div id="edit-profile-modal" class="modal">
-    <div class="modal-content">
-        <h4>Edit Profile</h4>
-        <div class="row">
-            <div class="input-field col m4 s12">
-                <input id="edit-displayname-input" type="text" class="validate">
-                <label for="edit-displayname-input">Display Name</label>
-            </div>
-        </div>
-    </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" onclick="app.updateProfile()">Update</a>
-        <a href="#" class="modal-close btn-flat">Close</a>
-    </div>
-</div>
-
-<!-- resources -->
-
-<template id="resources-tabs-template">
-    <ul id="resources-tabs" class="tabs">
-        <li class="tab"><a href="#resources-devices">Devices</a></li>
-        <li class="tab"><a href="#resources-accounts">Accounts</a></li>
-        <li class="tab"><a href="#resources-shares">Shares</a></li>
+    </nav>
+    <ul id="user-dropdown" class="dropdown-content">
+        <li><a href="#" onclick="app.updatePassword()">Change password</a></li>
+        <li><a href="#" onclick="app.updateUserProfile()">Edit profile</a></li>
+        <li><a href="#" onclick="app.logout()">Logout</a></li>
     </ul>
-    <div id="resources-devices" class="col"></div>
-    <div id="resources-accounts"></div>
-    <div id="resources-shares"></div>
-</template>
-
-<template id="resources-devices-template">
-    <h2>Devices</h2>
-    <div class="fixed-action-btn">
-        <a class="btn-floating btn-large" href="#" onClick="app.startDiscovery()"><i class="material-icons">cloud_sync</i> Rescan the LAN</a>
-    </div>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Hostname</th>
-            <th>IP Address(es)</th>
-            <th>Protocol</th>
-            <th>State</th>
-
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</template>
-
-<template id="resources-accounts-template">
-    <h2>Device Accounts</h2>
-    <div class="fixed-action-btn">
-        <a class="btn-floating btn-large" href="#" onclick="app.createAccount()"><i class="material-icons">add</i></a>
-    </div>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Username @ Device</th>
-            <th>Lock State</th>
-            <th>State</th>
-            <th>&nbsp</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</template>
-
-<div id="account-modal" class="modal">
-    <div class="modal-content">
-        <h4 id="account-modal-header">Header</h4>
-        <div class="row">
-            <div class="input-field col s12">
-                <select id="account-device-input"></select>
-                <label for="account-device-input">Device</label>
-            </div>
-            <div class="input-field col m6 s12">
-                <input id="account-username-input" type="text" class="validate">
-                <label for="account-username-input">Username</label>
-            </div>
-            <div class="input-field col m6 s12">
-                <input id="account-password-input" type="password" class="validate">
-                <label for="account-password-input">Password</label>
-            </div>
-            <div class="input-field col m6 s12">
-                <input id="account-key-input" type="password" class="validate">
-                <label for="account-key-input">Lock PIN (optional)</label>
-            </div>
-            <div class="input-field col m6 s12">
-                <label>
-                    <input id="account-validate-input" type="checkbox" class="filled-in" checked="checked">
-                    <span>Validate</span>
-                </label>
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="row">
+                <div class="input-field col m4 s12">
+                    <input id="username-input" type="text" class="validate">
+                    <label for="username-input">Username</label>
+                </div>
+                <div class="input-field col m4 s12">
+                    <input id="password-input" type="password" class="validate">
+                    <label for="password-input">Password</label>
+                </div>
+                <div class="input-field col m4 s12">
+                    <label>
+                        <input id="rememberme-input" type="checkbox" />
+                        <span>Remember me</span>
+                    </label>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" id="account-modal-action-btn" onclick="app.processAccount()">Action</a>
-        <a href="#" class="modal-close btn-flat">Close</a>
-        <input id="account-id-input" type="hidden" />
-    </div>
-</div>
-
-<div id="unlock-account-modal" class="modal">
-    <div class="modal-content">
-        <h4>Unlock account</h4>
-        <div class="row">
-            <div class="input-field col s12">
-                <input id="unlock-key-input" type="password" class="validate">
-                <label for="unlock-key-input">PIN</label>
-            </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" id="login-button" onclick="app.login()">Login</a>
+            <a href="#" class="modal-close btn-flat">Close</a>
         </div>
     </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" id="unlock-button" onclick="app.unlockAccount()">Unlock</a>
-        <a href="#" class="modal-close btn-flat">Close</a>
-        <input id="unlock-account-id-input" type="hidden" />
-    </div>
-</div>
-
-<template id="resources-shares-template">
-    <h2>Shared Resources</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Device</th>
-            <th>Share Name</th>
-            <th>Path</th>
-            <th>Scope</th>
-            <th>&nbsp</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</template>
-
-<!-- users -->
-<template id="user-list-template">
-    <h2>Users</h2>
-    <div class="fixed-action-btn">
-        <a class="btn-floating btn-large modal-trigger" href="#new-user-modal"><i class="material-icons">add</i></a>
-    </div>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Display Name</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>&nbsp;</th>
-        </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</template>
-<div id="new-user-modal" class="modal">
-    <div class="modal-content">
-        <h4>New User</h4>
-        <div class="row">
-            <div class="input-field col m4 s12">
-                <input id="new-username-input" type="text" class="validate">
-                <label for="new-username-input">Username</label>
-            </div>
-            <div class="input-field col m4 s12">
-                <input id="new-displayname-input" type="text" class="validate">
-                <label for="new-displayname-input">Display Name</label>
-            </div>
-            <div class="input-field col m4 s12">
-                <label>
-                    <input id="new-isadmin-input" type="checkbox"/>
-                    <span>Admin</span>
-                </label>
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <h4>Change Password</h4>
+            <div class="row">
+                <div class="input-field col m4 s12">
+                    <input id="old-password-input" type="password" class="validate">
+                    <label for="old-password-input">Old Password</label>
+                </div>
+                <div class="input-field col m4 s12">
+                    <input id="new-password-input" type="password" class="validate">
+                    <label for="new-password-input">New Password</label>
+                </div>
+                <div class="input-field col m4 s12">
+                    <input id="repeat-new-password-input" type="password" class="validate">
+                    <label for="repeat-new-password-input">Repeat new password</label>
+                </div>
             </div>
         </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" onclick="app.updatePassword()">Update</a>
+            <a href="#" class="modal-close btn-flat">Close</a>
+        </div>
     </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" onclick="app.addUser()">Create user</a>
-        <a href="#" class="modal-close btn-flat">Close</a>
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content">
+            <h4>Edit Profile</h4>
+            <div class="row">
+                <div class="input-field col m4 s12">
+                    <input id="edit-displayname-input" type="text" class="validate">
+                    <label for="edit-displayname-input">Display Name</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" onclick="app.updateUserProfile()">Update</a>
+            <a href="#" class="modal-close btn-flat">Close</a>
+        </div>
     </div>
-</div>
 
-<!-- nav directory -->
-<template id="nav-dir-template">
-    <h3>Files & Folders</h3>
-    <div class="row nav-wrapper breadcrumbs-container"></div>
-    <table>
-        <tbody></tbody>
-    </table>
-</template>
+    <!-- resources -->
 
-<!-- content -->
-<div class="container" id="content"></div>
+    <template id="resources-tabs-template">
+        <ul id="resources-tabs" class="tabs">
+            <li class="tab"><a href="#resources-devices">Devices</a></li>
+            <li class="tab"><a href="#resources-accounts">Accounts</a></li>
+            <li class="tab"><a href="#resources-shares">Shares</a></li>
+        </ul>
+        <div id="resources-devices" class="col"></div>
+        <div id="resources-accounts"></div>
+        <div id="resources-shares"></div>
+    </template>
+
+    <template id="resources-devices-template">
+        <h2>Devices</h2>
+        <div class="fixed-action-btn">
+            <a class="btn-floating btn-large" href="#" onClick="app.startDiscovery()"><i
+                    class="material-icons">cloud_sync</i> Rescan the LAN</a>
+        </div>
+        <table class="highlight">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Hostname</th>
+                    <th>IP Address(es)</th>
+                    <th>Protocol</th>
+                    <th>State</th>
+
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </template>
+
+    <template id="resources-accounts-template">
+        <h2>Device Accounts</h2>
+        <div class="fixed-action-btn">
+            <a class="btn-floating btn-large" href="#" onclick="app.createAccount()"><i
+                    class="material-icons">add</i></a>
+        </div>
+        <table class="highlight">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username @ Device</th>
+                    <th>Lock State</th>
+                    <th>State</th>
+                    <th>&nbsp</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </template>
+
+    <div id="account-modal" class="modal">
+        <div class="modal-content">
+            <h4 id="account-modal-header">Header</h4>
+            <div class="row">
+                <div class="input-field col s12">
+                    <select id="account-device-input"></select>
+                    <label for="account-device-input">Device</label>
+                </div>
+                <div class="input-field col m6 s12">
+                    <input id="account-username-input" type="text" class="validate">
+                    <label for="account-username-input">Username</label>
+                </div>
+                <div class="input-field col m6 s12">
+                    <input id="account-password-input" type="password" class="validate">
+                    <label for="account-password-input">Password</label>
+                </div>
+                <div class="input-field col m6 s12">
+                    <input id="account-key-input" type="password" class="validate">
+                    <label for="account-key-input">Lock PIN (optional)</label>
+                </div>
+                <div class="input-field col m6 s12">
+                    <label>
+                        <input id="account-validate-input" type="checkbox" class="filled-in" checked="checked">
+                        <span>Validate</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" id="account-modal-action-btn" onclick="app.processAccount()">Action</a>
+            <a href="#" class="modal-close btn-flat">Close</a>
+            <input id="account-id-input" type="hidden" />
+        </div>
+    </div>
+
+    <div id="unlock-account-modal" class="modal">
+        <div class="modal-content">
+            <h4>Unlock account</h4>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input id="unlock-key-input" type="password" class="validate">
+                    <label for="unlock-key-input">PIN</label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" id="unlock-button" onclick="app.unlockAccount()">Unlock</a>
+            <a href="#" class="modal-close btn-flat">Close</a>
+            <input id="unlock-account-id-input" type="hidden" />
+        </div>
+    </div>
+
+    <template id="resources-shares-template">
+        <h2>Shared Resources</h2>
+        <table class="highlight">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Account @ Device</th>
+                    <th>Share Name</th>
+                    <th>Path</th>
+                    <th>Scope</th>
+                    <th>&nbsp</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </template>
+
+    <!-- users -->
+    <template id="user-list-template">
+        <h2>Users</h2>
+        <div class="fixed-action-btn">
+            <a class="btn-floating btn-large modal-trigger" href="#new-user-modal"><i class="material-icons">add</i></a>
+        </div>
+        <table class="highlight">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Display Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </template>
+    <div id="new-user-modal" class="modal">
+        <div class="modal-content">
+            <h4>New User</h4>
+            <div class="row">
+                <div class="input-field col m4 s12">
+                    <input id="new-username-input" type="text" class="validate">
+                    <label for="new-username-input">Username</label>
+                </div>
+                <div class="input-field col m4 s12">
+                    <input id="new-displayname-input" type="text" class="validate">
+                    <label for="new-displayname-input">Display Name</label>
+                </div>
+                <div class="input-field col m4 s12">
+                    <label>
+                        <input id="new-isadmin-input" type="checkbox" />
+                        <span>Admin</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn" onclick="app.addUser()">Create user</a>
+            <a href="#" class="modal-close btn-flat">Close</a>
+        </div>
+    </div>
+
+    <!-- nav directory -->
+    <template id="nav-dir-template">
+        <h3>Files & Folders</h3>
+        <div class="row nav-wrapper breadcrumbs-container"></div>
+        <table>
+            <tbody></tbody>
+        </table>
+    </template>
+
+    <!-- content -->
+    <div class="container" id="content"></div>
 </body>
+
 </html>

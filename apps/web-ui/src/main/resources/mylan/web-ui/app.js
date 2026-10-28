@@ -15,7 +15,7 @@
 */
 
 import { Client } from "./client.js";
-import { SseHandler}  from "./sse-handler.js";
+import { SseHandler } from "./sse-handler.js";
 import { MaterialUi } from "./material-ui.js";
 import { User } from "./user.js";
 import { byId, report, reportError } from "./utils.js";
@@ -47,18 +47,18 @@ export class App {
     }
 
     login() {
-        const creds = this.ui.credsFromModal();
-        this.client.authenticate(creds, (response) => {
-            this.client.setToken(response.authToken, creds.persist);
-            this.user.reset(response.user);
-            this.sse.start(response.authToken);
-            this.ui.applyUser(this.user);
-            this.ui.closeModal('login-modal');
-            this.ui.clearCreds();
-            if (response.mustChangePassword) {
-                this.ui.notifyPasswordChangeRequired();
-            }
-        });
+        if (this.ui.loginModal()) {
+            const creds = this.ui.credsFromModal();
+            this.client.authenticate(creds, (response) => {
+                this.client.setToken(response.authToken, creds.persist);
+                this.user.reset(response.user);
+                this.sse.start(response.authToken);
+                this.ui.applyUser(this.user);
+                if (response.mustChangePassword) {
+                    this.ui.notifyPasswordChangeRequired();
+                }
+            });
+        }
     }
 
     logout() {
@@ -71,29 +71,26 @@ export class App {
     }
 
     updatePassword() {
-        const oldPass = byId('old-password-input').value;
-        const newPass = byId('new-password-input').value;
-        const repPass = byId('repeat-new-password-input').value;
-        if (newPass != repPass) {
-            reportError("Repeat password missmatch.")
-            return;
+        if (this.ui.updatePasswordModal()) {
+            const payload = this.ui.newPasswordFromModal();
+            if (payload) {
+                this.client.updateUserPassword(payload, () => {
+                    report("Password updated. Please re-login.");
+                    this.ui.closeModal();
+                });
+            }
         }
-        this.client.updateUserPassword(
-            { userId: this.user.id, oldPassword: oldPass, newPassword: newPass },
-            () => {
-                report("Password updated. Please re-login.");
-                this.ui.closeModal('change-password-modal');
-            });
     }
 
-    updateProfile() {
-        this.client.updateUserDetails(
-            { userId: this.user.id, displayName: byId('edit-displayname-input').value },
-            (updatedUser) => {
-                this.user.reset(updatedUser);
-                this.ui.applyUser(this.user);
-                this.ui.closeModal('edit-profile-modal');
-            });
+    updateUserProfile() {
+        if (this.ui.updateUserProfileModal()) {
+            this.client.updateUserDetails(
+                this.ui.userProfileFromModal(),
+                (updatedUser) => {
+                    this.user.reset(updatedUser);
+                    this.ui.applyUser(this.user);
+                });
+        }
     }
 
     refresh() {
