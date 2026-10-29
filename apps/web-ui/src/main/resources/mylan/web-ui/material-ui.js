@@ -26,7 +26,7 @@ export class MaterialUi {
     }
 
     init(app) {
-        M.Dropdown.init(document.querySelectorAll(".dropdown-trigger"), {});
+        intiDropdDowns(document);
         M.Modal.init(document.querySelectorAll(".modal"), {
             onOpenStart: M.updateTextFields, onOpenEnd: modalFocusFirst,
             onCloseEnd: () => { this.curModal = null }
@@ -36,6 +36,9 @@ export class MaterialUi {
     }
 
     loginModal() {
+        if (!this.curModal) {
+            this.clearCreds();
+        }
         return !this.openModal('login-modal');
     }
 
@@ -209,23 +212,32 @@ export class MaterialUi {
     }
 
     drawUserList(users, app) {
-        const usersTable = buildTableFromTemplate('user-list-template', users,
-            (user) => "user-list-tr-" + user.userId,
-            (user) => [
-                user.userId, user.username, user.displayName,
-                user.admin ? 'admin' : 'user',
-                user.disabled ? 'disabled' : 'active',
-                user.disabled
-                    ? [
-                        button('Enable', () => app.setUserEnabled(user, true)),
-                        button('Delete', () => app.deleteUser(user))
-                    ]
-                    : [
-                        button('Reset Password', () => app.resetUserPassword(user)),
-                        button('Disable', () => app.setUserEnabled(user, false))
-                    ]
-            ]);
-        setContent(usersTable);
+        setContent(tableContentFromTemplate('user-list-template', users, (item) => userListRow(item, app)));
+    }
+
+    updateUserListItem(user, app) {
+        replaceById(userListRow(user, app));
+    }
+
+    deleteUserListItem(userId) {
+        byId("tr-user-" + userId).remove();
+    }
+
+    newUserModal() {
+        if (!this.curModal) {
+            byId('new-username-input').value = "";
+            byId('new-displayname-input').value = "";
+            byId('new-isadmin-input').checked = false;
+        }
+        return !this.openModal('new-user-modal');
+    }
+
+    newUserFromModal() {
+        return {
+            username: byId('new-username-input').value,
+            displayName: byId('new-displayname-input').value,
+            admin: byId('new-isadmin-input').checked
+        };
     }
 
     drawDir(dir, app) {
@@ -247,7 +259,6 @@ export class MaterialUi {
                 const folderLink = linkElement(sd.name, () => browseFunc(sd.path), "folder");
                 const shareInfo = sd.shareId ? icon("share") : "";
                 const bookmarkInfo = sd.bookmarkId ? icon("bookmark") : "";
-
 
                 const row = elementNode("tr", [elementNode("td", [folderLink])])
                 tbody.append(row);
@@ -287,15 +298,125 @@ export class MaterialUi {
     }
 }
 
+function intiDropdDowns(source) {
+    M.Dropdown.init(source.querySelectorAll(".dropdown-trigger"), {
+        coverTrigger: false, constraintWidth: false, alighment: "right"
+    });
+}
+
+function userListRow(user, app) {
+    const row = tr("tr-user-" + user.userId);
+    row.append(
+        td(user.userId),
+        td(user.username, user.disabled ? "person_off" : "person"),
+        td(user.displayName),
+        td(user.admin ? 'admin' : 'user'),
+        td(user.disabled ? 'disabled' : 'active'),
+        actionTd("act-user-" + user.userId, user.disabled
+            ? [
+                a('Enable', () => app.setUserEnabled(user, true)),
+                a('Delete', () => app.deleteUser(user))
+            ]
+            : [
+                a('Reset Password', () => app.resetUserPassword(user)),
+                a('Disable', () => app.setUserEnabled(user, false))
+            ])
+    );
+    if (user.disabled) {
+        row.classList.add("inactive");
+    }
+    return row;
+}
+
+function tableContentFromTemplate(templateId, items, rowBuilder) {
+    const fragment = byId(templateId).content.cloneNode(true);
+    const tbody = fragment.querySelector("tbody");
+    items.forEach((item) => tbody.append(rowBuilder(item)));
+    return fragment;
+}
+
+function actionTd(id, links) {
+    const trigger = a(null, null, "more_vert", null, ["dropdown-trigger"]);
+    trigger.setAttribute("data-target", id);
+    const dropdown = document.createElement('ul');
+    dropdown.classList.add("dropdown-content");
+    dropdown.id = id;
+    links.forEach(a => {
+        const li = document.createElement('li');
+        li.append(a);
+        dropdown.append(li);
+    });
+    const td = document.createElement('td');
+    td.append(trigger, dropdown);
+    return td;
+
+}
+
+function tr(id) {
+    const tr = document.createElement('tr');
+    tr.id = id;
+    return tr;
+}
+
+function td(text, iconId, classes) {
+    return elm('td', text, iconId, classes);
+}
+
+function a(text, onclick, iconId, href, classes) {
+    const a = elm('a', text, iconId);
+    if (onclick) {
+        a.onclick = onclick;
+    }
+    a.href = href ? href : "#";
+    if (classes) {
+        a.classList.add(classes);
+    }
+    return a;
+}
+
+function elm(tag, text, iconId, classes) {
+    const elm = document.createElement(tag);
+    if (iconId) {
+        elm.append(icon(iconId));
+    }
+    if (text) {
+        elm.append(text);
+    }
+    if (classes) {
+        elm.classList.add(classes);
+    }
+    return elm;
+}
+
+function icon(iconId, classes) {
+    const icon = document.createElement("i");
+    icon.append(iconId);
+    icon.classList.add("material-icons");
+    if (classes) {
+        icon.classList.add(classes);
+    }
+    return icon;
+}
+
 function buildTableFromTemplate(templateId, items, toId, toCells) {
     const fragment = byId(templateId).content.cloneNode(true);
     const tbody = fragment.querySelector("tbody");
-    items.forEach((item) => tbody.append(buildTableRow(toId(item), toCells(item))))
+    items.forEach((item) => tbody.append(buildTableRow(toId(item), toCells(item))));
     return fragment;
 }
 
 function setContent(newContent) {
-    byId('content').replaceChildren(newContent);
+    const container = byId('content');
+    container.replaceChildren(newContent);
+    intiDropdDowns(container);
+}
+
+function replaceById(elm) {
+    const cur = byId(elm.id);
+    if (cur) {
+        cur.replaceWith(elm);
+        intiDropdDowns(byId(elm.id));
+    }
 }
 
 function setVisible(id, visible) {
@@ -307,7 +428,7 @@ function setVisible(id, visible) {
 }
 
 function buildTableRow(id, items) {
-    var row = document.createElement('tr');
+    const row = document.createElement('tr');
     row.id = id;
     items.forEach((item) => row.append(Array.isArray(item) ? elementNode('td', item) : elementText('td', item)));
     return row;
@@ -343,16 +464,7 @@ function linkElement(text, onclick, cls) {
     return link;
 }
 
-function icon(iconId, classes) {
-    const elm = elementText("i", iconId);
-    elm.classList.add("material-icons");
-    if (classes) {
-        elm.classList.add(classes);
-    } else {
-        elm.classList.add("tiny");
-    }
-    return elm;
-}
+
 
 function breadcrumbs(topElm, path, pathFunc) {
     const bcs = [topElm];

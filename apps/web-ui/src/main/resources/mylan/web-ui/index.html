@@ -48,7 +48,7 @@
                     <a href="#" class="dropdown-trigger column s1" data-target="user-dropdown" id="user-link">
                         <i class="left large material-icons">account_circle</i>
                         <span id="username">username</span>
-                        <i class="material-icons right">arrow_drop_down</i></a>
+                        <i class="material-icons right">more_vert</i></a>
                 </li>
                 <li id="login-menu-item"><a href="#" onclick="app.login()">
                         <i class="left large material-icons">login</i>Login</a></li>
@@ -253,7 +253,7 @@
     <template id="user-list-template">
         <h2>Users</h2>
         <div class="fixed-action-btn">
-            <a class="btn-floating btn-large modal-trigger" href="#new-user-modal"><i class="material-icons">add</i></a>
+            <a class="btn-floating btn-large" href="#" onclick="app.addUser()"><i class="material-icons">add</i></a>
         </div>
         <table class="highlight">
             <thead>

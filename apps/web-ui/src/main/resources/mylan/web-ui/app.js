@@ -220,16 +220,14 @@ export class App {
     }
 
     addUser() {
-        this.client.createUser(
-            {
-                username: byId('new-username-input').value,
-                displayName: byId('new-displayname-input').value,
-                admin: byId('new-isadmin-input').checked
-            },
-            (response) => {
-                this.ui.closeModal('new-user-modal');
-                this.listUsers();
-            });
+        if (this.ui.newUserModal()) {
+            this.client.createUser(
+                this.ui.newUserFromModal(),
+                (response) => {
+                    this.ui.closeModal();
+                    this.listUsers();
+                });
+        }
     }
 
     resetUserPassword(user) {
@@ -242,7 +240,8 @@ export class App {
             { userId: user.userId, disabled: !enabled },
             (response) => {
                 report("User @" + user.username + " " + (enabled ? "enabled." : "disabled."));
-                this.listUsers();
+                user.disabled = !enabled;
+                this.ui.updateUserListItem(user, this);
             });
     }
 
@@ -250,7 +249,7 @@ export class App {
         // TODO delete confirm dialog
         this.client.deleteUser(user.userId, () => {
             report("User @" + user.username + " deleted.");
-            this.listUsers();
+            this.ui.deleteUserListItem(user.userId);
         });
     }
 }
