@@ -16,7 +16,7 @@
 
 import { Client } from "./client.js";
 import { SseHandler } from "./sse-handler.js";
-import { MaterialUi } from "./material-ui.js";
+import { MaterialUi, reportDiscoveryStatus } from "./material-ui.js";
 import { User } from "./user.js";
 import { byId, report, reportError } from "./utils.js";
 
@@ -40,7 +40,7 @@ export class App {
             this.user.reset(currentUser);
             this.ui.applyUser(this.user);
             if (!this.user.isGuest) {
-                this.sse.start(this.client.token);
+                this.sse.setToken(this.client.token);
             }
             this.refresh();
         });
@@ -51,8 +51,8 @@ export class App {
             const creds = this.ui.credsFromModal();
             this.client.authenticate(creds, (response) => {
                 this.client.setToken(response.authToken, creds.persist);
+                this.sse.setToken(response.authToken);
                 this.user.reset(response.user);
-                this.sse.start(response.authToken);
                 this.ui.applyUser(this.user);
                 if (response.mustChangePassword) {
                     this.ui.notifyPasswordChangeRequired();
@@ -64,9 +64,9 @@ export class App {
     logout() {
         // TODO Notify server to cancel session
         this.client.clearToken();
+        this.sse.clearToken();
         this.user.reset({ userId: null });
         this.ui.applyUser(this.user);
-        this.sse.stop();
         this.refresh();
     }
 
@@ -157,7 +157,10 @@ export class App {
 
     startDiscovery() {
         // fixme: report actual status
-        this.client.startDiscovery((status) => report("Discovery started."));
+        this.client.startDiscovery((status) => {
+            this.sse.waitForEvent("discovery-status", reportDiscoveryStatus)
+            report("Discovery started.")
+        });
     }
 
     listResourcesAccounts() {

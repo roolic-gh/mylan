@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-import { byId, reportError } from "./utils.js";
+import { byId, report, reportError } from "./utils.js";
 
 export class MaterialUi {
     selfContext = null;
@@ -111,12 +111,8 @@ export class MaterialUi {
     }
 
     drawResourceDevicesList(devices, app) {
-        const devicesTable = buildTableFromTemplate("resources-devices-template", devices,
-            (device) => "rsrc-device-tr-" + device.deviceId,
-            (device) => [device.deviceId, device.identifier,
-            device.ipAddresses.map(ipa => ipa.ipAddress).join(", "),
-            device.protocol, device.state]);
-        byId("resources-devices").replaceChildren(devicesTable);
+        byId("resources-devices").replaceChildren(
+            tableContentFromTemplate("resources-devices-template", devices, deviceListRow));
     }
 
     setDeviceSelectors(devices) {
@@ -328,6 +324,25 @@ function userListRow(user, app) {
     return row;
 }
 
+function deviceListRow(device) {
+    const row = tr("tr-device-" + device.deviceId);
+    row.append(
+        td(device.deviceId),
+        td(device.identifier),
+        td(device.ipAddresses.map(ipa => ipa.ipAddress).join(", ")),
+        td(device.protocol == "LOCAL" ? "" : device.protocol)
+    );
+    if (device.state == 'ONLINE') {
+        row.append(td("online", "check_circle_outline"));
+    } else if (device.protocol == "LOCAL") {
+        row.append(td(""));
+    } else {
+        row.append(td("offline", "block"));
+        row.classList.add("inactive");
+    }
+    return row;
+}
+
 function tableContentFromTemplate(templateId, items, rowBuilder) {
     const fragment = byId(templateId).content.cloneNode(true);
     const tbody = fragment.querySelector("tbody");
@@ -484,6 +499,14 @@ function breadcrumbs(topElm, path, pathFunc) {
         }
     }
     return bcs;
+}
+
+export function reportDiscoveryStatus(status) {
+    const message = "<p>Discovery completed.<br /><b>{0} Devices</b> discovered.<br/>Start time: {1}<br/>End time: {2}</p>"
+        .replace("{0}", status.devicesDiscovered)
+        .replace("{1}", new Date(status.startTime).toLocaleString())
+        .replace("{2}", new Date(status.endTime).toLocaleString());
+    M.toast({ html: message, classes: 'teal darken-1', displayLength: 10000 });
 }
 
 function modalFocusFirst(elm) {

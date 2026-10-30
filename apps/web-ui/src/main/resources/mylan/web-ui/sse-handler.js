@@ -17,16 +17,38 @@
 export class SseHandler {
     uri = null;
     sse = null;
+    token = null;
+    callbacks = [];
 
     constructor(uri) {
         this.uri = uri;
     }
-    
-    start(token) {
+
+    setToken(newToken) {
+        this.token = newToken;
+    }
+
+    clearToken() {
+        this.token = null;
+        this.stop();
+        this.callbacks = [];
+    }
+
+    waitForEvent(type, callback) {
+        this.callbacks[type] = callback
+        if (!this.sse) {
+            this.start();
+        }
+    }
+
+    start() {
+        if (!this.token) {
+            return;
+        }
         this.sse = new SSE(this.uri, {
             method: "GET",
             headers: {
-                Authorization: "Bearer " + token,
+                Authorization: "Bearer " + this.token,
                 Accept: "text/event-stream"
             },
             autoReconnect: true,
@@ -43,7 +65,7 @@ export class SseHandler {
     }
 
     stop() {
-        if (this.sse != null) {
+        if (this.sse) {
             this.sse.close();
             this.sse = null;
         }
@@ -51,5 +73,14 @@ export class SseHandler {
 
     onEvent(event) {
         console.log(event);
+        const type = event.eventType;
+        const callback = type == null ? null : this.callbacks[type];
+        if (callback) {
+            callback(event);
+            delete this.callbacks[type];
+            if (this.callbacks.length < 1) {
+                this.stop();
+            }
+        }
     }
 }
