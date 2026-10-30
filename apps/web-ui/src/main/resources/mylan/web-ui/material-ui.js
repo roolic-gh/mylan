@@ -300,7 +300,7 @@ export class MaterialUi {
 
 function intiDropdDowns(source) {
     M.Dropdown.init(source.querySelectorAll(".dropdown-trigger"), {
-        coverTrigger: false, constraintWidth: false, alighment: "right"
+        coverTrigger: false, constraintWidth: false, alignment: "left", onOpenEnd: (elm) => console.log(elm)
     });
 }
 
@@ -311,15 +311,15 @@ function userListRow(user, app) {
         td(user.username, user.disabled ? "person_off" : "person"),
         td(user.displayName),
         td(user.admin ? 'admin' : 'user'),
-        td(user.disabled ? 'disabled' : 'active'),
+        user.disabled ? td("disabled", "block") : td("active", "check_circle_outline"),
         actionTd("act-user-" + user.userId, user.disabled
             ? [
-                a('Enable', () => app.setUserEnabled(user, true)),
-                a('Delete', () => app.deleteUser(user))
+                a('Enable', () => app.setUserEnabled(user, true), "check_circle_outline"),
+                a('Delete', () => app.deleteUser(user), "delete_outline")
             ]
             : [
-                a('Reset Password', () => app.resetUserPassword(user)),
-                a('Disable', () => app.setUserEnabled(user, false))
+                a('Reset Password', () => app.resetUserPassword(user), "lock_reset"),
+                a('Disable', () => app.setUserEnabled(user, false), "block")
             ])
     );
     if (user.disabled) {
@@ -347,6 +347,7 @@ function actionTd(id, links) {
         dropdown.append(li);
     });
     const td = document.createElement('td');
+    td.classList.add("actions");
     td.append(trigger, dropdown);
     return td;
 
@@ -368,9 +369,7 @@ function a(text, onclick, iconId, href, classes) {
         a.onclick = onclick;
     }
     a.href = href ? href : "#";
-    if (classes) {
-        a.classList.add(classes);
-    }
+    addClasses(a, classes);
     return a;
 }
 
@@ -382,19 +381,25 @@ function elm(tag, text, iconId, classes) {
     if (text) {
         elm.append(text);
     }
-    if (classes) {
-        elm.classList.add(classes);
-    }
+    addClasses(elm, classes);
     return elm;
+}
+
+function addClasses(elm, classes) {
+    if (classes) {
+        if (Array.isArray(classes)) {
+            classes.forEach(c => elm.classList.add(c));
+        } else {
+            elm.classList.add(classes);
+        }
+    }
 }
 
 function icon(iconId, classes) {
     const icon = document.createElement("i");
     icon.append(iconId);
     icon.classList.add("material-icons");
-    if (classes) {
-        icon.classList.add(classes);
-    }
+    addClasses(icon, classes);
     return icon;
 }
 

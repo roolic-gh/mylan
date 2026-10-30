@@ -2,6 +2,21 @@ body {
     background-color: white;
 }
 
+tr.inactive {
+    color: grey;
+}
+
+td .material-icons {
+    vertical-align: middle;
+    margin-right: 5px;
+    /* font-size: 1em; */
+}
+
+td.actions {
+    width: 30%;
+    text-align: right;
+}
+
 .tabs,
 .tab {
     background: none;
@@ -11,7 +26,8 @@ a:hover {
     cursor: pointer;
 }
 
-.tabs .tab a {
+.tabs .tab a,
+td a {
     color: black;
 }
 
