@@ -300,7 +300,7 @@ export class MaterialUi {
 
 function intiDropdDowns(source) {
     M.Dropdown.init(source.querySelectorAll(".dropdown-trigger"), {
-        coverTrigger: false, constraintWidth: false, alignment: "left", onOpenEnd: (elm) => console.log(elm)
+        coverTrigger: false, constrainWidth: false, alignment: "right"
     });
 }
 
