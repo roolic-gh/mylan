@@ -27,7 +27,6 @@ export class Client {
     }
 
     setToken(newToken, persist) {
-        console.log("token: ", newToken, persist);
         this.token = newToken;
         sessionStorage.setItem("token", newToken);
         if (persist) {
@@ -69,7 +68,7 @@ export class Client {
                 this.request(method, path, callback, account);
             });
         } else {
-            this.request("POST", path, callback, account);
+            this.request(method, path, callback, account);
         }
     }
 

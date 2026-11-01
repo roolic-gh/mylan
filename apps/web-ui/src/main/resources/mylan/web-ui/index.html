@@ -153,7 +153,6 @@
                     <th>IP Address(es)</th>
                     <th>Protocol</th>
                     <th>State</th>
-
                 </tr>
             </thead>
             <tbody></tbody>
@@ -163,8 +162,8 @@
     <template id="resources-accounts-template">
         <h2>Device Accounts</h2>
         <div class="fixed-action-btn">
-            <a class="btn-floating btn-large" href="#" onclick="app.createAccount()"><i
-                    class="material-icons">add</i></a>
+            <a class="btn-floating btn-large" href="#" onclick="app.editAccount()"><i
+                    class="material-icons">person_add_alt</i></a>
         </div>
         <table class="highlight">
             <thead>
@@ -172,7 +171,7 @@
                     <th>ID</th>
                     <th>Username @ Device</th>
                     <th>Lock State</th>
-                    <th>State</th>
+                    <th>Check Status</th>
                     <th>&nbsp</th>
                 </tr>
             </thead>
@@ -209,7 +208,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <a href="#" class="btn" id="account-modal-action-btn" onclick="app.processAccount()">Action</a>
+            <a href="#" class="btn" id="account-modal-action-btn" onclick="app.updateAccount()">Action</a>
             <a href="#" class="modal-close btn-flat">Close</a>
             <input id="account-id-input" type="hidden" />
         </div>

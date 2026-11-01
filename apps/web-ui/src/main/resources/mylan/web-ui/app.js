@@ -107,7 +107,6 @@ export class App {
             this.listBookmarks();
         } else if ("recent" === navId) {
             this.listRecent();
-
         } else if (navId.startsWith("browse-")) {
             const subs = navId.substring(7).split("/", 3);
             if (subs[0] === "account") {
@@ -167,42 +166,40 @@ export class App {
         this.client.getAccountList((accounts) => this.ui.drawResourceAccountList(accounts, this));
     }
 
-    createAccount() {
-        this.ui.openNewAccountModal();
-    }
 
     editAccount(account) {
-        this.ui.openEditAccountModal(account);
+        this.ui.accountModal(account);
     }
 
-    processAccount() {
-        const account = this.ui.accountFromModal();
-        const callback = (response) => {
-            this.ui.closeModal("account-modal");
-            this.listResourcesAccounts();
-        };
-        this.client.createOrUpdateAccount(account, callback);
-    }
-
-    unlockAccount() {
-        this.client.unlockAccount(this.ui.unlockRequestFromModal(), (response) => {
-            report("Account unlocked.")
-            this.ui.closeModal("unlock-account-modal");
+    updateAccount() {
+        this.client.createOrUpdateAccount(this.ui.accountFromModal(), (response) => {
+            this.ui.closeModal();
             this.listResourcesAccounts();
         });
+    }
+
+    unlockAccount(account) {
+        if (this.ui.unlockAccountModal(account)) {
+            this.client.unlockAccount(this.ui.unlockAccountFromModal(), (response) => {
+                report("Account unlocked.")
+                this.ui.closeModal();
+                this.ui.updateAccountListItem(response, this);
+            });
+        }
     }
 
     lockAccount(account) {
         this.client.lockAccount(account.accountId, (response) => {
             report("Account locked.")
-            this.listResourcesAccounts();
+            this.ui.updateAccountListItem(response, this);
         });
     }
 
     deleteAccount(account) {
+        // TODo confirm dialog
         this.client.deleteAccount(account.accountId, (response) => {
             report("Account deleted.")
-            this.listResourcesAccounts();
+            this.ui.deleteAccountListItem(account.accountId);
         });
     }
 

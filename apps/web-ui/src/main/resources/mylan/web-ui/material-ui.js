@@ -117,6 +117,7 @@ export class MaterialUi {
 
     setDeviceSelectors(devices) {
         const deviceSelector = byId("account-device-input");
+        // TODO clear before adding
         devices.filter(device => device.protocol != "LOCAL")
             .forEach(device => {
                 const option = document.createElement("option");
@@ -128,22 +129,30 @@ export class MaterialUi {
     }
 
     drawResourceAccountList(accounts, app) {
-        const devicesTable = buildTableFromTemplate("resources-accounts-template", accounts,
-            (acc) => "rsrc-acc-tr-" + acc.accountId,
-            (acc) => [
-                acc.accountId,
-                acc.username + " @ " + acc.deviceIdentifier,
-                acc.lockState == "HAS_NO_LOCK" ? "--" : acc.lockState,
-                acc.state,
-                [
-                    acc.lockState != "LOCKED" ? button("Browse", () => app.browseAccount(acc.accountId, "")) : "",
-                    acc.lockState == "UNLOCKED" ? button("Lock", () => app.lockAccount(acc)) : "",
-                    acc.lockState == "LOCKED" ? button("Unlock", () => app.ui.openUnlockModal(acc)) : "",
-                    button("Edit", () => app.editAccount(acc)),
-                    button("Delete", () => app.deleteAccount(acc))
-                ]
-            ]);
-        byId("resources-accounts").replaceChildren(devicesTable);
+        setContent(
+            tableContentFromTemplate("resources-accounts-template", accounts, (acc) => accountListRow(acc, app)),
+            "resources-accounts"
+        );
+    }
+
+    updateAccountListItem(account, app) {
+        replaceById(accountListRow(account, app));
+    }
+
+    deleteAccountListItem(accountId) {
+        byId("tr-account-" + accountId).remove();
+    }
+
+    accountModal(account) {
+        byId("account-id-input").value = account ? account.accountId : "";
+        byId("account-device-input").value = account ? account.deviceId : "";
+        byId("account-username-input").value = account ? account.username : "";
+        byId("account-password-input").value = "";
+        byId("account-key-input").value = "";
+        byId("account-validate-input").checked = true;
+        byId("account-modal-header").innerHTML = account ? "Edit Account" : "New Account";
+        byId("account-modal-action-btn").text = account ? "Update Account" : "Create Account";
+        this.openModal("account-modal");
     }
 
     accountFromModal() {
@@ -157,36 +166,15 @@ export class MaterialUi {
         };
     }
 
-    setAccountToModal(account) {
-        byId("account-id-input").value = account.accountId;
-        byId("account-device-input").value = account.deviceId;
-        byId("account-username-input").value = account.username;
-        byId("account-password-input").value = "";
-        byId("account-key-input").value = "";
-        byId("account-validate-input").checked = true;
+    unlockAccountModal(account) {
+        if (!this.curModal) {
+            byId("unlock-account-id-input").value = account.accountId;
+            byId("unlock-key-input").value = "";
+        }
+        return !this.openModal("unlock-account-modal");
     }
 
-    openNewAccountModal() {
-        this.setAccountToModal({ accountId: "", username: "", deviceId: "" });
-        byId("account-modal-header").innerHTML = "New Account";
-        byId("account-modal-action-btn").text = "Create Account";
-        this.openModal("account-modal");
-    }
-
-    openEditAccountModal(account) {
-        this.setAccountToModal(account);
-        byId("account-modal-header").innerHTML = "Edit Account";
-        byId("account-modal-action-btn").text = "Update Account";
-        this.openModal("account-modal");
-    }
-
-    openUnlockModal(account) {
-        byId("unlock-account-id-input").value = account.accountId;
-        byId("unlock-key-input").value = "";
-        this.openModal("unlock-account-modal");
-    }
-
-    unlockRequestFromModal() {
+    unlockAccountFromModal() {
         return {
             accountId: byId("unlock-account-id-input").value,
             key: byId("unlock-key-input").value
@@ -343,6 +331,37 @@ function deviceListRow(device) {
     return row;
 }
 
+function accountListRow(acc, app) {
+    const row = tr("tr-account-" + acc.accountId);
+    row.append(td(acc.accountId), td(acc.username + " @ " + acc.deviceIdentifier));
+    const actions = [];
+    if (acc.lockState != "LOCKED" && acc.state == "VALID") {
+        actions.push(a("Browse", () => app.browseAccount(acc.accountId, "outbound")));
+    }
+    if (acc.lockState == "LOCKED") {
+        row.append(td("Locked", "lock"));
+        actions.push(a("Unlock", () => app.unlockAccount(acc), "lock_open"));
+    } else if (acc.lockState == "UNLOCKED") {
+        row.append(td("Unlocked", "lock_open"));
+        actions.push(a("Lock", () => app.lockAccount(acc), "lock"));
+    } else {
+        row.append(td("", "no_encryption"))
+    }
+    if (acc.state == "VALID") {
+        row.append(td("Valid", "check_circle_outline"));
+    } else if (acc.state == "INVALID") {
+        row.append(td("Invalid", "block"));
+    } else {
+        row.append(td("Unknown", "help_outline"));
+    }
+    actions.push(
+        a("Edit", () => app.editAccount(acc), "edit"),
+        a("Delete", () => app.deleteAccount(acc), "delete")
+    );
+    row.append(actionTd("act-acc-" + acc.accountId, actions));
+    return row;
+}
+
 function tableContentFromTemplate(templateId, items, rowBuilder) {
     const fragment = byId(templateId).content.cloneNode(true);
     const tbody = fragment.querySelector("tbody");
@@ -425,8 +444,8 @@ function buildTableFromTemplate(templateId, items, toId, toCells) {
     return fragment;
 }
 
-function setContent(newContent) {
-    const container = byId('content');
+function setContent(newContent, containerId) {
+    const container = byId(containerId ? containerId : 'content');
     container.replaceChildren(newContent);
     intiDropdDowns(container);
 }
