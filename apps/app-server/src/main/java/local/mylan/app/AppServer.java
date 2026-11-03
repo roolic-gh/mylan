@@ -26,6 +26,7 @@ import local.mylan.service.api.NotificationService;
 import local.mylan.service.data.DataServiceProvider;
 import local.mylan.service.net.NetworkDiscoveryService;
 import local.mylan.service.net.NetworkNavigationService;
+import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import local.mylan.service.rest.api.DiscoveryRestService;
 import local.mylan.service.rest.api.NavResourceRestService;
 import local.mylan.service.rest.api.NavigationRestService;
@@ -36,6 +37,7 @@ import local.mylan.service.rest.spi.DefaultNavigationRestService;
 import local.mylan.service.rest.spi.DefaultUserRestService;
 import local.mylan.service.spi.DefaultEncryptionService;
 import local.mylan.service.spi.DefaultNotificationService;
+import local.mylan.service.spi.LocalFsAccessor;
 import local.mylan.transport.http.CompositeDispatcher;
 import local.mylan.transport.http.HttpServer;
 import local.mylan.transport.http.ext.SseDispatcher;
@@ -75,9 +77,12 @@ final class AppServer {
         final var navResourceService =
             dataServiceProvider.buildNavResourceService(encryptionService, notificationService);
 
-        // networking
-        discoveryService = new NetworkDiscoveryService(confDir, notificationService);
-        navigationService = new NetworkNavigationService(confDir, navResourceService, notificationService);
+        // networking and local files
+        final var smb = new SmbDeviceAccessor(confDir);
+        final var localfs = new LocalFsAccessor(confDir, navResourceService);
+        discoveryService = new NetworkDiscoveryService(confDir, notificationService, List.of(smb));
+        navigationService = new NetworkNavigationService(confDir, navResourceService, notificationService,
+            List.of(smb, localfs));
 
         // rest endpoints
         final var userRestService = new DefaultUserRestService(userService);

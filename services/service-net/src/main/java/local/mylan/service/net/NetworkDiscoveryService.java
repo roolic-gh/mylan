@@ -66,13 +66,15 @@ public class NetworkDiscoveryService implements DiscoveryService {
     private final NotificationService notificationService;
     private final Set<DeviceAccessor> accessors;
 
-    public NetworkDiscoveryService(final Path confDir, final NotificationService notificationService) {
-        this(ConfUtils.loadConfiguration(NetworkDiscoveryServiceConf.class, confDir), notificationService,
-            defaultAccessors(confDir));
+    public NetworkDiscoveryService(final Path confDir, final NotificationService notificationService,
+        final Collection<DeviceAccessor> accessors) {
+
+        this(ConfUtils.loadConfiguration(NetworkDiscoveryServiceConf.class, confDir), notificationService, accessors);
     }
 
-    public NetworkDiscoveryService(final NetworkDiscoveryServiceConf conf, final NotificationService notificationService,
-        final Collection<DeviceAccessor> accessors) {
+    public NetworkDiscoveryService(final NetworkDiscoveryServiceConf conf,
+        final NotificationService notificationService, final Collection<DeviceAccessor> accessors) {
+
         this(conf, notificationService, InetAddressList.valueOf(conf.subnets()), accessors);
     }
 

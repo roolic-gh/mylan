@@ -60,7 +60,6 @@ import local.mylan.service.api.model.NavResource;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.api.model.ShareType;
-import local.mylan.service.net.accessors.SmbDeviceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,9 +86,9 @@ public final class NetworkNavigationService implements NavigationService {
     private final List<Registration> registrations;
 
     public NetworkNavigationService(final Path confDir, final NavResourceService navResourceService,
-        final NotificationService notificationService) {
+        final NotificationService notificationService, final Collection<? extends DeviceAccessor> accessors) {
 
-        this(navResourceService, notificationService, defaultAccessors(confDir),
+        this(navResourceService, notificationService, accessors,
             ConfUtils.loadConfiguration(NetworkNavigationServiceConf.class, confDir));
     }
 
@@ -115,10 +114,6 @@ public final class NetworkNavigationService implements NavigationService {
             .build();
         loadCaches();
         LOG.info("Initialized.");
-    }
-
-    private static Set<DeviceAccessor> defaultAccessors(final Path confDir) {
-        return Set.of(new SmbDeviceAccessor(confDir));
     }
 
     private void loadCaches() {

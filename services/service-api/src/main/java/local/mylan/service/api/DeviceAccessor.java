@@ -28,12 +28,16 @@ public interface DeviceAccessor {
     DeviceProtocol protocol();
 
     @Nullable
-    String extractDeviceName(InetAddress address);
+    default String extractDeviceName(InetAddress address) {
+        return null;
+    }
 
-    DeviceAccountState validateCredentials(Device device, HavingCredentials creds);
+    default DeviceAccountState validateCredentials(Device device, HavingCredentials creds) {
+        return DeviceAccountState.UNKNOWN;
+    }
 
     NavDirectory listDirectory(Device device, HavingCredentials creds, String path);
 
-    default void stop(){
+    default void stop() {
     }
 }

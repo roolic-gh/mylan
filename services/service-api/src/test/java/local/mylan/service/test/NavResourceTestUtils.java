@@ -302,6 +302,28 @@ public final class NavResourceTestUtils {
 
     // navigation
 
+    public static void assertNavDirectory(final NavDirectory expected, final NavDirectory actual) {
+        assertNotNull(actual);
+        if (expected.getSubDirs() != null) {
+            assertList(expected.getSubDirs(), actual.getSubDirs(), NavDirectory::getName,
+                (exp, act) -> {
+                    assertNotNull(act);
+                    assertEquals(exp.getName(), act.getName());
+                });
+        } else {
+            assertTrue(actual.getSubDirs() == null || actual.getSubDirs().isEmpty());
+        }
+        if (expected.getFiles() != null) {
+            assertList(expected.getFiles(), actual.getFiles(), NavFile::getName,
+                (exp, act) -> {
+                    assertEquals(exp.getSize(), act.getSize());
+                    assertEquals(exp.getModified(), act.getModified());
+                });
+        } else {
+            assertTrue(actual.getFiles() == null || actual.getFiles().isEmpty());
+        }
+    }
+
     public static void assertNavDirectory(final NavDirectory template, final NavDirectory actual, final String path,
         final Map<String, Long> shareIdMap, final Map<String, Long> bookmarkIdMap) {
 
