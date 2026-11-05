@@ -52,8 +52,13 @@ class RestRequestHandler {
         this.method = method;
         this.serviceInstance = serviceInstance;
         id = "%s::%s".formatted(serviceInstance.getClass().getSimpleName(), method.getName());
-        argBuilders = Arrays.stream(method.getParameters()).map(RestArgUtils::getArgBuilder).toList();
-        LOG.debug("{} {} request mapped to service method {}", httpMethod, pathMatcher, id);
+        try {
+            argBuilders = Arrays.stream(method.getParameters()).map(RestArgUtils::getArgBuilder).toList();
+            LOG.debug("{} {} request mapped to service method {}", httpMethod, pathMatcher, id);
+        } catch(Exception e){
+            LOG.error("Error mapping service method {}", id);
+            throw new ExceptionInInitializerError(e);
+        }
     }
 
     boolean httpMethodMatches(final HttpMethod httpMethod) {
