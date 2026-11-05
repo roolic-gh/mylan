@@ -25,14 +25,19 @@ import static local.mylan.service.api.model.DeviceState.OFFLINE;
 import static local.mylan.service.api.model.DeviceState.ONLINE;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccount;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountList;
+import static local.mylan.service.test.NavResourceTestUtils.assertBookmarkList;
 import static local.mylan.service.test.NavResourceTestUtils.assertDeviceList;
+import static local.mylan.service.test.NavResourceTestUtils.assertShareList;
+import static local.mylan.service.test.NavResourceTestUtils.bookmarkByShare;
 import static local.mylan.service.test.NavResourceTestUtils.device;
 import static local.mylan.service.test.NavResourceTestUtils.deviceAccount;
+import static local.mylan.service.test.NavResourceTestUtils.share;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 
 import java.util.List;
+import java.util.Set;
 import local.mylan.service.api.NavigationService;
 import local.mylan.service.api.UserContext;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
@@ -40,6 +45,7 @@ import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.NavDirectory;
+import local.mylan.service.api.model.ShareType;
 import local.mylan.service.api.model.User;
 import local.mylan.service.rest.api.NavigationRestService;
 import local.mylan.service.rest.api.UnlockRequest;
@@ -79,7 +85,18 @@ class DefaultNavigationRestServiceTest {
     private static final Integer ACCOUNT_ID2 = 2002;
     private static final Integer ACCOUNT_INVALID = 2006;
 
-    private static final String PATH = "path/to/resources";
+    private static final Long SHARE_ID1 = 3001L;
+    private static final Long SHARE_ID2 = 3002L;
+    private static final String SHARE_NAME1 = "share-1";
+    private static final String SHARE_NAME2 = "share-2";
+    private static final String SHARE_PATH1 = "/share/path/1";
+    private static final String SHARE_PATH2 = "/share/path/2";
+
+    private static final Long BKM_ID = 4001L;
+    private static final String BKM_NAME = "bookmark-1";
+    private static final String BKM_PATH = "/bookmark/path/1";
+
+    private static final String RES_PATH = "path/to/resources";
 
     @Mock
     NavigationService navigationService;
@@ -144,9 +161,34 @@ class DefaultNavigationRestServiceTest {
     }
 
     @Test
+    void listShares() {
+        final var shares = List.of(
+            share(SHARE_ID1, ACCOUNT_ID1, SHARE_NAME1, SHARE_PATH1, false, ShareType.REGISTERED, DEVICE_NAME1),
+            share(SHARE_ID2, null, SHARE_NAME2, null, false, null, DEVICE_NAME2));
+        doReturn(shares).when(navigationService).listShares(USER_ID1);
+        assertShareList(shares, restService.listShares(USER_CTX1), Set.of(ACCOUNT_ID1));
+    }
+
+    @Test
+    void listUserShares() {
+        final var shares = List.of(
+            share(SHARE_ID1, ACCOUNT_ID1, SHARE_NAME1, SHARE_PATH1, false, ShareType.REGISTERED, DEVICE_NAME1));
+        doReturn(shares).when(navigationService).listUserShares(USER_ID1);
+        assertShareList(shares, restService.listUserShares(USER_CTX1), Set.of(ACCOUNT_ID1));
+    }
+
+    @Test
+    void listUserBookmarks() {
+        final var bookmarks = List.of(
+            bookmarkByShare(BKM_ID, USER_ID1, SHARE_ID1, BKM_NAME, BKM_PATH, true));
+        doReturn(bookmarks).when(navigationService).listUserBookmarks(USER_ID1);
+        assertBookmarkList(bookmarks, restService.listUserBookmarks(USER_CTX1));
+    }
+
+    @Test
     void readDirByAccount() {
         final var navDir = new NavDirectory("test-dir1");
-        doReturn(navDir).when(navigationService).readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, PATH);
-        assertEquals(navDir, restService.readAccountDir(ACCOUNT_ID1, PATH, USER_CTX1));
+        doReturn(navDir).when(navigationService).readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, RES_PATH);
+        assertEquals(navDir, restService.readAccountDir(ACCOUNT_ID1, RES_PATH, USER_CTX1));
     }
 }

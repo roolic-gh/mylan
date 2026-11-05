@@ -49,10 +49,10 @@ public interface NavigationRestService {
     @RequestMapping(method = "GET", path = "/nav/account/{id}/dir")
     NavDirectory readAccountDir(@PathParameter("id") Integer accountId, @QueryParameter(name="path") String path, UserContext userCtx);
 
-    @RequestMapping(method = "GET", path = "/nav/shares/all")
+    @RequestMapping(method = "GET", path = "/nav/shares")
     List<NavResourceShare> listShares(UserContext userCtx);
 
-    @RequestMapping(method = "GET", path = "/nav/shares")
+    @RequestMapping(method = "GET", path = "/nav/shares/own")
     List<NavResourceShare> listUserShares(UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/bookmarks")

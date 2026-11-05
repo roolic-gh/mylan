@@ -403,12 +403,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
 
     @Override
     public List<NavResourceShare> getSharedResources(final Integer userId) {
-        if (userId == null) {
-            return fromSession(session ->
-                session.createNamedQuery(Queries.GET_SHARED_RESOURCES_FOR_GUEST, NavResourceShareEntity.class)
-                    .getResultList()
-            ).stream().map(MAPPER::fromEntity).toList();
-        }
+        requireNonNull(userId, "userId is required");
         return fromSession(session ->
             session.createNamedQuery(Queries.GET_SHARED_RESOURCES_FOR_USER, NavResourceShareEntity.class)
                 .setParameter("userId", userId).getResultList()

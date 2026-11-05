@@ -333,15 +333,18 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public List<NavResourceShare> listShares(final Integer userId) {
+        final var userAccountIds = userAccountIds(userId);
         if (userId == null) {
             return shareMap.values().stream()
-                .filter(share -> share.getShareType() == ShareType.ALL).toList();
+                .filter(share -> share.getShareType() == ShareType.ALL)
+                .map(share -> copyShare(share, Set.of()))
+                .toList();
         }
-        final var accountIds = userAccountIds(userId);
         return shareMap.values().stream()
-            .filter(share -> accountIds.contains(share.getAccountId()) ||
+            .filter(share -> userAccountIds.contains(share.getAccountId()) ||
                 share.getShareType() == ShareType.ALL
                 || share.getShareType() == ShareType.REGISTERED)
+            .map(share -> copyShare(share, userAccountIds))
             .toList();
     }
 
@@ -350,9 +353,26 @@ public final class NetworkNavigationService implements NavigationService {
         if (userId == null) {
             return List.of();
         }
-        final var accountIds = userAccountIds(userId);
+        final var userAccountIds = userAccountIds(userId);
         return shareMap.values().stream()
-            .filter(share -> accountIds.contains(share.getAccountId())).toList();
+            .filter(share -> userAccountIds.contains(share.getAccountId()))
+            .map(share -> copyShare(share, userAccountIds))
+            .toList();
+    }
+
+    private static NavResourceShare copyShare(final NavResourceShare share, final Set<Integer> userAccountIds) {
+        final var copy = new NavResourceShare();
+        copy.setShareId(share.getShareId());
+        copy.setDeviceIdentifier(share.getDeviceIdentifier());
+        copy.setName(share.getName());
+        copy.setFile(share.isFile());
+        if (userAccountIds.contains(share.getAccountId())) {
+            // available to owner only
+            copy.setAccountId(share.getAccountId());
+            copy.setPath(share.getPath());
+            copy.setShareType(share.getShareType());
+        }
+        return copy;
     }
 
     private void onUserShareCrud(final UserShareCrudEvent event) {

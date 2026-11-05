@@ -36,11 +36,8 @@ import org.hibernate.annotations.OnDeleteAction;
     query = "SELECT s from NavResourceShareEntity s")
 @NamedQuery(name = Queries.GET_LOCAL_SHARED_RESOURCES, resultClass = NavResourceShareEntity.class,
     query = "SELECT s from NavResourceShareEntity s WHERE s.account.device.protocol = DeviceProtocol.LOCAL")
-@NamedQuery(name = Queries.GET_SHARED_RESOURCES_FOR_GUEST, resultClass = NavResourceShareEntity.class,
-    query = "SELECT s from NavResourceShareEntity s WHERE s.shareType = ShareType.ALL")
 @NamedQuery(name = Queries.GET_SHARED_RESOURCES_FOR_USER, resultClass = NavResourceShareEntity.class,
-    query = "SELECT s from NavResourceShareEntity s WHERE s.shareType IN (ShareType.ALL, ShareType.REGISTERED) " +
-            "OR s.userId = :userId")
+    query = "SELECT s from NavResourceShareEntity s WHERE s.userId = :userId")
 
 @Entity
 @Table(name = "nav_shares")

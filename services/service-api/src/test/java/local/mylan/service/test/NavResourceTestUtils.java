@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -196,6 +197,13 @@ public final class NavResourceTestUtils {
         assertList(expected, actual, NavResourceShare::getShareId, (exp, act) -> assertShare(exp, act, localAccountId));
     }
 
+    public static void assertShareList(final List<NavResourceShare> expected, final List<NavResourceShare> actual,
+        final Set<Integer> userAccountIds) {
+
+        assertList(expected, actual, NavResourceShare::getShareId, (exp, act) -> assertShare(exp, act,
+            exp.getAccountId() != null && userAccountIds.contains(exp.getAccountId())));
+    }
+
     public static void assertShare(final NavResourceShare expected, final NavResourceShare actual,
         final Integer localAccountId) {
 
@@ -216,6 +224,26 @@ public final class NavResourceTestUtils {
         assertEquals(expected.getPath(), actual.getPath());
         assertEquals(expected.isFile(), actual.isFile());
         assertEquals(expected.getShareType(), actual.getShareType());
+    }
+
+    public static void assertShare(final NavResourceShare expected, final NavResourceShare actual,
+        final boolean userOwned) {
+
+        assertNotNull(actual);
+        assertNotNull(actual.getShareId());
+        assertEquals(expected.getShareId(), actual.getShareId());
+        assertEquals(expected.getDeviceIdentifier(), actual.getDeviceIdentifier());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.isFile(), actual.isFile());
+        if (userOwned) {
+            assertEquals(expected.getAccountId(), actual.getAccountId());
+            assertEquals(expected.getPath(), actual.getPath());
+            assertEquals(expected.getShareType(), actual.getShareType());
+        } else {
+            assertNull(actual.getAccountId());
+            assertNull(actual.getPath());
+            assertNull(actual.getShareType());
+        }
     }
 
     // bookmarks
@@ -324,7 +352,8 @@ public final class NavResourceTestUtils {
         }
     }
 
-    public static void assertNavDirectory(final NavDirectory template, final NavDirectory actual, final String path,
+    public static void assertNavDirectory(final NavDirectory template, final NavDirectory actual,
+        final String path,
         final Map<String, Long> shareIdMap, final Map<String, Long> bookmarkIdMap) {
 
         assertNotNull(actual);

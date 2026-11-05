@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -183,12 +182,9 @@ class DefaultNavResourceRestServiceTest {
 
     @Test
     void listShares() {
-        final var list1 = List.of(SHARE_1);
-        final var list2 = List.of(SHARE_1, SHARE_2);
-        doReturn(list1).when(navResourceService).getSharedResources(isNull());
-        doReturn(list2).when(navResourceService).getSharedResources(USER_ID2);
-        assertShareList(list1, restService.listUserShares(GUEST_CTX));
-        assertShareList(list2, restService.listUserShares(USER_CTX2));
+        final var shares = List.of(SHARE_1, SHARE_2);
+        doReturn(shares).when(navResourceService).getSharedResources(USER_ID2);
+        assertShareList(shares, restService.listUserShares(USER_CTX2));
     }
 
     @Test
@@ -217,11 +213,11 @@ class DefaultNavResourceRestServiceTest {
     }
 
     private static void assertShare(final NavResourceShare expected, final NavResourceShare actual) {
-        NavResourceTestUtils.assertShare(expected, actual, null);
+        NavResourceTestUtils.assertShare(expected, actual, true);
     }
 
     private static void assertShareList(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
-        NavResourceTestUtils.assertShareList(expected, actual, null);
+        NavResourceTestUtils.assertShareList(expected, actual, (Integer) null);
     }
 
     @Test

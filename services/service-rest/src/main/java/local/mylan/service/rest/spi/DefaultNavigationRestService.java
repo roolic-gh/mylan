@@ -88,17 +88,17 @@ public class DefaultNavigationRestService implements NavigationRestService {
 
     @Override
     public List<NavResourceShare> listShares(final UserContext userCtx) {
-        return List.of();
+        return navigationService.listShares(userIdFrom(userCtx));
     }
 
     @Override
     public List<NavResourceShare> listUserShares(final UserContext userCtx) {
-        return List.of();
+        return navigationService.listUserShares(userIdFrom(userCtx));
     }
 
     @Override
     public List<NavResourceBookmark> listUserBookmarks(final UserContext userCtx) {
-        return List.of();
+        return navigationService.listUserBookmarks(userIdFrom(userCtx));
     }
 
     @Override

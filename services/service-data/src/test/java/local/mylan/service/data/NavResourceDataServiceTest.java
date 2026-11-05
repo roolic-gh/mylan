@@ -629,14 +629,12 @@ class NavResourceDataServiceTest {
     @Test
     @Order(35)
     void getShares() {
-        // shares expected for registered and guest users accordingly
-        final var expectedReg = List.of(localShareAll, localShareReg, share1, share2);
-        final var expectedGuest = List.of(localShareAll, share1);
+        assertShareList(List.of(localShareAll, localShareReg, share1, share2),
+            navResourceService.getAllSharedResources());
 
-        assertShareList(expectedReg, navResourceService.getAllSharedResources());
-        assertShareList(expectedGuest, navResourceService.getSharedResources(null));
-        assertShareList(expectedReg, navResourceService.getSharedResources(userId1));
-        assertShareList(expectedReg, navResourceService.getSharedResources(userId2));
+        assertThrows(NullPointerException.class, () -> navResourceService.getSharedResources(null));
+        assertShareList(List.of(share1), navResourceService.getSharedResources(userId1));
+        assertShareList(List.of(share2), navResourceService.getSharedResources(userId2));
     }
 
     private static void assertShare(final NavResourceShare expected, final NavResourceShare actual) {

@@ -50,6 +50,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import local.mylan.common.utils.ConfUtils;
 import local.mylan.service.api.DeviceAccessor;
 import local.mylan.service.api.NavResourceService;
@@ -360,6 +361,9 @@ class NetworkNavigationServiceTest {
         final var account2 = accountWithCreds(ACCOUNT_ID2, USER_ID2, DEVICE_ID1, USERNAME2, PASSWORD2, null);
         doReturn(List.of(localAccount(), account1, account2))
             .when(navResourceService).getAllAccountsWithCredentials();
+        // user accounts
+        final var userAccs1 = Set.of(ACCOUNT_ID1);
+        final var userAccs2 = Set.of(ACCOUNT_ID2);
 
         // accessor
         doReturn(SMB).when(accessor).protocol();
@@ -385,12 +389,12 @@ class NetworkNavigationServiceTest {
         service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
 
         // validate initial
-        assertShares(List.of(localShare), service.listShares(USER_ID_GUEST));
-        assertShares(List.of(localShare, share1, share3), service.listShares(USER_ID1));
-        assertShares(List.of(localShare, share1, share2, share3), service.listShares(USER_ID2));
+        assertShareList(List.of(localShare), service.listShares(USER_ID_GUEST), Set.of());
+        assertShareList(List.of(localShare, share1, share3), service.listShares(USER_ID1), userAccs1);
+        assertShareList(List.of(localShare, share1, share2, share3), service.listShares(USER_ID2), userAccs2);
 
-        assertShares(List.of(share1), service.listUserShares(USER_ID1));
-        assertShares(List.of(share2, share3), service.listUserShares(USER_ID2));
+        assertShareList(List.of(share1), service.listUserShares(USER_ID1), userAccs1);
+        assertShareList(List.of(share2, share3), service.listUserShares(USER_ID2), userAccs2);
 
         // share events: #1 modified, share #3 removed, share #4 added
         notificationService.raiseEvent(new UserShareCrudEvent(SHARE_ID1,
@@ -405,12 +409,12 @@ class NetworkNavigationServiceTest {
             share(SHARE_ID4, ACCOUNT_ID1, SHARE_NAME4, SHARE_PATH4, IS_DIR, ShareType.ALL, DEVICE_NAME1);
 
         // validate updated
-        assertShares(List.of(localShare, share4), service.listShares(USER_ID_GUEST));
-        assertShares(List.of(localShare, share1updated, share4), service.listShares(USER_ID1));
-        assertShares(List.of(localShare, share2, share4), service.listShares(USER_ID2));
+        assertShareList(List.of(localShare, share4), service.listShares(USER_ID_GUEST), Set.of());
+        assertShareList(List.of(localShare, share1updated, share4), service.listShares(USER_ID1), userAccs1);
+        assertShareList(List.of(localShare, share2, share4), service.listShares(USER_ID2), userAccs2);
 
-        assertShares(List.of(share1updated, share4), service.listUserShares(USER_ID1));
-        assertShares(List.of(share2), service.listUserShares(USER_ID2));
+        assertShareList(List.of(share1updated, share4), service.listUserShares(USER_ID1), userAccs1);
+        assertShareList(List.of(share2), service.listUserShares(USER_ID2), userAccs2);
 
         // cascade on account remove
         notificationService.raiseEvent(new DeviceAccountCrudEvent(ACCOUNT_ID2, CrudOperation.DELETE));
@@ -419,10 +423,6 @@ class NetworkNavigationServiceTest {
         // cascade on device remove
         notificationService.raiseEvent(new DeviceCrudEvent(DEVICE_ID1, CrudOperation.DELETE));
         assertEquals(List.of(), service.listUserShares(USER_ID1));
-    }
-
-    private static void assertShares(final List<NavResourceShare> expected, final List<NavResourceShare> actual) {
-        assertShareList(expected, actual, ACCOUNT_ID_LOCAL);
     }
 
     @Test
