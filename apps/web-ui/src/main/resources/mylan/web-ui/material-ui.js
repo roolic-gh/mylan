@@ -20,6 +20,7 @@ export class MaterialUi {
     selfContext = null;
     curUser = null;
     curModal = null;
+    devices = null;
 
     constructor(selfContext) {
         this.selfContext = selfContext;
@@ -59,7 +60,6 @@ export class MaterialUi {
     applyUser(user) {
         this.curUser = user;
         setVisible("resources-menu-item", !user.isGuest);
-        setVisible("bookmarks-menu-item", !user.isGuest);
         setVisible("users-menu-item", user.isAdmin);
         setVisible("registered-menu-item", !user.isGuest);
         setVisible("login-menu-item", user.isGuest);
@@ -102,12 +102,10 @@ export class MaterialUi {
         return { userId: this.curUser.id, displayName: byId('edit-displayname-input').value };
     }
 
-    drawResourcesTabs(app, navId) {
-        setContent(byId("resources-tabs-template").content.cloneNode(true));
-        const tabs = M.Tabs.init(byId("resources-tabs"), { onShow: (div) => app.setNav(div.id) });
-        if (navId) {
-            tabs.select(navId);
-        }
+    drawResourcesTabs(navId, onTabShow) {
+        setContent(fromTemplate("resources-tabs-template"));
+        const tabs = M.Tabs.init(byId("resources-tabs"), { onShow: (elm) => onTabShow(elm.id) });
+        tabs.select(navId ? navId : "resources-devices");
     }
 
     drawResourceDevicesList(devices, app) {
@@ -116,8 +114,9 @@ export class MaterialUi {
     }
 
     setDeviceSelectors(devices) {
+        this.devices = devices;
         const deviceSelector = byId("account-device-input");
-        // TODO clear before adding
+        deviceSelector.innerHTML = "";
         devices.filter(device => device.protocol != "LOCAL")
             .forEach(device => {
                 const option = document.createElement("option");
@@ -222,6 +221,24 @@ export class MaterialUi {
             displayName: byId('new-displayname-input').value,
             admin: byId('new-isadmin-input').checked
         };
+    }
+
+    drawDashboard(navId, onTabShow) {
+        if (!this.curUser || this.curUser.isGuest) {
+            setContent(fromTemplate("guest-dashboard-template"));
+            onTabShow("all-shares");
+        } else {
+            setContent(fromTemplate("dashboard-template"));
+            const tabs = M.Tabs.init(byId("dashboard-tabs"), { onShow: (elm) => onTabShow(elm.id) });
+            tabs.select(navId ? navId : "all-shares");
+        }
+    }
+
+    drawAllShares(shares, app) {
+        setContent(
+            tableContentFromTemplate("all-shares-template", shares, (share) => shareListRow(share, app, true)),
+            "all-shares"
+        );
     }
 
     drawDir(dir, app) {
@@ -362,14 +379,50 @@ function accountListRow(acc, app) {
     return row;
 }
 
+function shareListRow(share, app, linkName) {
+    const row = tr("tr-share-" + share.shareId);
+    const actions = [];
+    const name = share.name + " @ " + share.deviceIdentifier;
+    if (share.file) {
+        // TODO file icon and actions depending on type
+        row.append(td(name, "file_present"));
+        actions.push(a("Download", () => app.downloadByShare(share.shareId, ""), "download"))
+    } else {
+        row.append(linkName
+            ? td(a(name, () => app.browseByShare(share.shareId), "folder_special"))
+            : td(name, "folder_special")
+        );
+        actions.push(a("Browse", () => app.browsebyShare(share.shareId), "outbound"));
+    }
+    if (share.path) {
+        actions.push(a("Edit", () => app.updateShare(share), "edit"));
+        actions.push(a("Delete", () => app.deleteShare(share), "delete"));
+    }
+    row.append(actionTd("act-share-" + share.shareId, actions));
+    return row;
+}
+
+function table(items, rowBuilder, classes) {
+    const table = document.createElement("table");
+    const tbody = document.createElement("tbody");
+    items.forEach(item => tbody.append(rowBuilder(item)));
+    table.append(tbody);
+    addClasses(table, classes);
+    return table;
+}
+
+function fromTemplate(templateId) {
+    return byId(templateId).content.cloneNode(true);
+}
+
 function tableContentFromTemplate(templateId, items, rowBuilder) {
     const fragment = byId(templateId).content.cloneNode(true);
     const tbody = fragment.querySelector("tbody");
-    items.forEach((item) => tbody.append(rowBuilder(item)));
+    items.forEach(item => tbody.append(rowBuilder(item)));
     return fragment;
 }
 
-function actionTd(id, links) {
+function actionTd(id, links, buttons) {
     const trigger = a(null, null, "more_vert", null, ["dropdown-trigger"]);
     trigger.setAttribute("data-target", id);
     const dropdown = document.createElement('ul');
@@ -382,9 +435,11 @@ function actionTd(id, links) {
     });
     const td = document.createElement('td');
     td.classList.add("actions");
+    if (buttons) {
+        buttons.forEach(b => td.append(b));
+    }
     td.append(trigger, dropdown);
     return td;
-
 }
 
 function tr(id) {
@@ -407,13 +462,13 @@ function a(text, onclick, iconId, href, classes) {
     return a;
 }
 
-function elm(tag, text, iconId, classes) {
+function elm(tag, inner, iconId, classes) {
     const elm = document.createElement(tag);
     if (iconId) {
         elm.append(icon(iconId));
     }
-    if (text) {
-        elm.append(text);
+    if (inner) {
+        elm.append(inner);
     }
     addClasses(elm, classes);
     return elm;
@@ -440,7 +495,7 @@ function icon(iconId, classes) {
 function buildTableFromTemplate(templateId, items, toId, toCells) {
     const fragment = byId(templateId).content.cloneNode(true);
     const tbody = fragment.querySelector("tbody");
-    items.forEach((item) => tbody.append(buildTableRow(toId(item), toCells(item))));
+    items.forEach(item => tbody.append(buildTableRow(toId(item), toCells(item))));
     return fragment;
 }
 
@@ -469,13 +524,13 @@ function setVisible(id, visible) {
 function buildTableRow(id, items) {
     const row = document.createElement('tr');
     row.id = id;
-    items.forEach((item) => row.append(Array.isArray(item) ? elementNode('td', item) : elementText('td', item)));
+    items.forEach(item => row.append(Array.isArray(item) ? elementNode('td', item) : elementText('td', item)));
     return row;
 }
 
 function elementNode(tag, children) {
     const elm = document.createElement(tag);
-    children.forEach(((item) => elm.append(item)));
+    children.forEach((item => elm.append(item)));
     return elm;
 }
 

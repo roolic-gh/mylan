@@ -41,7 +41,7 @@
         <div class="nav-wrapper blue-grey darken-3">
             <a href="#" onclick="app.dashboard()" class="left brand-logo">MyLAN</a>
             <ul class="right">
-                <li id="bookmarks-menu-item"><a href="#" onclick="app.listBookmarks()">Bookmarks</a></li>
+                <li id="dashboard-menu-item"><a href="#" onclick="app.dashboard()">Dashboard</a></li>
                 <li id="resources-menu-item"><a href="#" onclick="app.listResources()">Resources</a></li>
                 <li id="users-menu-item"><a href="#" onclick="app.listUsers()">Users</a></li>
                 <li id="registered-menu-item">
@@ -125,6 +125,44 @@
             <a href="#" class="modal-close btn-flat">Close</a>
         </div>
     </div>
+
+    <!-- home -->
+
+    <template id="guest-dashboard-template">
+        <div id="all-shares"></div>
+    </template>
+
+    <template id="dashboard-template">
+        <ul id="dashboard-tabs" class="tabs">
+            <li class="tab"><a href="#all-shares">Shares</a></li>
+            <li class="tab"><a href="#user-bookmarks">Bookmars</a></li>
+            <li class="tab"><a href="#user-history">History</a></li>
+        </ul>
+        <div id="all-shares"></div>
+        <div id="user-bookmarks"></div>
+        <div id="user-history"></div>
+    </template>
+
+    <template id="all-shares-template">
+        <h2>Shared Resources</h2>
+        <table class="highlight">
+            <tbody></tbody>
+        </table>
+    </template>
+
+    <template id="user-bookmarks-template">
+        <h2>Bookmarks</h2>
+        <table class="highlight">
+            <tbody></tbody>
+        </table>
+    </template>
+
+    <template id="user-history-template">
+        <h2>History</h2>
+        <table class="highlight">
+            <tbody></tbody>
+        </table>
+    </template>
 
     <!-- resources -->
 

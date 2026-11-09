@@ -6,7 +6,8 @@ tr.inactive {
     color: grey;
 }
 
-td .material-icons {
+td .material-icons,
+td a .material-icons {
     vertical-align: middle;
     margin-right: 5px;
     /* font-size: 1em; */

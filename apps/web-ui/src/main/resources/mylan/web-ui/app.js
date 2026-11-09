@@ -103,10 +103,8 @@ export class App {
             this.listUsers();
         } else if (navId.startsWith("resources")) {
             this.listResources(navId);
-        } else if ("bookmarks" === navId) {
-            this.listBookmarks();
-        } else if ("recent" === navId) {
-            this.listRecent();
+        } else if (navId.startsWith("dashboard-")) {
+            this.dashboard(navId.substring(10));
         } else if (navId.startsWith("browse-")) {
             const subs = navId.substring(7).split("/", 3);
             if (subs[0] === "account") {
@@ -119,51 +117,50 @@ export class App {
         }
     }
 
-    setNav(navId) {
-        setNav(navId);
+    dashboard(navId) {
+        this.ui.drawDashboard(navId, (id) => this.listDashboard(id));
     }
 
-    dashboard() {
-        setNav("home");
+    listDashboard(navId) {
+        setNav("dashboard-" + navId);
+        if (navId === "user-bookmarks") {
+            // TODO BOOKMARKS
+            console.log("Bookmarks");
+        } else if (navId === "user-history") {
+            // TODO HISTORY
+            console.log("History");
+        } else {
+            this.client.getShareList((shares) => this.ui.drawAllShares(shares, this));
+        }
     }
 
-    listBookmarks() {
-        setNav("bookmarks");
-    }
-
-    listRecent() {
-        setNav("recent");
-    }
 
     listResources(navId) {
-        if (navId) {
-            this.ui.drawResourcesTabs(this, navId);
-        } else {
-            setNav("resources");
-            this.ui.drawResourcesTabs(this, null);
-        }
-        this.listResourcesDevices();
-        this.listResourcesAccounts();
-        this.listResourcesShares();
+        this.ui.drawResourcesTabs(navId, (id) => this.listResource(id));
     }
 
-    listResourcesDevices() {
-        this.client.getDeviceList((devices) => {
-            this.ui.setDeviceSelectors(devices);
-            this.ui.drawResourceDevicesList(devices, this);
-        });
+    listResource(navId) {
+        setNav(navId)
+        if (navId == "resources-shares") {
+            this.client.getUserShareList((shares) => this.ui.drawResourceShareList(shares, this));
+        } else if (navId == "resources-accounts") {
+            if (!this.ui.devices) {
+                this.client.getDeviceList((devices) => this.ui.setDeviceSelectors(devices));
+            }
+            this.client.getAccountList((accounts) => this.ui.drawResourceAccountList(accounts, this));
+        } else {
+            this.client.getDeviceList((devices) => {
+                this.ui.setDeviceSelectors(devices);
+                this.ui.drawResourceDevicesList(devices, this);
+            });
+        }
     }
 
     startDiscovery() {
-        // fixme: report actual status
         this.client.startDiscovery((status) => {
             this.sse.waitForEvent("discovery-status", reportDiscoveryStatus)
             report("Discovery started.")
         });
-    }
-
-    listResourcesAccounts() {
-        this.client.getAccountList((accounts) => this.ui.drawResourceAccountList(accounts, this));
     }
 
 
@@ -174,7 +171,7 @@ export class App {
     updateAccount() {
         this.client.createOrUpdateAccount(this.ui.accountFromModal(), (response) => {
             this.ui.closeModal();
-            this.listResourcesAccounts();
+            this.listDeviceAccounts();
         });
     }
 
@@ -208,10 +205,6 @@ export class App {
             setNav("browse-account/" + accountId + (path ? path : "/"));
             this.ui.drawDir(response, this);
         });
-    }
-
-    listResourcesShares() {
-        this.client.getShareList((shares) => this.ui.drawResourceShareList(shares, this));
     }
 
     listUsers() {
@@ -255,7 +248,9 @@ export class App {
 }
 
 function setNav(value) {
-    window.history.pushState({ nav: value }, null, "?" + value);
+    if (getNav() != value) {
+        window.history.pushState({ nav: value }, null, "?" + value);
+    }
 }
 
 function getNav() {

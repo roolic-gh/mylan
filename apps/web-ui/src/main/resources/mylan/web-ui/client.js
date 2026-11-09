@@ -93,14 +93,18 @@ export class Client {
         this.request("GET", "/nav/account/" + accountId + "/dir?" + params, callback);
     }
 
-    getShareList(callback) {
-        callback([{
-            shareId: 1,
-            account: { accountId: 1, username: "username", deviceId: 1, deviceIdentifier: "ROOLIC-TEST" },
-            name: "My Files", path: "path/to/files", type: "ALL"
-        }]);
+    getUserShareList(callback) {
+        this.request("GET", "/nav/shares/own", callback);
     }
 
+    getShareList(callback) {
+        this.request("GET", "/nav/shares", callback)
+    }
+
+    readDirByShare(shareId, path, callback) {
+        const params = new URLSearchParams({ path: path }).toString();
+        this.request("GET", "/nav/share/" + shareId + "/dir?" + params, callback);
+    }
 
     updateUserPassword(creds, callback) {
         this.request("POST", "/user/change-password", callback, creds);
