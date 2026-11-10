@@ -40,8 +40,10 @@ import io.swagger.v3.oas.models.tags.Tag;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,15 +74,15 @@ class OpenApiBuilder {
         final var server = new Server();
         server.setUrl(rootPath);
         openApi.setServers(List.of(server));
-
     }
 
     OpenAPI build() {
-        // TODO ensure sorted
+        components.setSchemas(sortedMap(components.getSchemas()));
+
         openApi.setInfo(defaultInfo());
         openApi.setSecurity(defaultSecurity());
-        openApi.setTags(List.copyOf(tags));
-        openApi.setPaths(paths);
+        openApi.setTags(tags.stream().sorted(Comparator.comparing(Tag::getName)).toList());
+        openApi.setPaths(sortedMap(paths, new Paths()));
         openApi.setComponents(components);
         return openApi;
     }
@@ -97,18 +99,21 @@ class OpenApiBuilder {
     }
 
     private List<SecurityRequirement> defaultSecurity() {
-        components.setSecuritySchemes(
-            Map.of("BasicAuth", new SecurityScheme()
+        components
+            .addSecuritySchemes("BasicAuth",
+                new SecurityScheme()
                     .type(SecurityScheme.Type.HTTP)
                     .scheme("basic")
-                    .in(SecurityScheme.In.HEADER),
-                "BearerAuth", new SecurityScheme()
+                    .in(SecurityScheme.In.HEADER))
+            .addSecuritySchemes("BearerAuth",
+                new SecurityScheme()
                     .type(SecurityScheme.Type.HTTP)
                     .scheme("bearer")
-                    .in(SecurityScheme.In.HEADER)));
+                    .in(SecurityScheme.In.HEADER));
         return List.of(
-            new SecurityRequirement().addList("BasicAuth").addList("BearerAuth"));
-
+            new SecurityRequirement()
+                .addList("BasicAuth")
+                .addList("BearerAuth"));
     }
 
     OpenApiBuilder process(final Collection<Class<?>> classes) {
@@ -190,7 +195,7 @@ class OpenApiBuilder {
         return this;
     }
 
-    private Content buildContent(final Schema schema) {
+    private Content buildContent(final Schema<?> schema) {
         final var content = new Content();
         supportedEncodings.forEach(
             encoding -> {
@@ -253,5 +258,16 @@ class OpenApiBuilder {
 
     private static String nonEmptyOrNull(final String value) {
         return value == null || value.isEmpty() ? null : value;
+    }
+
+    private static <T> Map<String, T> sortedMap(final Map<String, T> unsorted){
+        return sortedMap(unsorted, new LinkedHashMap<>());
+    }
+
+    private static <T, M extends Map<String, T>> M sortedMap(final M unsorted, final M sorted) {
+        final var keys = unsorted.keySet().stream().sorted().toList();
+        sorted.clear();
+        keys.forEach(key -> sorted.put(key, unsorted.get(key)));
+        return sorted;
     }
 }

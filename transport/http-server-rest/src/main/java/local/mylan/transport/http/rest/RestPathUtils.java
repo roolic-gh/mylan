@@ -16,6 +16,7 @@
 package local.mylan.transport.http.rest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +119,7 @@ final class RestPathUtils {
 
         @Override
         public String toString() {
-            return pattern + "-> " + paramNames;
+            return pattern + " -> " + Arrays.toString(paramNames);
         }
     }
 }
