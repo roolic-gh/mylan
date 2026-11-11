@@ -227,7 +227,7 @@ public final class NavResourceTestUtils {
     }
 
     public static void assertShare(final NavResourceShare expected, final NavResourceShare actual,
-        final boolean userOwned) {
+        final boolean editable) {
 
         assertNotNull(actual);
         assertNotNull(actual.getShareId());
@@ -235,7 +235,7 @@ public final class NavResourceTestUtils {
         assertEquals(expected.getDeviceIdentifier(), actual.getDeviceIdentifier());
         assertEquals(expected.getName(), actual.getName());
         assertEquals(expected.isFile(), actual.isFile());
-        if (userOwned) {
+        if (editable) {
             assertEquals(expected.getAccountId(), actual.getAccountId());
             assertEquals(expected.getPath(), actual.getPath());
             assertEquals(expected.getShareType(), actual.getShareType());

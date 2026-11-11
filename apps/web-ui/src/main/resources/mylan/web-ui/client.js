@@ -94,11 +94,11 @@ export class Client {
     }
 
     getUserShareList(callback) {
-        this.request("GET", "/nav/shares/own", callback);
+        this.request("GET", "/nav/shares", callback);
     }
 
     getShareList(callback) {
-        this.request("GET", "/nav/shares", callback)
+        this.request("GET", "/nav/shares/all", callback)
     }
 
     readDirByShare(shareId, path, callback) {

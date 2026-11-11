@@ -27,11 +27,13 @@ import static local.mylan.service.api.model.DeviceProtocol.SMB;
 import static local.mylan.service.api.model.DeviceState.OFFLINE;
 import static local.mylan.service.api.model.DeviceState.ONLINE;
 import static local.mylan.service.test.NavResourceTestUtils.accountWithCreds;
+import static local.mylan.service.test.NavResourceTestUtils.assertAccount;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountListWithStates;
 import static local.mylan.service.test.NavResourceTestUtils.assertAccountWithStates;
 import static local.mylan.service.test.NavResourceTestUtils.assertBookmarkList;
 import static local.mylan.service.test.NavResourceTestUtils.assertDeviceList;
 import static local.mylan.service.test.NavResourceTestUtils.assertNavDirectory;
+import static local.mylan.service.test.NavResourceTestUtils.assertShare;
 import static local.mylan.service.test.NavResourceTestUtils.assertShareList;
 import static local.mylan.service.test.NavResourceTestUtils.bookmarkByAccount;
 import static local.mylan.service.test.NavResourceTestUtils.bookmarkByShare;
@@ -39,6 +41,7 @@ import static local.mylan.service.test.NavResourceTestUtils.device;
 import static local.mylan.service.test.NavResourceTestUtils.deviceAccount;
 import static local.mylan.service.test.NavResourceTestUtils.share;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -521,6 +524,53 @@ class NetworkNavigationServiceTest {
         final var result = service.readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, DIR_PATH);
         // TODO add shares and bookmarks identified
         assertNavDirectory(dir, result, DIR_PATH, Map.of(), Map.of());
+        assertAccount(deviceAccount(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1), result.getAccount());
+
+        // illegal user
+        assertThrows(UnauthorizedException.class,
+            () -> service.readDeviceDirectoryByAccount(USER_ID2, ACCOUNT_ID1, DIR_PATH));
+    }
+
+    @Test
+    void readDirByShare() {
+        // setup device, account etc
+        final var device = device(DEVICE_ID1, DEVICE_NAME1, SMB, List.of(IP1), null);
+        final var account = accountWithCreds(ACCOUNT_ID1, USER_ID1, DEVICE_ID1, USERNAME1, PASSWORD1, null);
+        final var share = share(SHARE_ID1, ACCOUNT_ID1, SHARE_NAME1, SHARE_PATH1, false, ShareType.REGISTERED,
+            DEVICE_NAME1);
+        final var shareFile = share(SHARE_ID2, ACCOUNT_ID1, SHARE_NAME2, SHARE_PATH2, true, ShareType.ALL,
+            DEVICE_NAME1);
+
+        doReturn(List.of(device)).when(navResourceService).getAllDevices();
+        doReturn(List.of(account)).when(navResourceService).getAllAccountsWithCredentials();
+        doReturn(List.of(share, shareFile)).when(navResourceService).getAllSharedResources();
+
+        // accessor
+        doReturn(SMB).when(accessor).protocol();
+        doReturn(VALID).when(accessor).validateCredentials(device, account);
+        final var now = System.currentTimeMillis();
+        final var dir = new NavDirectory(
+            List.of(new NavDirectory(SUBDIR1), new NavDirectory(SUBDIR2)),
+            List.of(new NavFile(FILENAME1, 1024, now), new NavFile(FILENAME2, 1025, now))
+        );
+
+        final var fullPath = SHARE_PATH1 + DIR_PATH;
+        doReturn(dir).when(accessor).listDirectory(device, account, fullPath);
+
+        // test
+        service = new NetworkNavigationService(navResourceService, notificationService, List.of(accessor), CONF);
+        final var result = service.readDeviceDirectoryByShare(USER_ID2, SHARE_ID1, DIR_PATH);
+        // TODO add shares and bookmarks identified
+        assertNavDirectory(dir, result, DIR_PATH, Map.of(), Map.of());
+        final var topResource = assertInstanceOf(NavResourceShare.class, result.getTopResource());
+        assertShare(share, topResource, false);
+
+        // not eligible for guest
+        assertThrows(UnauthorizedException.class,
+            () -> service.readDeviceDirectoryByShare(null, SHARE_ID1, DIR_PATH));
+        // not a dir
+        assertThrows(IllegalArgumentException.class,
+            () -> service.readDeviceDirectoryByShare(null, SHARE_ID2, DIR_PATH));
     }
 
     private static Device localDevice() {

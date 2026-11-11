@@ -42,7 +42,7 @@ public interface NavigationService {
 
     NavDirectory readDeviceDirectoryByAccount(Integer userId, Integer accountId, String path);
 
-    NavDirectory readDeviceDirectoryByShare(Integer userId, Integer shareId, String path);
+    NavDirectory readDeviceDirectoryByShare(Integer userId, Long shareId, String path);
 
     default void stop(){
     }

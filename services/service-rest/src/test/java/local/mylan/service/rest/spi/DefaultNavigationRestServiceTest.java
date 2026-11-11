@@ -189,6 +189,13 @@ class DefaultNavigationRestServiceTest {
     void readDirByAccount() {
         final var navDir = new NavDirectory("test-dir1");
         doReturn(navDir).when(navigationService).readDeviceDirectoryByAccount(USER_ID1, ACCOUNT_ID1, RES_PATH);
-        assertEquals(navDir, restService.readAccountDir(ACCOUNT_ID1, RES_PATH, USER_CTX1));
+        assertEquals(navDir, restService.readDirByAccount(ACCOUNT_ID1, RES_PATH, USER_CTX1));
+    }
+
+    @Test
+    void readDirByShare() {
+        final var navDir = new NavDirectory("test-dir2");
+        doReturn(navDir).when(navigationService).readDeviceDirectoryByShare(USER_ID1, SHARE_ID1, RES_PATH);
+        assertEquals(navDir, restService.readDirByShare(SHARE_ID1, RES_PATH, USER_CTX1));
     }
 }

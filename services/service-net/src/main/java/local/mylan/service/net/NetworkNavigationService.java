@@ -252,7 +252,7 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public DeviceAccount unlockAccount(final Integer userId, final Integer accountId, final String key) {
-        final var account = validUserAccount(accountId, userId);
+        final var account = validAccount(accountId, userId);
         if (account.getLockState() == DeviceAccountLockState.LOCKED) {
             account.unlock(key);
             if (account.getLockState() == DeviceAccountLockState.UNLOCKED) {
@@ -264,7 +264,7 @@ public final class NetworkNavigationService implements NavigationService {
 
     @Override
     public DeviceAccount lockAccount(final Integer userId, final Integer accountId) {
-        final var account = validUserAccount(accountId, userId);
+        final var account = validAccount(accountId, userId);
         if (account.getLockState() == DeviceAccountLockState.UNLOCKED) {
             account.lock();
         }
@@ -415,10 +415,25 @@ public final class NetworkNavigationService implements NavigationService {
     @Override
     public NavDirectory readDeviceDirectoryByAccount(final Integer userId, final Integer accountId,
         final String path) {
-        final var account = ensureUnlocked(validUserAccount(accountId, userId));
+        final var account = ensureUnlocked(validAccount(accountId, userId));
         final var device = validDevice(account.getDeviceId());
         final var dir = readDirectory(device, account, path);
         dir.setAccount(copyAccount(account));
+        setDirPaths(dir, path);
+        return dir;
+    }
+
+    @Override
+    public NavDirectory readDeviceDirectoryByShare(final Integer userId, final Long shareId, final String path) {
+        final var share = validShare(shareId);
+        if (share.isFile()) {
+            throw new IllegalArgumentException("Resource is not a directory");
+        }
+        final var account = ensureUnlocked(validAccount(share, userId));
+        final var device = validDevice(account.getDeviceId());
+        final var absPath = buildPath(share.getPath(), path);
+        final var dir = readDirectory(device, account, absPath);
+        dir.setTopResource(copyShare(share, Set.of()));
         setDirPaths(dir, path);
         return dir;
     }
@@ -446,11 +461,6 @@ public final class NetworkNavigationService implements NavigationService {
         final var files = dir.getFiles() == null ? null :
             dir.getFiles().stream().map(fl -> new NavFile(fl.getName(), fl.getSize(), fl.getModified())).toList();
         return new NavDirectory(subdirs, files);
-    }
-
-    @Override
-    public NavDirectory readDeviceDirectoryByShare(final Integer userId, final Integer shareId, final String path) {
-        return null;
     }
 
     @Override
@@ -486,7 +496,7 @@ public final class NetworkNavigationService implements NavigationService {
         return account;
     }
 
-    private DeviceAccountWithCredentials validUserAccount(final Integer accountId, final Integer userId) {
+    private DeviceAccountWithCredentials validAccount(final Integer accountId, final Integer userId) {
         final var account = validAccount(accountId);
         if (!Objects.equals(userId, account.getUserId())) {
             throw new UnauthorizedException("Only account owner can interact with the account.");
@@ -494,11 +504,41 @@ public final class NetworkNavigationService implements NavigationService {
         return account;
     }
 
+    private DeviceAccountWithCredentials validAccount(final NavResourceShare share, final Integer userId) {
+        final var account = validAccount(share.getAccountId());
+        if (share.getShareType() == ShareType.ALL
+            || userId != null && share.getShareType() == ShareType.REGISTERED
+            || Objects.equals(userId, account.getUserId())) {
+            return account;
+        }
+        throw new UnauthorizedException("Shared resource is not eligible to access.");
+    }
+
     private static DeviceAccountWithCredentials ensureUnlocked(final DeviceAccountWithCredentials account) {
         if (account.getLockState() == DeviceAccountLockState.LOCKED) {
             throw new IllegalStateException("Account is locked.");
         }
         return account;
+    }
+
+    private NavResourceShare validShare(final Long shareId) {
+        final var share = shareMap.get(shareId);
+        if (share == null) {
+            throw new IllegalArgumentException("Shared resource with id % does not exuist.".formatted(shareId));
+        }
+        return share;
+    }
+
+    private static String buildPath(final String root, final String... parts) {
+        var path = Path.of(root);
+        for (var p : parts) {
+            if(p == null || p.isEmpty() || "/".equals(p)){
+                continue;
+            }
+            path = path.resolve(p.startsWith("/") ? p.substring(1) : p);
+        }
+        return path.toString();
+
     }
 
     private static void setDirPaths(final NavDirectory dir, final String path) {

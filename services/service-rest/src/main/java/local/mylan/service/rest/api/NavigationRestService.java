@@ -47,13 +47,16 @@ public interface NavigationRestService {
     DeviceAccount lockAccount(@PathParameter("id") Integer accountId, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/account/{id}/dir")
-    NavDirectory readAccountDir(@PathParameter("id") Integer accountId, @QueryParameter(name="path") String path, UserContext userCtx);
+    NavDirectory readDirByAccount(@PathParameter("id") Integer accountId, @QueryParameter(name="path") String path, UserContext userCtx);
 
-    @RequestMapping(method = "GET", path = "/nav/shares")
+    @RequestMapping(method = "GET", path = "/nav/shares/all")
     List<NavResourceShare> listShares(UserContext userCtx);
 
-    @RequestMapping(method = "GET", path = "/nav/shares/own")
+    @RequestMapping(method = "GET", path = "/nav/shares")
     List<NavResourceShare> listUserShares(UserContext userCtx);
+
+    @RequestMapping(method = "GET", path = "/nav/share/{id}/dir")
+    NavDirectory readDirByShare(@PathParameter("id") Long shareId, @QueryParameter(name="path") String path, UserContext userCtx);
 
     @RequestMapping(method = "GET", path = "/nav/bookmarks")
     List<NavResourceBookmark> listUserBookmarks(UserContext userCtx);

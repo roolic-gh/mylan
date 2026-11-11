@@ -102,7 +102,12 @@ public class DefaultNavigationRestService implements NavigationRestService {
     }
 
     @Override
-    public NavDirectory readAccountDir(final Integer accountId, final String path, final UserContext userCtx) {
+    public NavDirectory readDirByAccount(final Integer accountId, final String path, final UserContext userCtx) {
         return navigationService.readDeviceDirectoryByAccount(userIdFrom(userCtx), accountId, path);
+    }
+
+    @Override
+    public NavDirectory readDirByShare(final Long shareId, final String path, final UserContext userCtx) {
+        return navigationService.readDeviceDirectoryByShare(userIdFrom(userCtx), shareId, path);
     }
 }
