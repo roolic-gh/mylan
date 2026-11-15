@@ -7,7 +7,8 @@ tr.inactive {
 }
 
 td .material-icons,
-td a .material-icons {
+td a .material-icons,
+.breadcrumbs-container a .material-icons {
     vertical-align: middle;
     margin-right: 5px;
     /* font-size: 1em; */
@@ -50,39 +51,5 @@ td a {
 .breadcrumbs-container a {
     color: black;
     font-size: 18px;
-    vertical-align: middle;
-}
-
-.breadcrumbs-container a::before {
-    font-size: 20px;
-}
-
-.breadcrumbs-container .folder::before {
-    /* drive_file_move */
-    content: '\e675';
-    margin-left: 20px;
-}
-
-.account::before,
-.folder::before {
-    display: inline-block;
-    font-family: "Material Icons";
-    font-weight: normal;
-    font-style: normal;
-    margin: 0 8px 0 0;
-    vertical-align: middle;
-}
-
-.account {
-    font-weight: bold;
-}
-
-.account::before {
-    /* person */
-    content: '\e7fd';
-}
-
-.folder::before {
-    /* folder_open */
-    content: '\e2c8';
+    margin-right: 10px;
 }

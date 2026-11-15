@@ -14,13 +14,14 @@
   limitations under the License.
 */
 
-import { byId, report, reportError } from "./utils.js";
+import { byId, nextId, report, reportError } from "./utils.js";
 
 export class MaterialUi {
     selfContext = null;
     curUser = null;
     curModal = null;
     devices = null;
+    browseRefAction = null;
 
     constructor(selfContext) {
         this.selfContext = selfContext;
@@ -181,10 +182,11 @@ export class MaterialUi {
     }
 
     drawResourceShareList(shares, app) {
+        this.browseRefAction = () => app.listResources("resources-shares");
         const devicesTable = buildTableFromTemplate("resources-shares-template", shares,
             (share) => "rsrc-share-tr-" + share.shareId,
             (share) => [
-                share.shareId, share.account.username + " @ " + share.account.deviceIdentifier,
+                share.shareId, extName(share.account),
                 share.name, share.path, share.type,
                 [
                     button("Browse", () => app.browseShare(share)),
@@ -224,6 +226,7 @@ export class MaterialUi {
     }
 
     drawDashboard(navId, onTabShow) {
+        this.browseRefAction = () => app.dashboard(navId);
         if (!this.curUser || this.curUser.isGuest) {
             setContent(fromTemplate("guest-dashboard-template"));
             onTabShow("all-shares");
@@ -241,39 +244,43 @@ export class MaterialUi {
         );
     }
 
-    drawDir(dir, app) {
-        if (dir.account) {
-            const accountId = dir.account.accountId;
-            const top = accountLink(dir.account, () => app.browseAccount(accountId, ""));
-            this.drawDirDetails(dir, app, true, top, (path) => app.browseAccount(accountId, path));
-        }
+    drawDirByAccount(dir, app) {
+        const accountId = dir.account.accountId;
+        const browseFunc = (path) => app.browseAccount(accountId, path)
+        const execFunc = (path, action) => app.executeByAccount(action, path, accountId);
+        const bc = breadcrumbs(
+            () => app.listResources("resources-accounts"),
+            a(extName(dir.account), () => app.browseAccount(accountId), "account"),
+            dir.path, browseFunc);
+        this.drawDirDetails(dir, app, bc, browseFunc, execFunc, true);
     }
 
-    drawDirDetails(dir, app, canShare, topBreadcrumb, browseFunc) {
-        const content = byId("nav-dir-template").content.cloneNode(true);
-        content.querySelector(".breadcrumbs-container")
-            .replaceChildren(breadcrumbs(topBreadcrumb, dir.path, browseFunc));
-
-        const tbody = content.querySelector("tbody");
-        if (dir.subDirs) {
-            dir.subDirs.forEach(sd => {
-                const folderLink = linkElement(sd.name, () => browseFunc(sd.path), "folder");
-                const shareInfo = sd.shareId ? icon("share") : "";
-                const bookmarkInfo = sd.bookmarkId ? icon("bookmark") : "";
-
-                const row = elementNode("tr", [elementNode("td", [folderLink])])
-                tbody.append(row);
-            });
-        }
-        if (dir.files) {
-            dir.files.forEach(file => {
-                const row = elementNode("tr", [elementText("td", file.name)])
-                tbody.append(row);
-            });
-        }
-        setContent(content);
+    drawDirByShare(dir, app) {
+        const shareId = dir.topResource.shareId;
+        const browseFunc = (path) => app.browseShare(shareId, path);
+        const execFunc = (path, action) => app.executeByShare(action, path, shareId);
+        const bc = breadcrumbs(
+            this.browseRefAction ? this.browseRefAction : () => app.dashboard(),
+            a(extName(dir.topResource), () => app.browseShare(shareId), "folder_special"),
+            dir.path, browseFunc);
+        this.drawDirDetails(dir, app, bc, browseFunc, execFunc, true);
     }
 
+    drawDirDetails(dir, app, dirBc, browseFunc, execFunc, canSetShare) {
+        setContent(fromTemplate("nav-dir-template"));
+        setContent(dirBc, "nav-dir-breadcrumbs");
+        const tables = [];
+        if (dir.subDirs && dir.subDirs.length > 0) {
+            tables.push(table(dir.subDirs, d => navSubdirRow(d, app, browseFunc, canSetShare), ["highlight"]));
+        }
+        if (dir.files && dir.files.length > 0) {
+            tables.push(table(dir.files, f => navFileRow(f, app, execFunc, canSetShare), ["highlight"]));
+        }
+        if (tables.length < 1) {
+            tables.push(elm("i", "Directory is empty"));
+        }
+        setContent(tables, "nav-dir-tables");
+    }
 
     openModal(id) {
         // return false if already open, otherwise open and return true
@@ -353,7 +360,7 @@ function accountListRow(acc, app) {
     row.append(td(acc.accountId), td(acc.username + " @ " + acc.deviceIdentifier));
     const actions = [];
     if (acc.lockState != "LOCKED" && acc.state == "VALID") {
-        actions.push(a("Browse", () => app.browseAccount(acc.accountId, "outbound")));
+        actions.push(a("Browse", () => app.browseAccount(acc.accountId), "outbound"));
     }
     if (acc.lockState == "LOCKED") {
         row.append(td("Locked", "lock"));
@@ -379,7 +386,7 @@ function accountListRow(acc, app) {
     return row;
 }
 
-function shareListRow(share, app, linkName) {
+function shareListRow(share, app) {
     const row = tr("tr-share-" + share.shareId);
     const actions = [];
     const name = share.name + " @ " + share.deviceIdentifier;
@@ -388,17 +395,30 @@ function shareListRow(share, app, linkName) {
         row.append(td(name, "file_present"));
         actions.push(a("Download", () => app.downloadByShare(share.shareId, ""), "download"))
     } else {
-        row.append(linkName
-            ? td(a(name, () => app.browseByShare(share.shareId), "folder_special"))
-            : td(name, "folder_special")
-        );
-        actions.push(a("Browse", () => app.browsebyShare(share.shareId), "outbound"));
+        row.append(td(a(name, () => app.browseShare(share.shareId, ""), "folder_special")));
+        actions.push(a("Browse", () => app.browseShare(share.shareId, ""), "outbound"));
     }
     if (share.path) {
         actions.push(a("Edit", () => app.updateShare(share), "edit"));
         actions.push(a("Delete", () => app.deleteShare(share), "delete"));
     }
     row.append(actionTd("act-share-" + share.shareId, actions));
+    return row;
+}
+
+function navSubdirRow(dir, app, browseFunc, canSetShare) {
+    const row = tr("nav-dir-" + nextId());
+    row.append(td(a(dir.name, () => browseFunc(dir.path), "folder")));
+    return row;
+}
+
+function navFileRow(file, app, execFunc, canSetShare) {
+    const row = tr("nav-file-" + nextId());
+    row.append(
+        td(file.name),
+        td(timestamp(file.modified)),
+        td(fileSize(file.size))
+    );
     return row;
 }
 
@@ -501,7 +521,12 @@ function buildTableFromTemplate(templateId, items, toId, toCells) {
 
 function setContent(newContent, containerId) {
     const container = byId(containerId ? containerId : 'content');
-    container.replaceChildren(newContent);
+    if (Array.isArray(newContent)) {
+        container.innerHTML = "";
+        newContent.forEach(nc => container.append(nc));
+    } else {
+        container.replaceChildren(newContent);
+    }
     intiDropdDowns(container);
 }
 
@@ -547,32 +572,44 @@ function button(label, onclick, cls) {
     return btn;
 }
 
-function accountLink(acc, onclick) {
-    return linkElement(acc.username + " @ " + acc.deviceIdentifier, onclick, "account");
+function extName(item) {
+    return (item.username ? item.username : item.name) + " @ " + item.deviceIdentifier;
 }
 
-function linkElement(text, onclick, cls) {
-    const link = elementText("a", text);
-    link.classList.add(cls);
-    link.onclick = onclick;
-    return link;
-}
-
-
-
-function breadcrumbs(topElm, path, pathFunc) {
-    const bcs = [topElm];
+function breadcrumbs(refAction, topElm, path, pathFunc) {
+    const bcs = [];
+    if (refAction) {
+        bcs.push(a("", refAction, "list"));
+    }
+    bcs.push(topElm)
     if (path) {
         var curPath = "";
         for (const pathItem of path.split("/")) {
             if (pathItem) {
                 curPath += "/" + pathItem;
                 const linkPath = curPath;
-                bcs.push(linkElement(pathItem, () => pathFunc(linkPath), "folder"));
+                bcs.push(a(pathItem, () => pathFunc(linkPath), "navigate_next"));
             }
         }
     }
     return bcs;
+}
+
+function fileSize(value) {
+    if (value < 1024) {
+        return value + "b";
+    }
+    if (value < 1048576) {
+        return (value / 1024).toFixed(2) + "K";
+    }
+    if (value < 1073741824) {
+        return (value / 1048576).toFixed(2) + "M";
+    }
+    return (value / 1073741824).toFixed(2) + "G";
+}
+
+function timestamp(value) {
+    return new Date(value).toISOString();
 }
 
 export function reportDiscoveryStatus(status) {

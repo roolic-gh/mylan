@@ -94,21 +94,21 @@ export class App {
     }
 
     refresh() {
-        if (!this.user || this.user.isGuest) {
-            this.dashboard();
-            return;
-        }
+        const isGuest = !this.user || !this.user.userId;
+        const isAdmin = this.user && this.user.admin;
         const navId = getNav();
-        if ("users" === navId) {
+        if (isAdmin && "users" === navId) {
             this.listUsers();
-        } else if (navId.startsWith("resources")) {
+        } else if (!isGuest && navId.startsWith("resources")) {
             this.listResources(navId);
-        } else if (navId.startsWith("dashboard-")) {
+        } else if (!isGuest && navId.startsWith("dashboard-")) {
             this.dashboard(navId.substring(10));
         } else if (navId.startsWith("browse-")) {
             const subs = navId.substring(7).split("/", 3);
-            if (subs[0] === "account") {
+            if (!isGuest && subs[0] === "account") {
                 this.browseAccount(subs[1], '/' + subs[2]);
+            } else if (subs[0] === "share") {
+                this.browseShare(subs[1], '/' + subs[2]);
             } else {
                 this.dashboard()
             }
@@ -201,9 +201,16 @@ export class App {
     }
 
     browseAccount(accountId, path) {
-        this.client.readDirByAccount(accountId, path, (response) => {
+        this.client.readDirByAccount(accountId, path ? path : "", (response) => {
             setNav("browse-account/" + accountId + (path ? path : "/"));
-            this.ui.drawDir(response, this);
+            this.ui.drawDirByAccount(response, this);
+        });
+    }
+
+    browseShare(shareId, path) {
+        this.client.readDirByShare(shareId, path ? path : "", (response) => {
+            setNav("browse-share/" + shareId + (path ? path : "/"));
+            this.ui.drawDirByShare(response, this);
         });
     }
 
