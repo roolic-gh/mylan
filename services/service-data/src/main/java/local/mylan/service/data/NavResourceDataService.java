@@ -63,17 +63,18 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
     private static final NavResourceModelMapper MAPPER = Mappers.getMapper(NavResourceModelMapper.class);
 
     @VisibleForTesting
-    static final String LOCAL_DEVICE_IDENTIFIER = "mylan.server.local";
+    static final String LOCAL_DEVICE_IDENTIFIER = "MyLAN.local";
     @VisibleForTesting
     static final String LOCAL_ACCOUNT_USERNAME = "local";
+    private static final String LOCKED_INDICATOR = "LCK";
+
+    private final EncryptedDeviceAccountWithCredentials.Encryptor encryptor;
+    private final EncryptedDeviceAccountWithCredentials.Decryptor decryptor;
+    private final NotificationService notificationService;
+
     @VisibleForTesting
-    static final String LOCKED_INDICATOR = "LCK";
-
-    final EncryptedDeviceAccountWithCredentials.Encryptor encryptor;
-    final EncryptedDeviceAccountWithCredentials.Decryptor decryptor;
-
-    final NotificationService notificationService;
     final Integer localDeviceId;
+    @VisibleForTesting
     final Integer localAccountId;
 
     public NavResourceDataService(final SessionFactory sessionFactory, final EncryptionService encryptionService,
@@ -93,6 +94,17 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         localAccountId = localAccount.getAccountId();
     }
 
+    @Override
+    public void syncLocalDevice(final String localDeviceIdentifier) {
+        requireNonNull(localDeviceIdentifier);
+        checkArgument(!localDeviceIdentifier.isEmpty(), "Local device identifier should not be empty");
+        final var entity = getLocalDeviceEntity();
+        if (!localDeviceIdentifier.equals(entity.getIdentifier())) {
+            entity.setIdentifier(localDeviceIdentifier);
+            inTransaction(session -> session.merge(entity));
+        }
+    }
+
     private DeviceEntity getLocalDeviceEntity() {
         return fromTransaction(session -> {
             final var curLocalDevice =
@@ -108,6 +120,18 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
         });
     }
 
+    @Override
+    public void syncLocalAccount(final String localAccountUsername) {
+        requireNonNull(localAccountUsername);
+        checkArgument(!localAccountUsername.isEmpty(), "Local account username should not be empty");
+        final var entity = getLocalAccountEntity(null);
+        if (!localAccountUsername.equals(entity.getUsername())) {
+            entity.setUsername(localAccountUsername);
+            inTransaction(session -> session.merge(entity));
+        }
+
+    }
+
     private DeviceAccountEntity getLocalAccountEntity(final DeviceEntity localDevice) {
         return fromTransaction(session -> {
             final var curLocalAccount =
@@ -115,6 +139,7 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             if (curLocalAccount != null) {
                 return curLocalAccount;
             }
+            requireNonNull(localDevice);
             final var newLocalAccount = new DeviceAccountEntity();
             newLocalAccount.setDevice(localDevice);
             newLocalAccount.setUsername(LOCAL_ACCOUNT_USERNAME);
@@ -283,11 +308,6 @@ public class NavResourceDataService extends AbstractDataService implements NavRe
             newEntity.setDevice(deviceEntity);
             session.persist(newEntity);
         }
-    }
-
-    @Override
-    public DeviceAccount getLocalAccount() {
-        return getAccount(localAccountId);
     }
 
     @Override

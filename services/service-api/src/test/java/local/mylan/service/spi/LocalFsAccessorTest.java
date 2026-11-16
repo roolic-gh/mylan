@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,7 @@ class LocalFsAccessorTest {
     @TempDir
     static Path confDir;
     static Path sharesJsonFile;
+    static LocalFsAccessorConf conf;
 
     @Mock
     NavResourceService navResourceService;
@@ -63,8 +65,8 @@ class LocalFsAccessorTest {
 
     @BeforeAll
     static void beforeAll() {
-        sharesJsonFile = confDir.resolve(
-            ConfUtils.loadConfiguration(LocalFsAccessorConf.class).localSharesJsonFilename());
+        conf = ConfUtils.loadConfiguration(LocalFsAccessorConf.class);
+        sharesJsonFile = confDir.resolve(conf.localSharesJsonFilename());
     }
 
     @AfterEach
@@ -80,6 +82,8 @@ class LocalFsAccessorTest {
     @Test
     void nolocalShares() {
         new LocalFsAccessor(confDir, navResourceService);
+        verify(navResourceService, times(1)).syncLocalDevice(eq(conf.localDeviceIdentifier()));
+        verify(navResourceService, times(1)).syncLocalAccount(eq(conf.localAccountUsername()));
         verify(navResourceService, never()).syncLocalSharedResources(any());
     }
 

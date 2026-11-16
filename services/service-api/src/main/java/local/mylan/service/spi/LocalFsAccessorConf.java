@@ -21,6 +21,12 @@ import local.mylan.common.annotations.conf.ConfProperty;
 @ConfFile("local-fs.conf")
 public @interface LocalFsAccessorConf {
 
+    @ConfProperty("local.device.identifier")
+    String localDeviceIdentifier() default "MyLAN.Server";
+
+    @ConfProperty("local.account.username")
+    String localAccountUsername() default "local";
+
     @ConfProperty("local.shares.json.filename")
     String localSharesJsonFilename() default "local-shares.json";
 }

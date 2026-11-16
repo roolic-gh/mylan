@@ -25,6 +25,8 @@ import local.mylan.service.api.model.NavResourceShare;
 
 public interface NavResourceService {
 
+    void syncLocalDevice(String localDeviceIdentifier);
+
     Device getDevice(Integer deviceId);
 
     List<Device> getAllDevices();
@@ -39,7 +41,7 @@ public interface NavResourceService {
 
     void syncDeviceAddresses(List<Device> devices);
 
-    DeviceAccount getLocalAccount();
+    void syncLocalAccount(String localAccountUsername);
 
     DeviceAccount getAccount(Integer accountId);
 

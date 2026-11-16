@@ -159,25 +159,14 @@ class NavResourceDataServiceTest {
         sessionFactory = setupSessionFactory(UserEntity.class, DeviceEntity.class, DeviceAccountEntity.class,
             DeviceIpAddressEntity.class, NavResourceShareEntity.class, NavResourceBookmarkEntity.class);
         notificationService = new TestNotificationService();
-        navResourceService = new NavResourceDataService(sessionFactory,
+        final var service = new NavResourceDataService(sessionFactory,
             new DefaultEncryptionService(tempDir, tempDir), notificationService);
+        navResourceService = service;
+        localDeviceId = service.localDeviceId;
+        localAccountId = service.localAccountId;
 
         userId1 = newUserId("user-1");
         userId2 = newUserId("user-2");
-
-        final var localAccount = navResourceService.getLocalAccount();
-        assertNotNull(localAccount);
-        assertNull(localAccount.getUserId());
-        assertEquals(LOCAL_ACCOUNT_USERNAME, localAccount.getUsername());
-        localAccountId = localAccount.getAccountId();
-        assertNotNull(localAccountId);
-        localDeviceId = localAccount.getDeviceId();
-        assertNotNull(localDeviceId);
-
-        final var localDevice = navResourceService.getDevice(localAccount.getDeviceId());
-        assertNotNull(localDevice);
-        assertEquals(LOCAL_DEVICE_IDENTIFIER, localDevice.getIdentifier());
-        assertEquals(DeviceProtocol.LOCAL, localDevice.getProtocol());
     }
 
     private static Integer newUserId(final String username) {
@@ -196,6 +185,48 @@ class NavResourceDataServiceTest {
     @BeforeEach
     void beforeEach() {
         notificationService.clearEvents();
+    }
+
+    @Test
+    @Order(1)
+    void syncLocalDevice() {
+        final var device = navResourceService.getDevice(localDeviceId);
+        assertNotNull(device);
+        assertEquals(LOCAL_DEVICE_IDENTIFIER, device.getIdentifier());
+        assertEquals(DeviceProtocol.LOCAL, device.getProtocol());
+
+        final var newDeviceId = "test-server";
+        navResourceService.syncLocalDevice(newDeviceId);
+
+        final var updated = navResourceService.getDevice(localDeviceId);
+        assertNotNull(updated);
+        assertEquals(newDeviceId, updated.getIdentifier());
+        assertEquals(DeviceProtocol.LOCAL, updated.getProtocol());
+
+        assertThrows(NullPointerException.class, () -> navResourceService.syncLocalDevice(null));
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.syncLocalDevice(""));
+    }
+
+    @Test
+    @Order(2)
+    void syncLocalAccount() {
+        final var account = navResourceService.getAccount(localAccountId);
+        assertNotNull(account);
+        assertNull(account.getUserId());
+        assertEquals(localDeviceId, account.getDeviceId());
+        assertEquals(LOCAL_ACCOUNT_USERNAME, account.getUsername());
+
+        final var newUsername = "test-local";
+        navResourceService.syncLocalAccount(newUsername);
+
+        final var updated = navResourceService.getAccount(localAccountId);
+        assertNotNull(updated);
+        assertNull(updated.getUserId());
+        assertEquals(localDeviceId, updated.getDeviceId());
+        assertEquals(newUsername, updated.getUsername());
+
+        assertThrows(NullPointerException.class, () -> navResourceService.syncLocalAccount(null));
+        assertThrows(IllegalArgumentException.class, () -> navResourceService.syncLocalAccount(""));
     }
 
     @Test

@@ -40,6 +40,8 @@ public class LocalFsAccessor implements DeviceAccessor {
 
     public LocalFsAccessor(final Path confPath, final NavResourceService navResourceService) {
         final var conf = ConfUtils.loadConfiguration(LocalFsAccessorConf.class, confPath);
+        navResourceService.syncLocalDevice(conf.localDeviceIdentifier());
+        navResourceService.syncLocalAccount(conf.localAccountUsername());
         initLocalShares(confPath.resolve(conf.localSharesJsonFilename()), navResourceService);
         LOG.info("Initialized.");
     }
