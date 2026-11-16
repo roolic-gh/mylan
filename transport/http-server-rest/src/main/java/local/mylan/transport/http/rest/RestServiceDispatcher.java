@@ -32,8 +32,14 @@ public final class RestServiceDispatcher implements ContextDispatcher {
     private final List<RestRequestHandler> handlers;
 
     public RestServiceDispatcher(final String contextPath, final Collection<?> restServices) {
+        this(contextPath, restServices, ExceptionHandler.defaultHandler());
+
+    }
+    public RestServiceDispatcher(final String contextPath, final Collection<?> restServices,
+        final ExceptionHandler exceptionHandler) {
+
         this.contextPath = contextPath;
-        handlers = buildHandlers(restServices);
+        handlers = buildHandlers(restServices, exceptionHandler);
     }
 
     @Override
@@ -55,7 +61,9 @@ public final class RestServiceDispatcher implements ContextDispatcher {
         return false;
     }
 
-    private static List<RestRequestHandler> buildHandlers(final Collection<?> serviceInstances) {
+    private static List<RestRequestHandler> buildHandlers(final Collection<?> serviceInstances,
+        final ExceptionHandler exceptionHandler) {
+
         final var result = new ArrayList<RestRequestHandler>();
         for (var serviceInstance : serviceInstances) {
             final var cls = serviceInstance.getClass();
@@ -64,7 +72,8 @@ public final class RestServiceDispatcher implements ContextDispatcher {
                 try {
                     final var httpMethod = HttpMethod.valueOf(mapping.method());
                     final var pathMatcher = RestPathUtils.getMatcher(mapping.path());
-                    result.add(new RestRequestHandler(httpMethod, pathMatcher, classMethod, serviceInstance));
+                    result.add(new RestRequestHandler(httpMethod, pathMatcher, classMethod,
+                        serviceInstance, exceptionHandler));
                 } catch (IllegalArgumentException e) {
                     LOG.error("Exception on building handler for {}.{}()", serviceInstance.getClass(),
                         classMethod.getName(), e);

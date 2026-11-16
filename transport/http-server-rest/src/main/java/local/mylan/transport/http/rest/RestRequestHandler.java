@@ -44,18 +44,22 @@ class RestRequestHandler {
     private final Method method;
     private final Object serviceInstance;
     private final List<RestArgBuilder> argBuilders;
+    private final ExceptionHandler exceptionHandler;
 
     RestRequestHandler(final HttpMethod httpMethod, final RestPathMatcher pathMatcher, final Method method,
-        final Object serviceInstance) {
+        final Object serviceInstance, final ExceptionHandler exceptionHandler) {
+
         this.httpMethod = httpMethod;
         this.pathMatcher = pathMatcher;
         this.method = method;
         this.serviceInstance = serviceInstance;
+        this.exceptionHandler = exceptionHandler;
+
         id = "%s::%s".formatted(serviceInstance.getClass().getSimpleName(), method.getName());
         try {
             argBuilders = Arrays.stream(method.getParameters()).map(RestArgUtils::getArgBuilder).toList();
             LOG.debug("{} {} mapped to service method {}", httpMethod, pathMatcher, id);
-        } catch(Exception e){
+        } catch (Exception e) {
             LOG.error("Error mapping service method {}", id);
             throw new ExceptionInInitializerError(e);
         }
@@ -84,11 +88,14 @@ class RestRequestHandler {
             }
         } catch (InvocationTargetException e) {
             final var cause = e.getCause();
-            LOG.error("Exception processing request {}", ctx.contextPath(), cause);
             final var content = RestConverter.toResponseBody(new ErrorMessage(cause.getMessage()), encoding);
-            // todo response code by exception type
-            sendResponse(ctx, responseWithContent(ctx.protocolVersion(), INTERNAL_SERVER_ERROR,
-                content, encoding.mediaType()));
+            final var status = exceptionHandler.statusFromException(cause);
+            if (status == INTERNAL_SERVER_ERROR) {
+                LOG.error("Exception processing request {}", ctx.contextPath(), cause);
+            } else{
+                LOG.error("Error on processing request {} -> {}", ctx.contextPath(), cause.getMessage());
+            }
+            sendResponse(ctx, responseWithContent(ctx.protocolVersion(), status, content, encoding.mediaType()));
         } catch (IllegalAccessException e) {
             LOG.error("Exception processing request {}", ctx.contextPath(), e);
             sendResponse(ctx, simpleResponse(ctx.protocolVersion(), INTERNAL_SERVER_ERROR));

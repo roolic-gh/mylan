@@ -20,6 +20,8 @@ import static io.netty.handler.codec.http.HttpMethod.DELETE;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpMethod.PATCH;
 import static io.netty.handler.codec.http.HttpMethod.POST;
+import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static local.mylan.transport.http.common.HttpTestUtils.assertResponse;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -152,6 +155,21 @@ class RestServiceDispatcherTest {
         verify(testService, times(1)).deleteData("del-id");
     }
 
+    @ParameterizedTest
+    @EnumSource(Encoding.class)
+    void defaultExceptionHandler(final Encoding encoding) throws Exception {
+        doThrow(new IllegalArgumentException("Bad Request")).when(testService).getData(eq(400), eq(0));
+        doThrow(new IllegalStateException("Server Error")).when(testService).getData(eq(500), eq(0));
+
+        final var channel = setupChannel(dispatcher);
+        assertRestResponse(
+            executeRequest(channel, restRequest(GET, "/data?limit=400", encoding)),
+            BAD_REQUEST, encoding, new ErrorMessage("Bad Request"));
+        assertRestResponse(
+            executeRequest(channel, restRequest(GET, "/data?limit=500", encoding)),
+            INTERNAL_SERVER_ERROR, encoding, new ErrorMessage("Server Error"));
+    }
+
     private static List<TestPojo> nextPojoList() {
         return List.of(nextPojo(), nextPojo(), nextPojo());
     }
@@ -173,7 +191,7 @@ class RestServiceDispatcherTest {
 
     private static void assertRestResponse(final FullHttpResponse response, final HttpResponseStatus expectedStatus,
         final Encoding encoding, final Object expectedData) throws Exception {
-        assertResponse(response, OK, encoding.mediaType().toString(),
+        assertResponse(response, expectedStatus, encoding.mediaType().toString(),
             encoding.objectMapper().writeValueAsBytes(expectedData));
     }
 }

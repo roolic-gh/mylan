@@ -35,6 +35,7 @@ import local.mylan.service.rest.spi.DefaultDiscoveryRestService;
 import local.mylan.service.rest.spi.DefaultNavResourceRestService;
 import local.mylan.service.rest.spi.DefaultNavigationRestService;
 import local.mylan.service.rest.spi.DefaultUserRestService;
+import local.mylan.service.rest.utils.ExceptionHandlerUtils;
 import local.mylan.service.spi.DefaultEncryptionService;
 import local.mylan.service.spi.DefaultNotificationService;
 import local.mylan.service.spi.LocalFsAccessor;
@@ -91,7 +92,7 @@ final class AppServer {
             new DefaultDiscoveryRestService(discoveryService, notificationService),
             new DefaultNavResourceRestService(navResourceService),
             new DefaultNavigationRestService(navigationService)
-        ));
+        ), ExceptionHandlerUtils::toResponseStatus);
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest", List.of(
             UserRestService.class, DiscoveryRestService.class,
             NavResourceRestService.class, NavigationRestService.class));
