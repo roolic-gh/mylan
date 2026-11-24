@@ -15,6 +15,37 @@
  */
 package local.mylan.service.api.model;
 
+import static java.util.Objects.requireNonNull;
+
+import java.util.Locale;
+import java.util.Set;
+
 public enum FileType {
-    VIDEO, AUDIO, IMAGE, IMAGE_ARCHIVE, OTHER
+    VIDEO(Set.of("mp4", "mkv")),
+    AUDIO(Set.of("mp3")),
+    IMAGE(Set.of("jpg", "jpeg", "png", "gif")),
+    COMIC_BOOK(Set.of("cbr", "cbz")),
+    OTHER(Set.of());
+
+    private final Set<String> extentions;
+
+    FileType(final Set<String> extentions) {
+        this.extentions = extentions;
+    }
+
+    static FileType fromFilename(final String filename) {
+        requireNonNull(filename);
+        final var idx = filename.lastIndexOf('.');
+        final var ext = idx > 0 && idx < filename.length() - 2
+            ? filename.substring(idx + 1).toLowerCase(Locale.US) : "";
+        if (!ext.isEmpty()) {
+            for( var ft: values()){
+                if(ft.extentions.contains(ext)){
+                    return ft;
+                }
+            }
+        }
+        return OTHER;
+    }
+
 }

@@ -29,6 +29,7 @@ public class NavFile extends NavResource {
         setName(name);
         this.size = size;
         this.modified = modified;
+        type = FileType.fromFilename(name);
     }
 
     public FileType getType() {
