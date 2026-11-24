@@ -64,10 +64,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>local.mylan</groupId>
-            <artifactId>service-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
         </dependency>

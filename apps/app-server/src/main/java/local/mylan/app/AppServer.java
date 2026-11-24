@@ -45,6 +45,7 @@ import local.mylan.transport.http.ext.SseDispatcher;
 import local.mylan.transport.http.ext.StaticContentDispatcher;
 import local.mylan.transport.http.rest.RestServiceDispatcher;
 import local.mylan.transport.http.rest.SwaggerUiDispatcher;
+import local.mylan.transport.http.stream.StreamDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +100,7 @@ final class AppServer {
 
         // streaming
         final var sseDispatcher = new SseDispatcher("/sse", notificationService, 10_000L);
+        final var streamDispatcher = new StreamDispatcher("/stream", path -> null);
 
         // web ui
         boolean devMode = true; // TODO make configurable
@@ -121,7 +123,7 @@ final class AppServer {
         final var dispatcher = CompositeDispatcher.builder()
             .authenticator(userRestService::authenticate)
             .defaultDispatcher(uiDispatcher)
-            .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher)
+            .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher, streamDispatcher)
             .build();
         server = new HttpServer(confDir, dispatcher);
         server.start();

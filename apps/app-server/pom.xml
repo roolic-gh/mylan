@@ -64,6 +64,10 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
+            <artifactId>http-server-stream</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
             <artifactId>service-api</artifactId>
         </dependency>
         <dependency>

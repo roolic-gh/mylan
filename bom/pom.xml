@@ -65,6 +65,11 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
+                <artifactId>http-server-stream</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
                 <artifactId>net-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
