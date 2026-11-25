@@ -250,7 +250,7 @@ export class MaterialUi {
         const execFunc = (path, action) => app.executeByAccount(action, path, accountId);
         const bc = breadcrumbs(
             () => app.listResources("resources-accounts"),
-            a(extName(dir.account), () => app.browseAccount(accountId), "account"),
+            a(extName(dir.account), () => app.browseAccount(accountId), "account_box"),
             dir.path, browseFunc);
         this.drawDirDetails(dir, app, bc, browseFunc, execFunc, true);
     }

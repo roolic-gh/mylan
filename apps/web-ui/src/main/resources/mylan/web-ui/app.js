@@ -54,6 +54,7 @@ export class App {
                 this.sse.setToken(response.authToken);
                 this.user.reset(response.user);
                 this.ui.applyUser(this.user);
+                this.refresh();
                 if (response.mustChangePassword) {
                     this.ui.notifyPasswordChangeRequired();
                 }
