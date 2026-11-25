@@ -17,8 +17,8 @@ package local.mylan.service.rest.api;
 
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.model.DiscoveryStatus;
+import local.mylan.transport.api.UserContext;
 
 @ServiceDescriptor(id = "DiscoveryService", description = "Device discovery operations")
 public interface DiscoveryRestService {

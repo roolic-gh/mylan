@@ -25,7 +25,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
@@ -36,14 +35,18 @@ import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.api.ChangePassword;
 import local.mylan.service.rest.api.UserAuthResult;
 import local.mylan.service.rest.api.UserRestService;
+import local.mylan.transport.api.RequestAuthenticator;
+import local.mylan.transport.api.UserContext;
 
-public final class DefaultUserRestService implements UserRestService {
+public final class DefaultUserRestService implements UserRestService, RequestAuthenticator {
+
+    // FIXME move authencator functionality into dedicated service
 
     private static final Duration SESSION_EXPIRES = Duration.ofHours(24);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     @VisibleForTesting
-    static final UserContext ANONIMOUS_CONTEXT = new UserContext(new User("anonimous", "Guest", false), "");
+    static final UserContextExt ANONIMOUS_CONTEXT = new UserContextExt(new User("anonimous", "Guest", false), "");
     @VisibleForTesting
     static final String AUTH_BASIC = "Basic ";
     @VisibleForTesting
@@ -58,7 +61,7 @@ public final class DefaultUserRestService implements UserRestService {
     }
 
     @Override
-    public UserContext authenticate(final String authHeader) {
+    public UserContext authenticateUser(final String authHeader) {
         if (authHeader == null) {
             return ANONIMOUS_CONTEXT;
         }
@@ -73,7 +76,7 @@ public final class DefaultUserRestService implements UserRestService {
             final var user = creds.length == 2 ?
                 service.getUserByCredentials(new UserCredentials(creds[0], creds[1])).orElse(null) : null;
             if (user != null) {
-                final var newContext = new UserContext(user, key);
+                final var newContext = new UserContextExt(user, key);
                 contextCache.put(key, newContext);
                 return newContext;
             }
@@ -95,7 +98,7 @@ public final class DefaultUserRestService implements UserRestService {
         if (user != null) {
             final var key = Hashing.sha256().hashString(credentials.getUsername() + COUNTER.incrementAndGet(),
                 StandardCharsets.UTF_8).toString();
-            final var newContext = new UserContext(user, key);
+            final var newContext = new UserContextExt(user, key);
             contextCache.put(key, newContext);
             final var passwordChangeRequired = service.userMustChangePassword(user.getUserId());
             return new UserAuthResult(user, key, passwordChangeRequired);
@@ -105,7 +108,7 @@ public final class DefaultUserRestService implements UserRestService {
 
     @Override
     public void resetPassword(final Integer userId, final UserContext userCtx) {
-        if (!userCtx.currentUser().isAdmin()) {
+        if (!userCtx.isAdmin()) {
             throw new UnauthorizedException("Password reset action is only allowed to administrator.");
         }
         service.resetUserPassword(userId);
@@ -113,7 +116,7 @@ public final class DefaultUserRestService implements UserRestService {
 
     @Override
     public void changePassword(final ChangePassword passwordChange, final UserContext userCtx) {
-        if (!Objects.equals(userCtx.currentUser().getUserId(), passwordChange.getUserId())) {
+        if (!Objects.equals(userCtx.userId(), passwordChange.getUserId())) {
             throw new UnauthorizedException("Password change is only allowed to owner.");
         }
         service.changeUserPassword(passwordChange.getUserId(), passwordChange.getOldPassword(),
@@ -122,7 +125,7 @@ public final class DefaultUserRestService implements UserRestService {
 
     @Override
     public User createUser(final User newUser, final UserContext userCtx) {
-        if (!userCtx.currentUser().isAdmin()) {
+        if (!userCtx.isAdmin()) {
             throw new UnauthorizedException("User creation is only allowed to administrator.");
         }
         if (newUser.getUsername() == null) {
@@ -136,8 +139,7 @@ public final class DefaultUserRestService implements UserRestService {
         if (user.getUserId() == null) {
             throw new IllegalArgumentException("User ID is required");
         }
-        final var currentUser = userCtx.currentUser();
-        if (!currentUser.isAdmin() && !Objects.equals(user.getUserId(), currentUser.getUserId())) {
+        if (!userCtx.isAdmin() && !Objects.equals(user.getUserId(), userCtx.userId())) {
             throw new UnauthorizedException("User update is only allowed to owner or adminiastrator.");
         }
         return service.updateUser(user);
@@ -148,11 +150,10 @@ public final class DefaultUserRestService implements UserRestService {
         if (status.getUserId() == null) {
             throw new IllegalArgumentException("User ID is required");
         }
-        final var currentUser = userCtx.currentUser();
-        if (!currentUser.isAdmin()) {
+        if (!userCtx.isAdmin()) {
             throw new UnauthorizedException("User status update is only allowed to administrator.");
         }
-        if (Objects.equals(currentUser.getUserId(), status.getUserId())) {
+        if (Objects.equals(userCtx.userId(), status.getUserId())) {
             throw new IllegalArgumentException("Administrator cannot update own status.");
         }
         service.updateUserStatus(status);
@@ -160,10 +161,10 @@ public final class DefaultUserRestService implements UserRestService {
 
     @Override
     public void deleteUser(final Integer userId, final UserContext userCtx) {
-        if (!userCtx.currentUser().isAdmin()) {
+        if (!userCtx.isAdmin()) {
             throw new UnauthorizedException("User deletion is only allowed to administrator.");
         }
-        if (Objects.equals(userCtx.currentUser().getUserId(), userId)) {
+        if (Objects.equals(userCtx.userId(), userId)) {
             throw new IllegalArgumentException("Administrator cannot delete himself.");
         }
         service.deleteUser(userId);
@@ -171,21 +172,25 @@ public final class DefaultUserRestService implements UserRestService {
 
     @Override
     public User getCurrentUser(final UserContext userCtx) {
-        return userCtx.currentUser();
+        if (userCtx instanceof UserContextExt ext) {
+            return ext.user();
+        }
+        if (userCtx.userId() == null) {
+            return ANONIMOUS_CONTEXT.user();
+        }
+        return service.getUserById(userCtx.userId(), userCtx.isAdmin()).orElse(ANONIMOUS_CONTEXT.user());
     }
 
     @Override
     public User getUser(final Integer userId, final UserContext userCtx) {
-        final var currentUser = userCtx.currentUser();
-        if (currentUser.getUserId() == null) {
+        if (userCtx.userId() == null) {
             throw new UnauthorizedException("User info is not eligible for guests");
         }
-        return service.getUserById(userId, currentUser.isAdmin()).orElseThrow(NoDataException::new);
+        return service.getUserById(userId, userCtx.isAdmin()).orElseThrow(NoDataException::new);
     }
 
     @Override
     public List<User> getUserList(final UserContext userCtx) {
-        final var currentUser = userCtx.currentUser();
-        return currentUser.getUserId() == null ? List.of() : service.getUserList(currentUser.isAdmin());
+        return userCtx.userId() == null ? List.of() : service.getUserList(userCtx.isAdmin());
     }
 }

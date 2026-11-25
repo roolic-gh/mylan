@@ -44,17 +44,6 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>http-server-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>local.mylan</groupId>
-                <artifactId>http-server-common</artifactId>
-                <version>${project.version}</version>
-                <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>local.mylan</groupId>
                 <artifactId>http-server-ext</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -70,13 +59,14 @@
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>net-api</artifactId>
+                <artifactId>http-utils</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
-                <artifactId>smb-client</artifactId>
+                <artifactId>http-utils</artifactId>
                 <version>${project.version}</version>
+                <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>local.mylan</groupId>
@@ -102,6 +92,16 @@
             <dependency>
                 <groupId>local.mylan</groupId>
                 <artifactId>service-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>smb-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>local.mylan</groupId>
+                <artifactId>transport-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

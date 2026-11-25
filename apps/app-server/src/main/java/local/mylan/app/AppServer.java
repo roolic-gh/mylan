@@ -94,6 +94,8 @@ final class AppServer {
             new DefaultNavResourceRestService(navResourceService),
             new DefaultNavigationRestService(navigationService)
         ), ExceptionHandlerUtils::toResponseStatus);
+
+        // swagger integration
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest", List.of(
             UserRestService.class, DiscoveryRestService.class,
             NavResourceRestService.class, NavigationRestService.class));
@@ -121,7 +123,7 @@ final class AppServer {
 
         // http server
         final var dispatcher = CompositeDispatcher.builder()
-            .authenticator(userRestService::authenticate)
+            .authenticator(userRestService)
             .defaultDispatcher(uiDispatcher)
             .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher, streamDispatcher)
             .build();

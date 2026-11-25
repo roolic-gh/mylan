@@ -32,11 +32,11 @@
 
     <modules>
         <module>http-server</module>
-        <module>http-server-common</module>
         <module>http-server-ext</module>
         <module>http-server-rest</module>
         <module>http-server-stream</module>
-        <module>net-api</module>
+        <module>http-utils</module>
         <module>smb-client</module>
+        <module>transport-api</module>
     </modules>
 </project>

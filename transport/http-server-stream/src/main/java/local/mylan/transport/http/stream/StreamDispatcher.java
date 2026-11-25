@@ -15,14 +15,14 @@
  */
 package local.mylan.transport.http.stream;
 
-import static local.mylan.transport.http.common.utils.ResponseUtils.allowResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.notFoundResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.unsupportedMethodResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.allowResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.notFoundResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.unsupportedMethodResponse;
 
 import java.io.InputStream;
 import java.util.function.Function;
-import local.mylan.transport.http.common.api.ContextDispatcher;
-import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

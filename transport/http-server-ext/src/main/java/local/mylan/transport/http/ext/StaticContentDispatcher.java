@@ -24,13 +24,13 @@ import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_OCTET_STR
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static local.mylan.transport.http.common.utils.RequestUtils.isRootUri;
-import static local.mylan.transport.http.common.utils.ResponseUtils.allowResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.fullUrl;
-import static local.mylan.transport.http.common.utils.ResponseUtils.notFoundResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.redirectResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.unsupportedMethodResponse;
+import static local.mylan.transport.http.utils.RequestUtils.isRootUri;
+import static local.mylan.transport.http.utils.ResponseUtils.allowResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.fullUrl;
+import static local.mylan.transport.http.utils.ResponseUtils.notFoundResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.redirectResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.unsupportedMethodResponse;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -49,8 +49,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import local.mylan.transport.http.common.api.ContextDispatcher;
-import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

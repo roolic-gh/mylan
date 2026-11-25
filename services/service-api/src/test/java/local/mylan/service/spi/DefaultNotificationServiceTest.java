@@ -21,9 +21,9 @@ import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.util.List;
+import local.mylan.common.api.Event;
+import local.mylan.common.api.EventListener;
 import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.events.EventListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

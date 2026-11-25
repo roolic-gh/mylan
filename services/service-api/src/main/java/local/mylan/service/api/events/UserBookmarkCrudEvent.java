@@ -15,7 +15,8 @@
  */
 package local.mylan.service.api.events;
 
+import local.mylan.common.api.Event;
 import local.mylan.service.api.model.NavResourceBookmark;
 
-public record UserBookmarkCrudEvent(Long id, NavResourceBookmark bookmark, CrudOperation operation) implements Event{
+public record UserBookmarkCrudEvent(Long id, NavResourceBookmark bookmark, CrudOperation operation) implements Event {
 }

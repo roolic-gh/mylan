@@ -21,7 +21,7 @@ import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
-import local.mylan.service.api.UserContext;
+import local.mylan.transport.api.UserContext;
 
 @ServiceDescriptor(id = "test", description = "test description")
 interface TestService {

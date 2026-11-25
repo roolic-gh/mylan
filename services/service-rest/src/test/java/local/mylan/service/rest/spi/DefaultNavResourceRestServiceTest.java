@@ -37,7 +37,6 @@ import static org.mockito.Mockito.verify;
 
 import java.util.List;
 import local.mylan.service.api.NavResourceService;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -45,9 +44,9 @@ import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.api.model.ShareType;
-import local.mylan.service.api.model.User;
 import local.mylan.service.rest.api.NavResourceRestService;
 import local.mylan.service.test.NavResourceTestUtils;
+import local.mylan.transport.api.UserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,12 +70,8 @@ class DefaultNavResourceRestServiceTest {
 
     private static final Integer USER_ID1 = 501;
     private static final Integer USER_ID2 = 502;
-    private static final User USER1 = new User(USER_ID1, "user1", "USR1", false);
-    private static final User USER2 = new User(USER_ID2, "user2", "USR2", false);
-    private static final User GUEST = new User("", "", false);
-    private static final UserContext USER_CTX1 = new UserContext(USER1, "u1");
-    private static final UserContext USER_CTX2 = new UserContext(USER2, "u2");
-    private static final UserContext GUEST_CTX = new UserContext(GUEST, null);
+    private static final UserContext USER_CTX1 = UserContext.buildDefault(USER_ID1, false);
+    private static final UserContext USER_CTX2 = UserContext.buildDefault(USER_ID2, false);
 
     private static final Integer ACCOUNT_ID1 = 601;
     private static final Integer ACCOUNT_ID2 = 602;

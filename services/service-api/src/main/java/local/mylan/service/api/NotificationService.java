@@ -15,24 +15,20 @@
  */
 package local.mylan.service.api;
 
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.events.EventListener;
-import local.mylan.service.api.events.Registration;
+import local.mylan.common.api.Event;
+import local.mylan.common.api.EventListener;
+import local.mylan.common.api.EventProducer;
+import local.mylan.common.api.Registration;
 
-public interface NotificationService {
+public interface NotificationService extends EventProducer {
 
     default <T extends Event> Registration registerEventListener(Class<T> eventType, EventListener<T> listener) {
         return registerEventListener(null, eventType, listener);
     }
 
-    <T extends Event> Registration registerEventListener(Integer targetUserId, Class<T> eventType,
-        EventListener<T> listener);
-
     default void raiseEvent(Event event) {
         raiseEvent(null, event);
     }
-
-    void raiseEvent(Integer targetUserId, Event event);
 
     default void stop() {
     }

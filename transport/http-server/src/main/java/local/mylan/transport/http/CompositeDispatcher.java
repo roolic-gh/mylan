@@ -15,10 +15,10 @@
  */
 package local.mylan.transport.http;
 
-import static local.mylan.transport.http.common.utils.RequestUtils.buildRequestContext;
-import static local.mylan.transport.http.common.utils.ResponseUtils.fullUrl;
-import static local.mylan.transport.http.common.utils.ResponseUtils.redirectResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.utils.RequestUtils.buildRequestContext;
+import static local.mylan.transport.http.utils.ResponseUtils.fullUrl;
+import static local.mylan.transport.http.utils.ResponseUtils.redirectResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.simpleResponse;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -28,11 +28,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import local.mylan.service.api.UserContext;
-import local.mylan.transport.http.common.api.ContextDispatcher;
-import local.mylan.transport.http.common.api.RequestAuthenticator;
-import local.mylan.transport.http.common.api.RequestDispatcher;
-import local.mylan.transport.http.common.utils.RequestUtils;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.api.RequestAuthenticator;
+import local.mylan.transport.api.RequestDispatcher;
+import local.mylan.transport.api.UserContext;
+import local.mylan.transport.http.utils.RequestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

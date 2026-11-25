@@ -18,10 +18,10 @@ package local.mylan.service.test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import local.mylan.common.api.Event;
+import local.mylan.common.api.EventListener;
+import local.mylan.common.api.Registration;
 import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.events.EventListener;
-import local.mylan.service.api.events.Registration;
 
 public class TestNotificationService implements NotificationService {
     private final List<ListenerRecord> listeners = new ArrayList<>();

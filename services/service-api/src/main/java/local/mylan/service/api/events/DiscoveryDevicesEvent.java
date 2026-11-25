@@ -16,6 +16,7 @@
 package local.mylan.service.api.events;
 
 import java.util.List;
+import local.mylan.common.api.Event;
 import local.mylan.service.api.model.Device;
 
 public record DiscoveryDevicesEvent(List<Device> devices) implements Event {

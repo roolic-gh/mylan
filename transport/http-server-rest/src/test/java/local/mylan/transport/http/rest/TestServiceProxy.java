@@ -17,7 +17,7 @@ package local.mylan.transport.http.rest;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import local.mylan.service.api.UserContext;
+import local.mylan.transport.api.UserContext;
 
 class TestServiceProxy implements TestService {
 

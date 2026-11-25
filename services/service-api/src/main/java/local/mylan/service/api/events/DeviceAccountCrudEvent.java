@@ -15,5 +15,7 @@
  */
 package local.mylan.service.api.events;
 
+import local.mylan.common.api.Event;
+
 public record DeviceAccountCrudEvent(Integer accountId, CrudOperation operation) implements Event {
 }

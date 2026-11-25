@@ -20,8 +20,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import local.mylan.common.annotations.rest.RequestMapping;
-import local.mylan.transport.http.common.api.ContextDispatcher;
-import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.api.ExceptionHandler;
+import local.mylan.transport.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

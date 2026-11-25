@@ -25,14 +25,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.util.concurrent.SettableFuture;
+import local.mylan.common.api.Event;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.events.DiscoveryStatusEvent;
-import local.mylan.service.api.events.Event;
 import local.mylan.service.api.model.DiscoveryStatus;
-import local.mylan.service.api.model.User;
 import local.mylan.service.rest.api.DiscoveryRestService;
+import local.mylan.transport.api.UserContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +78,7 @@ class DefaultDiscoveryRestServiceTest {
 
     @Test
     void startDiscoveryGuest() {
-        final var userCtx = new UserContext(new User("guest", "guest", false), null);
+        final var userCtx = UserContext.buildDefault(null, false);
         final var status = restService.startDiscovery(userCtx);
         assertEquals(statusRunning, status);
         // no discovery started by anonimous
@@ -88,7 +87,7 @@ class DefaultDiscoveryRestServiceTest {
 
     @Test
     void startDiscoveryUser() {
-        final var userCtx = new UserContext(new User(USER_ID, "user", "User", false), null);
+        final var userCtx = UserContext.buildDefault(USER_ID, false);
         final var future = SettableFuture.<DiscoveryStatus>create();
         doReturn(future).when(discoveryService).startDiscovery();
 

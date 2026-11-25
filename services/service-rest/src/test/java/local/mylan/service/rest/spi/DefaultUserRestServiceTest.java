@@ -24,8 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -33,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
@@ -42,6 +43,8 @@ import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.api.UserRestService;
+import local.mylan.transport.api.RequestAuthenticator;
+import local.mylan.transport.api.UserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,9 +66,9 @@ public class DefaultUserRestServiceTest {
     private static final User USER = new User(USER_ID, "user", "Name", false);
     private static final User USER2 = new User(USER2_ID, "user2", "Name", false);
     private static final User USER_NO_ID = new User("userx", "", false);
-    private static final UserContext ADMIN_CTX = new UserContext(ADMIN, "a");
-    private static final UserContext USER_CTX = new UserContext(USER, "u");
-    private static final UserContext USER2_CTX = new UserContext(USER2, "u2");
+    private static final UserContext ADMIN_CTX = new UserContextExt(ADMIN, "a");
+    private static final UserContext USER_CTX = new UserContextExt(USER, "u");
+    private static final UserContext USER2_CTX = new UserContextExt(USER2, "u2");
     private static final List<User> USER_LIST = List.of(USER, USER2);
     private static final List<User> USER_LIST_ADM = List.of(ADMIN, USER, USER2);
 
@@ -73,10 +76,13 @@ public class DefaultUserRestServiceTest {
     UserService userService;
 
     private UserRestService restService;
+    private RequestAuthenticator authenticator;
 
     @BeforeEach
     void beforeEach() {
-        restService = new DefaultUserRestService(userService);
+        final var svc = new DefaultUserRestService(userService);
+        restService = svc;
+        authenticator = svc;
     }
 
     @Test
@@ -84,14 +90,14 @@ public class DefaultUserRestServiceTest {
         doReturn(Optional.of(USER)).when(userService).getUserByCredentials(CREDENTIALS);
         doReturn(Optional.empty()).when(userService).getUserByCredentials(CREDENTIALS2);
 
-        final var context = restService.authenticate(basicAuthHeader(USERNAME, PASSWORD));
+        final var context = authenticator.authenticateUser(basicAuthHeader(USERNAME, PASSWORD));
         assertNotNull(context);
-        assertEquals(USER, context.currentUser());
-        assertNotNull(context.currentSessionId());
-        assertFalse(context.currentSessionId().isEmpty());
+        assertEquals(USER_ID, context.userId());
+        assertNotNull(context.sessionId());
+        assertFalse(context.sessionId().isEmpty());
 
         assertThrows(UnauthenticatedException.class,
-            () -> restService.authenticate(basicAuthHeader(USERNAME, PASSWORD2)));
+            () -> authenticator.authenticateUser(basicAuthHeader(USERNAME, PASSWORD2)));
     }
 
     private static String basicAuthHeader(final String username, final String password) {
@@ -112,17 +118,18 @@ public class DefaultUserRestServiceTest {
         final var authToken = authResult.getAuthToken();
         assertNotNull(authToken);
 
-        final var context = restService.authenticate(AUTH_BEARER + authToken);
+        final var context = authenticator.authenticateUser(AUTH_BEARER + authToken);
         assertNotNull(context);
-        assertEquals(USER, context.currentUser());
+        assertEquals(USER_ID, context.userId());
 
         assertThrows(UnauthenticatedException.class, () -> restService.authenticate(CREDENTIALS2));
-        assertThrows(UnauthenticatedException.class, () -> restService.authenticate(AUTH_BEARER + "unknown-token"));
+        assertThrows(UnauthenticatedException.class,
+            () -> authenticator.authenticateUser(AUTH_BEARER + "unknown-token"));
     }
 
     @Test
     void authGuest() {
-        assertEquals(ANONIMOUS_CONTEXT, restService.authenticate((String) null));
+        assertEquals(ANONIMOUS_CONTEXT, authenticator.authenticateUser( null));
     }
 
     @Test
@@ -184,8 +191,13 @@ public class DefaultUserRestServiceTest {
 
     @Test
     void currentUser() {
-        assertEquals(ANONIMOUS_CONTEXT.currentUser(), restService.getCurrentUser(ANONIMOUS_CONTEXT));
+        doReturn(Optional.of(ADMIN)).when(userService).getUserById(ADMIN_ID, true);
+        assertEquals(ANONIMOUS_CONTEXT.user(), restService.getCurrentUser(ANONIMOUS_CONTEXT));
         assertEquals(USER, restService.getCurrentUser(USER_CTX));
         assertEquals(ADMIN, restService.getCurrentUser(ADMIN_CTX));
+
+        verify(userService, never()).getUserById(any(), anyBoolean());
+        // extract from data service if not contained in ctx
+        assertEquals(ADMIN, restService.getCurrentUser(UserContext.buildDefault(ADMIN_ID, true)));
     }
 }

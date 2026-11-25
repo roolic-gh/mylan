@@ -15,15 +15,17 @@
  */
 package local.mylan.service.rest.spi;
 
+import static local.mylan.transport.api.UserContext.userIdFrom;
+
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.MoreExecutors;
 import local.mylan.service.api.DiscoveryService;
 import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.events.DiscoveryStatusEvent;
 import local.mylan.service.api.model.DiscoveryStatus;
 import local.mylan.service.rest.api.DiscoveryRestService;
+import local.mylan.transport.api.UserContext;
 
 public class DefaultDiscoveryRestService implements DiscoveryRestService {
 
@@ -38,7 +40,7 @@ public class DefaultDiscoveryRestService implements DiscoveryRestService {
 
     @Override
     public DiscoveryStatus startDiscovery(final UserContext userCtx) {
-        final var userId = userCtx.currentUser().getUserId();
+        final var userId = userIdFrom(userCtx);
         if (userId != null) {
             Futures.addCallback(discoveryService.startDiscovery(),
                 new FutureCallback<DiscoveryStatus>() {

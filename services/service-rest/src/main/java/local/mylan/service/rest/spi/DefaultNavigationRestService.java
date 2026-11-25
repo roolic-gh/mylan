@@ -15,11 +15,10 @@
  */
 package local.mylan.service.rest.spi;
 
-import static local.mylan.service.api.UserContext.userIdFrom;
+import static local.mylan.transport.api.UserContext.userIdFrom;
 
 import java.util.List;
 import local.mylan.service.api.NavigationService;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
 import local.mylan.service.api.model.Device;
@@ -31,6 +30,7 @@ import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
 import local.mylan.service.rest.api.NavigationRestService;
 import local.mylan.service.rest.api.UnlockRequest;
+import local.mylan.transport.api.UserContext;
 
 public class DefaultNavigationRestService implements NavigationRestService {
 

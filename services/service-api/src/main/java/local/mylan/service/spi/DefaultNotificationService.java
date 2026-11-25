@@ -21,10 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import local.mylan.common.api.Event;
+import local.mylan.common.api.EventListener;
+import local.mylan.common.api.Registration;
 import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.events.EventListener;
-import local.mylan.service.api.events.Registration;
 
 public final class DefaultNotificationService implements NotificationService {
     private final AtomicLong idCount = new AtomicLong(0);

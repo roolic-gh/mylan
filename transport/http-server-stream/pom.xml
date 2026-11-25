@@ -51,11 +51,15 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>http-server-common</artifactId>
+            <artifactId>transport-api</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>http-server-common</artifactId>
+            <artifactId>http-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>http-utils</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

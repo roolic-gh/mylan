@@ -15,7 +15,8 @@
  */
 package local.mylan.service.api.events;
 
+import local.mylan.common.api.Event;
 import local.mylan.service.api.model.NavResourceShare;
 
-public record UserShareCrudEvent(Long id, NavResourceShare share, CrudOperation operation) implements Event{
+public record UserShareCrudEvent(Long id, NavResourceShare share, CrudOperation operation) implements Event {
 }

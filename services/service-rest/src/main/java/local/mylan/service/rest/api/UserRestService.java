@@ -20,15 +20,13 @@ import local.mylan.common.annotations.rest.PathParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.model.User;
 import local.mylan.service.api.model.UserCredentials;
 import local.mylan.service.api.model.UserStatus;
+import local.mylan.transport.api.UserContext;
 
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
 public interface UserRestService {
-
-    UserContext authenticate(String authHeader);
 
     @RequestMapping(method = "POST", path = "/authenticate", description = "Authenticate user")
     UserAuthResult authenticate(@RequestBody UserCredentials credentials);

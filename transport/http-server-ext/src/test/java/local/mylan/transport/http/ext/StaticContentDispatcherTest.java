@@ -21,11 +21,11 @@ import static io.netty.handler.codec.http.HttpHeaderValues.APPLICATION_OCTET_STR
 import static io.netty.handler.codec.http.HttpHeaderValues.TEXT_PLAIN;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static local.mylan.transport.http.common.HttpTestUtils.assertResponse;
-import static local.mylan.transport.http.common.HttpTestUtils.executeRequest;
-import static local.mylan.transport.http.common.HttpTestUtils.httpRequest;
-import static local.mylan.transport.http.common.HttpTestUtils.setupChannel;
 import static local.mylan.transport.http.ext.StaticContentDispatcher.SourceType.FILE_SYSTEM;
+import static local.mylan.transport.http.utils.HttpTestUtils.assertResponse;
+import static local.mylan.transport.http.utils.HttpTestUtils.executeRequest;
+import static local.mylan.transport.http.utils.HttpTestUtils.httpRequest;
+import static local.mylan.transport.http.utils.HttpTestUtils.setupChannel;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -34,8 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import local.mylan.transport.http.common.HttpTestUtils;
-import local.mylan.transport.http.common.api.ContextDispatcher;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.http.utils.HttpTestUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;

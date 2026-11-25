@@ -21,8 +21,8 @@ import java.util.function.Function;
 import local.mylan.common.annotations.rest.PathParameter;
 import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
-import local.mylan.service.api.UserContext;
-import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.transport.api.RequestContext;
+import local.mylan.transport.api.UserContext;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.type.TypeFactory;
 

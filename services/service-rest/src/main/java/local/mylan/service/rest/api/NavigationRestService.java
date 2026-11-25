@@ -21,12 +21,12 @@ import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
-import local.mylan.service.api.UserContext;
 import local.mylan.service.api.model.Device;
 import local.mylan.service.api.model.DeviceAccount;
 import local.mylan.service.api.model.NavDirectory;
 import local.mylan.service.api.model.NavResourceBookmark;
 import local.mylan.service.api.model.NavResourceShare;
+import local.mylan.transport.api.UserContext;
 
 @ServiceDescriptor(id = "NavigationService", description = "Navigation service")
 public interface NavigationRestService {

@@ -15,6 +15,7 @@
  */
 package local.mylan.service.api.events;
 
+import local.mylan.common.api.Event;
 import local.mylan.service.api.model.DiscoveryStatus;
 
 public class DiscoveryStatusEvent extends DiscoveryStatus implements Event {

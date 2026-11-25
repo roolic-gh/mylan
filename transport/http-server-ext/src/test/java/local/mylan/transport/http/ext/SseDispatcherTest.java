@@ -16,10 +16,10 @@
 package local.mylan.transport.http.ext;
 
 import static io.netty.handler.codec.http.HttpMethod.GET;
-import static local.mylan.transport.http.common.HttpTestUtils.assertResponse;
-import static local.mylan.transport.http.common.HttpTestUtils.executeRequest;
-import static local.mylan.transport.http.common.HttpTestUtils.httpRequest;
-import static local.mylan.transport.http.common.HttpTestUtils.setupChannel;
+import static local.mylan.transport.http.utils.HttpTestUtils.assertResponse;
+import static local.mylan.transport.http.utils.HttpTestUtils.executeRequest;
+import static local.mylan.transport.http.utils.HttpTestUtils.httpRequest;
+import static local.mylan.transport.http.utils.HttpTestUtils.setupChannel;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,12 +38,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.regex.Pattern;
-import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.UserContext;
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.model.User;
-import local.mylan.service.spi.DefaultNotificationService;
-import local.mylan.transport.http.common.api.ContextDispatcher;
+import local.mylan.common.api.Event;
+import local.mylan.common.api.EventListener;
+import local.mylan.common.api.EventProducer;
+import local.mylan.common.api.Registration;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.api.UserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -53,18 +53,18 @@ public class SseDispatcherTest {
     private static final String CONTEXT_PATH = "/test";
     private static final long PING_INTERVAL_MILLIS = 1000L;
     private static final Integer USER_ID = Integer.valueOf(1001);
-    private static final UserContext USER_CTX = new UserContext(new User(USER_ID, "user", "User", false), null);
+    private static final UserContext USER_CTX = UserContext.buildDefault(USER_ID, false);
 
     private static final Pattern EVENT_MESSAGE_PATTERN = Pattern.compile("event: (.+?)\\r\\ndata: (.+)\\r\\n\\r\\n");
     private static final String EVENT_TYPE_JSON_FRAGMENT = "\"eventType\":\"test-event-type\"";
 
-    private NotificationService notificationService;
+    private EventProducer eventProducer;
     private ContextDispatcher dispatcher;
 
     @BeforeEach
     void beforeEach() {
-        notificationService = new DefaultNotificationService();
-        dispatcher = new SseDispatcher(CONTEXT_PATH, notificationService, PING_INTERVAL_MILLIS);
+        eventProducer = new TestEventProducer();
+        dispatcher = new SseDispatcher(CONTEXT_PATH, eventProducer, PING_INTERVAL_MILLIS);
     }
 
     @Test
@@ -108,7 +108,7 @@ public class SseDispatcherTest {
 
         // event triggered
         final var originalEvent = new TestEvent(System.currentTimeMillis(), "test");
-        notificationService.raiseEvent(USER_ID, originalEvent);
+        eventProducer.raiseEvent(USER_ID, originalEvent);
         // wait for event message appearence
         // NB check interval is less than ping to avoid ping message apper first
         await()
@@ -181,6 +181,27 @@ public class SseDispatcherTest {
         @Override
         public int hashCode() {
             return Objects.hashCode(time, name);
+        }
+    }
+
+    private static class TestEventProducer implements EventProducer {
+        EventListener<Event> listener;
+        Integer consumerId;
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T extends Event> Registration registerEventListener(final Integer consumerId, final Class<T> eventType,
+            final EventListener<T> listener) {
+            this.consumerId = consumerId;
+            this.listener = (EventListener<Event>) listener;
+            return () -> this.listener = null;
+        }
+
+        @Override
+        public void raiseEvent(final Integer consumerId, final Event event) {
+            if (listener != null && Objects.equal(consumerId, this.consumerId)) {
+                listener.onEvent(event);
+            }
         }
     }
 }

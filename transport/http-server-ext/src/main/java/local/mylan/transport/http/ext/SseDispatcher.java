@@ -16,9 +16,9 @@
 package local.mylan.transport.http.ext;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static local.mylan.transport.http.common.utils.ResponseUtils.allowResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.simpleResponse;
-import static local.mylan.transport.http.common.utils.ResponseUtils.unsupportedMethodResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.allowResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.simpleResponse;
+import static local.mylan.transport.http.utils.ResponseUtils.unsupportedMethodResponse;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.netty.buffer.ByteBuf;
@@ -31,11 +31,11 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import java.util.concurrent.TimeUnit;
-import local.mylan.service.api.NotificationService;
-import local.mylan.service.api.events.Event;
-import local.mylan.service.api.events.EventListener;
-import local.mylan.transport.http.common.api.ContextDispatcher;
-import local.mylan.transport.http.common.api.RequestContext;
+import local.mylan.common.api.Event;
+import local.mylan.common.api.EventListener;
+import local.mylan.common.api.EventProducer;
+import local.mylan.transport.api.ContextDispatcher;
+import local.mylan.transport.api.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JsonGenerator;
@@ -61,18 +61,17 @@ public class SseDispatcher implements ContextDispatcher {
             .withContentInclusion(JsonInclude.Include.NON_NULL)).build();
 
     private final String contextPath;
-    private final NotificationService notificationService;
+    private final EventProducer eventProducer;
     private final long pingIntervalMillis;
 
-    public SseDispatcher(final String contextPath, final NotificationService notificationService,
-        final long pingIntervalMillis) {
+    public SseDispatcher(final String contextPath, final EventProducer eventProducer, final long pingIntervalMillis) {
 
         this.contextPath = contextPath;
-        this.notificationService = notificationService;
+        this.eventProducer = eventProducer;
         this.pingIntervalMillis = pingIntervalMillis;
     }
 
-        @Override
+    @Override
     public String contextPath() {
         return contextPath;
     }
@@ -89,8 +88,7 @@ public class SseDispatcher implements ContextDispatcher {
 
     private void handleRquest(final RequestContext ctx) {
 
-        final var userId = ctx.userContext() == null || ctx.userContext().currentUser() == null
-            ? null : ctx.userContext().currentUser().getUserId();
+        final var userId = ctx.userContext() == null ? null : ctx.userContext().userId();
         if (userId == null) {
             ctx.sendResponse(simpleResponse(ctx.protocolVersion(), HttpResponseStatus.UNAUTHORIZED));
         } else if (!ctx.headers().contains(HttpHeaderNames.ACCEPT, HttpHeaderValues.TEXT_EVENT_STREAM, true)) {
@@ -115,7 +113,7 @@ public class SseDispatcher implements ContextDispatcher {
         }
 
         boolean start() {
-            final var registration = notificationService.registerEventListener(userId, Event.class, this);
+            final var registration = eventProducer.registerEventListener(userId, Event.class, this);
             channelCtx.channel().closeFuture().addListener(future -> {
                 LOG.debug("SSE stream closed for user {}", userId);
                 registration.terminate();
@@ -165,7 +163,7 @@ public class SseDispatcher implements ContextDispatcher {
     }
 
     @SuppressWarnings("serial")
-    private static class EventSerializerModule extends SimpleModule{
+    private static class EventSerializerModule extends SimpleModule {
 
         @Override
         public void setupModule(final SetupContext context) {
@@ -182,7 +180,7 @@ public class SseDispatcher implements ContextDispatcher {
         }
     }
 
-    private static class EventValueSerializer extends ValueSerializer<Event>{
+    private static class EventValueSerializer extends ValueSerializer<Event> {
         final ValueSerializer<Event> delegator;
 
         @SuppressWarnings("unchecked")
@@ -196,7 +194,7 @@ public class SseDispatcher implements ContextDispatcher {
         }
 
         @Override
-        public void serialize(final Event event, final JsonGenerator gen, final SerializationContext ctxt){
+        public void serialize(final Event event, final JsonGenerator gen, final SerializationContext ctxt) {
             gen.writeStartObject();
             delegator.unwrappingSerializer(null).serialize(event, gen, ctxt);
             gen.writeStringProperty("eventType", event.eventType());
