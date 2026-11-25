@@ -62,7 +62,19 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
-            <artifactId>web-ui</artifactId>
+            <artifactId>http-server-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>http-server-stream</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>http-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>service-api</artifactId>
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
@@ -70,7 +82,19 @@
         </dependency>
         <dependency>
             <groupId>local.mylan</groupId>
+            <artifactId>service-net</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
             <artifactId>service-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>smb-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>transport-api</artifactId>
         </dependency>
     </dependencies>
 
