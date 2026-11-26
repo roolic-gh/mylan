@@ -44,6 +44,7 @@ import local.mylan.common.api.EventProducer;
 import local.mylan.common.api.Registration;
 import local.mylan.transport.api.ContextDispatcher;
 import local.mylan.transport.api.UserContext;
+import local.mylan.transport.spi.SimpleUserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -53,7 +54,7 @@ public class SseDispatcherTest {
     private static final String CONTEXT_PATH = "/test";
     private static final long PING_INTERVAL_MILLIS = 1000L;
     private static final Integer USER_ID = Integer.valueOf(1001);
-    private static final UserContext USER_CTX = UserContext.buildDefault(USER_ID, false);
+    private static final UserContext USER_CTX = new SimpleUserContext(USER_ID, false);
 
     private static final Pattern EVENT_MESSAGE_PATTERN = Pattern.compile("event: (.+?)\\r\\ndata: (.+)\\r\\n\\r\\n");
     private static final String EVENT_TYPE_JSON_FRAGMENT = "\"eventType\":\"test-event-type\"";

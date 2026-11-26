@@ -48,6 +48,7 @@ import local.mylan.service.api.model.ShareType;
 import local.mylan.service.rest.api.NavigationRestService;
 import local.mylan.service.rest.api.UnlockRequest;
 import local.mylan.transport.api.UserContext;
+import local.mylan.transport.spi.SimpleUserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,9 +77,9 @@ class DefaultNavigationRestServiceTest {
 
     private static final Integer USER_ID1 = 1001;
     private static final Integer USER_ID2 = 1002;
-    private static final UserContext USER_CTX1 = UserContext.buildDefault(USER_ID1,false);
-    private static final UserContext USER_CTX2 = UserContext.buildDefault(USER_ID2, false);
-    private static final UserContext GUEST_CTX = UserContext.buildDefault(null, false);
+    private static final UserContext USER_CTX1 = new SimpleUserContext(USER_ID1,false);
+    private static final UserContext USER_CTX2 = new SimpleUserContext(USER_ID2, false);
+    private static final UserContext GUEST_CTX = new SimpleUserContext(null, false);
 
     private static final Integer ACCOUNT_ID1 = 2001;
     private static final Integer ACCOUNT_ID2 = 2002;

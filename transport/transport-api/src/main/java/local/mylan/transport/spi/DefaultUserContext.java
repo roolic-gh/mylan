@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.api;
+package local.mylan.transport.spi;
 
-@FunctionalInterface
-public interface RequestAuthenticator {
+import local.mylan.common.api.ServiceUser;
+import local.mylan.transport.api.UserContext;
 
-    UserContext authenticateUser(String authorizeHeader);
+public record DefaultUserContext(ServiceUser user, String sessionId, String ipAddress)
+    implements UserContext {
+
+    @Override
+    public Integer userId() {
+        return user == null ? null : user.getUserId();
+    }
+
+    @Override
+    public boolean isAdmin() {
+        return user != null && user.isAdmin();
+    }
 }

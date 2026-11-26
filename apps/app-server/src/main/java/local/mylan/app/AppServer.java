@@ -46,6 +46,7 @@ import local.mylan.transport.http.ext.StaticContentDispatcher;
 import local.mylan.transport.http.rest.RestServiceDispatcher;
 import local.mylan.transport.http.rest.SwaggerUiDispatcher;
 import local.mylan.transport.http.stream.StreamDispatcher;
+import local.mylan.transport.spi.DefaultSessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,9 @@ final class AppServer {
         final var navResourceService =
             dataServiceProvider.buildNavResourceService(encryptionService, notificationService);
 
+        // session mgmt
+        final var sessionMgr = new DefaultSessionManager();
+
         // networking and local files
         final var smb = new SmbDeviceAccessor(confDir);
         final var localfs = new LocalFsAccessor(confDir, navResourceService);
@@ -87,13 +91,13 @@ final class AppServer {
             List.of(smb, localfs));
 
         // rest endpoints
-        final var userRestService = new DefaultUserRestService(userService);
+        final var userRestService = new DefaultUserRestService(userService, sessionMgr);
         final var restDispatcher = new RestServiceDispatcher("/rest", List.of(
             userRestService,
             new DefaultDiscoveryRestService(discoveryService, notificationService),
             new DefaultNavResourceRestService(navResourceService),
             new DefaultNavigationRestService(navigationService)
-        ), ExceptionHandlerUtils::toResponseStatus);
+        ), ExceptionHandlerUtils.defaultExceptionHandler());
 
         // swagger integration
         final var swaggerDispatcher = new SwaggerUiDispatcher("/swagger-ui", "/rest", List.of(
@@ -123,7 +127,7 @@ final class AppServer {
 
         // http server
         final var dispatcher = CompositeDispatcher.builder()
-            .authenticator(userRestService)
+            .sessionManager(sessionMgr)
             .defaultDispatcher(uiDispatcher)
             .dispatchers(sseDispatcher, swaggerDispatcher, restDispatcher, streamDispatcher)
             .build();

@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.api.exceptions;
+package local.mylan.transport.api;
 
-import java.io.Serial;
+import io.netty.handler.codec.http.HttpHeaders;
+import local.mylan.common.api.ServiceUser;
 
-public class ConnectionException extends RuntimeException {
-    @Serial
-    private static final long serialVersionUID = 1L;
+public interface SessionManager {
 
-    public ConnectionException(final String message) {
-        super(message);
-    }
+    UserContext authenticateUser(HttpHeaders headers, String ipAddress);
 
-    public ConnectionException(final Throwable cause) {
-        super(cause.getMessage(), cause);
-    }
+    UserContext getOrCreateSession(ServiceUser user, String ipAddress, boolean persist);
 
-    public ConnectionException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
+    void closeSession(UserContext currentContext);
+
+    void closeUserSessions(Integer userId);
+
+    void updateUser(ServiceUser user);
+
+
 }

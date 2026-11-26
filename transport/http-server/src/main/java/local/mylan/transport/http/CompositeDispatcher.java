@@ -15,6 +15,7 @@
  */
 package local.mylan.transport.http;
 
+import static java.util.Objects.requireNonNull;
 import static local.mylan.transport.http.utils.RequestUtils.buildRequestContext;
 import static local.mylan.transport.http.utils.ResponseUtils.fullUrl;
 import static local.mylan.transport.http.utils.ResponseUtils.redirectResponse;
@@ -22,15 +23,15 @@ import static local.mylan.transport.http.utils.ResponseUtils.simpleResponse;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import local.mylan.transport.api.ContextDispatcher;
-import local.mylan.transport.api.RequestAuthenticator;
 import local.mylan.transport.api.RequestDispatcher;
+import local.mylan.transport.api.SessionManager;
 import local.mylan.transport.api.UserContext;
 import local.mylan.transport.http.utils.RequestUtils;
 import org.slf4j.Logger;
@@ -40,14 +41,15 @@ public class CompositeDispatcher implements RequestDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(CompositeDispatcher.class);
 
     private final List<ContextDispatcher> contextDispatchers;
-    private final RequestAuthenticator authenticator;
+    private final SessionManager sessionMgr;
     private final String rootRedirectUri;
 
     private CompositeDispatcher(final List<ContextDispatcher> contextDispatchers,
-        final RequestAuthenticator authenticator, final String rootRedirectUri) {
-        this.contextDispatchers = contextDispatchers;
-        this.authenticator = authenticator;
-        this.rootRedirectUri = rootRedirectUri;
+        final SessionManager sessionMgr, final String rootRedirectUri) {
+
+        this.contextDispatchers = requireNonNull(contextDispatchers);
+        this.sessionMgr = requireNonNull(sessionMgr);
+        this.rootRedirectUri = requireNonNull(rootRedirectUri);
     }
 
     @Override
@@ -62,9 +64,10 @@ public class CompositeDispatcher implements RequestDispatcher {
         }
         final UserContext userContext;
         try {
-            userContext = authenticator == null
-                ? null : authenticator.authenticateUser(request.headers().get(HttpHeaderNames.AUTHORIZATION));
+            final var ipAddress = ((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress();
+            userContext = sessionMgr.authenticateUser(request.headers(), ipAddress);
         } catch (Exception e) {
+            LOG.debug("User auth failed --> {}", e.getMessage());
             ctx.writeAndFlush(simpleResponse(request.protocolVersion(), HttpResponseStatus.UNAUTHORIZED));
             return true;
         }
@@ -83,15 +86,15 @@ public class CompositeDispatcher implements RequestDispatcher {
 
     public static class Builder {
         private final Set<ContextDispatcher> dispatchers = new HashSet<>();
-        private RequestAuthenticator authenticator;
+        private SessionManager sessionMgr;
         private String rootRedirectUri;
 
         private Builder() {
             // instantiate through static method above
         }
 
-        public Builder authenticator(RequestAuthenticator authenticator) {
-            this.authenticator = authenticator;
+        public Builder sessionManager(final SessionManager sessionMgr) {
+            this.sessionMgr = sessionMgr;
             return this;
         }
 
@@ -117,7 +120,7 @@ public class CompositeDispatcher implements RequestDispatcher {
         }
 
         public RequestDispatcher build() {
-            return new CompositeDispatcher(List.copyOf(dispatchers), authenticator, rootRedirectUri);
+            return new CompositeDispatcher(List.copyOf(dispatchers), sessionMgr, rootRedirectUri);
         }
     }
 }

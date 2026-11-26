@@ -15,16 +15,8 @@
  */
 package local.mylan.service.rest.spi;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.hash.Hashing;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import local.mylan.service.api.UserService;
 import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
@@ -35,75 +27,34 @@ import local.mylan.service.api.model.UserStatus;
 import local.mylan.service.rest.api.ChangePassword;
 import local.mylan.service.rest.api.UserAuthResult;
 import local.mylan.service.rest.api.UserRestService;
-import local.mylan.transport.api.RequestAuthenticator;
+import local.mylan.transport.api.SessionManager;
 import local.mylan.transport.api.UserContext;
 
-public final class DefaultUserRestService implements UserRestService, RequestAuthenticator {
-
-    // FIXME move authencator functionality into dedicated service
-
-    private static final Duration SESSION_EXPIRES = Duration.ofHours(24);
-    private static final AtomicInteger COUNTER = new AtomicInteger(0);
-
-    @VisibleForTesting
-    static final UserContextExt ANONIMOUS_CONTEXT = new UserContextExt(new User("anonimous", "Guest", false), "");
-    @VisibleForTesting
-    static final String AUTH_BASIC = "Basic ";
-    @VisibleForTesting
-    static final String AUTH_BEARER = "Bearer ";
-
+public final class DefaultUserRestService implements UserRestService {
     private final UserService service;
-    private final Cache<String, UserContext> contextCache;
+    private final SessionManager sessionMgr;
 
-    public DefaultUserRestService(final UserService service) {
+    public DefaultUserRestService(final UserService service, final SessionManager sessionMgr) {
         this.service = service;
-        contextCache = CacheBuilder.newBuilder().expireAfterAccess(SESSION_EXPIRES).build();
+        this.sessionMgr = sessionMgr;
     }
 
     @Override
-    public UserContext authenticateUser(final String authHeader) {
-        if (authHeader == null) {
-            return ANONIMOUS_CONTEXT;
-        }
-        if (authHeader.startsWith(AUTH_BASIC)) {
-            final var bytes = Base64.getDecoder().decode(authHeader.substring(AUTH_BASIC.length()));
-            final var key = Hashing.sha256().hashBytes(bytes).toString();
-            final var context = contextCache.getIfPresent(key);
-            if (context != null) {
-                return context;
-            }
-            final var creds = new String(bytes, StandardCharsets.UTF_8).split(":", 2);
-            final var user = creds.length == 2 ?
-                service.getUserByCredentials(new UserCredentials(creds[0], creds[1])).orElse(null) : null;
-            if (user != null) {
-                final var newContext = new UserContextExt(user, key);
-                contextCache.put(key, newContext);
-                return newContext;
-            }
-            throw new UnauthenticatedException();
-        }
-        if (authHeader.startsWith(AUTH_BEARER)) {
-            final var context = contextCache.getIfPresent(authHeader.substring(AUTH_BEARER.length()));
-            if (context != null) {
-                return context;
-            }
-            throw new UnauthenticatedException();
-        }
-        return ANONIMOUS_CONTEXT;
-    }
+    public UserAuthResult signIn(final UserCredentials credentials, final boolean persist,
+        final UserContext userCtx) {
 
-    @Override
-    public UserAuthResult authenticate(final UserCredentials credentials) {
         final var user = service.getUserByCredentials(credentials).orElse(null);
         if (user != null) {
-            final var key = Hashing.sha256().hashString(credentials.getUsername() + COUNTER.incrementAndGet(),
-                StandardCharsets.UTF_8).toString();
-            final var newContext = new UserContextExt(user, key);
-            contextCache.put(key, newContext);
+            final var newCtx = sessionMgr.getOrCreateSession(user, userCtx.ipAddress(), persist);
             final var passwordChangeRequired = service.userMustChangePassword(user.getUserId());
-            return new UserAuthResult(user, key, passwordChangeRequired);
+            return new UserAuthResult(user, newCtx.sessionId(), passwordChangeRequired);
         }
         throw new UnauthenticatedException("Invalid username and/or password.");
+    }
+
+    @Override
+    public void signOut(final UserContext userCtx) {
+        sessionMgr.closeSession(userCtx);
     }
 
     @Override
@@ -112,6 +63,7 @@ public final class DefaultUserRestService implements UserRestService, RequestAut
             throw new UnauthorizedException("Password reset action is only allowed to administrator.");
         }
         service.resetUserPassword(userId);
+        sessionMgr.closeUserSessions(userId);
     }
 
     @Override
@@ -142,7 +94,9 @@ public final class DefaultUserRestService implements UserRestService, RequestAut
         if (!userCtx.isAdmin() && !Objects.equals(user.getUserId(), userCtx.userId())) {
             throw new UnauthorizedException("User update is only allowed to owner or adminiastrator.");
         }
-        return service.updateUser(user);
+        final var updated = service.updateUser(user);
+        sessionMgr.updateUser(updated);
+        return updated;
     }
 
     @Override
@@ -157,6 +111,9 @@ public final class DefaultUserRestService implements UserRestService, RequestAut
             throw new IllegalArgumentException("Administrator cannot update own status.");
         }
         service.updateUserStatus(status);
+        if (status.isDisabled()) {
+            sessionMgr.closeUserSessions(status.getUserId());
+        }
     }
 
     @Override
@@ -168,17 +125,14 @@ public final class DefaultUserRestService implements UserRestService, RequestAut
             throw new IllegalArgumentException("Administrator cannot delete himself.");
         }
         service.deleteUser(userId);
+        sessionMgr.closeUserSessions(userId);
     }
 
     @Override
     public User getCurrentUser(final UserContext userCtx) {
-        if (userCtx instanceof UserContextExt ext) {
-            return ext.user();
-        }
-        if (userCtx.userId() == null) {
-            return ANONIMOUS_CONTEXT.user();
-        }
-        return service.getUserById(userCtx.userId(), userCtx.isAdmin()).orElse(ANONIMOUS_CONTEXT.user());
+        final var user = userCtx.user();
+        return user instanceof User casted
+            ? casted : new User(user.getUserId(), user.getUsername(), user.getUsername(), user.isAdmin());
     }
 
     @Override

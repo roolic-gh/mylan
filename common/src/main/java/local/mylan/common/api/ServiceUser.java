@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.service.rest.spi;
+package local.mylan.common.api;
 
-import local.mylan.service.api.model.User;
-import local.mylan.transport.api.UserContext;
+public interface ServiceUser {
 
-public record UserContextExt(User user, String sessionId) implements UserContext {
+    Integer getUserId();
 
-    @Override
-    public Integer userId() {
-        return user == null ? null : user.getUserId();
-    }
+    String getUsername();
 
-    @Override
-    public boolean isAdmin() {
-        return user != null && user.isAdmin();
-    }
+    boolean isAdmin();
 }

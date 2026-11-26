@@ -17,6 +17,7 @@ package local.mylan.service.rest.api;
 
 import java.util.List;
 import local.mylan.common.annotations.rest.PathParameter;
+import local.mylan.common.annotations.rest.QueryParameter;
 import local.mylan.common.annotations.rest.RequestBody;
 import local.mylan.common.annotations.rest.RequestMapping;
 import local.mylan.common.annotations.rest.ServiceDescriptor;
@@ -28,8 +29,12 @@ import local.mylan.transport.api.UserContext;
 @ServiceDescriptor(id = "UserService", description = "Operations related to registered users")
 public interface UserRestService {
 
-    @RequestMapping(method = "POST", path = "/authenticate", description = "Authenticate user")
-    UserAuthResult authenticate(@RequestBody UserCredentials credentials);
+    @RequestMapping(method = "POST", path = "/sign-in", description = "Authenticate user, start/continue the session")
+    UserAuthResult signIn(@RequestBody UserCredentials credentials, @QueryParameter(name= "persist") boolean persist,
+        UserContext userCtx);
+
+    @RequestMapping(method = "POST", path = "/sign-out", description = "Closes the session")
+    void signOut(UserContext userCtx);
 
     @RequestMapping(method = "POST", path = "/user/change-password", description = "Change own password")
     void changePassword(@RequestBody ChangePassword passwordChange, UserContext userCtx);

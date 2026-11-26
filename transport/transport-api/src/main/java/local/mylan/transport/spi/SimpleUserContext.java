@@ -13,23 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package local.mylan.transport.api.exceptions;
+package local.mylan.transport.spi;
 
-import java.io.Serial;
+import local.mylan.transport.api.UserContext;
 
-public class AuthorizationException extends RuntimeException {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
-    public AuthorizationException(final String message) {
-        super(message);
-    }
-
-    public AuthorizationException(final Throwable cause) {
-        super(cause.getMessage(), cause);
-    }
-
-    public AuthorizationException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
+public record SimpleUserContext(Integer userId, boolean isAdmin) implements UserContext {
 }

@@ -37,5 +37,9 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
         </dependency>
+        <dependency>
+            <groupId>local.mylan</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
     </dependencies>
 </project>

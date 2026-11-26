@@ -44,8 +44,12 @@ export class Client {
         this.request("GET", "/user", callback);
     }
 
-    authenticate(creds, callback) {
-        this.request("POST", "/authenticate", callback, creds);
+    signIn(creds, persist, callback) {
+        this.request("POST", "/sign-in?persist=" + persist, callback, creds);
+    }
+
+    signOut(callback) {
+        this.request("POST", "/sign-out", callback);
     }
 
     getDeviceList(callback) {

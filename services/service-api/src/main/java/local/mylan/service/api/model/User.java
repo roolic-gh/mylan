@@ -15,7 +15,9 @@
  */
 package local.mylan.service.api.model;
 
-public class User {
+import local.mylan.common.api.ServiceUser;
+
+public class User implements ServiceUser {
     private Integer userId;
     private String username;
     private String displayName;
@@ -37,6 +39,7 @@ public class User {
         this.isAdmin = isAdmin;
     }
 
+    @Override
     public Integer getUserId() {
         return userId;
     }
@@ -45,6 +48,7 @@ public class User {
         this.userId = userId;
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
@@ -61,6 +65,7 @@ public class User {
         this.displayName = displayName;
     }
 
+    @Override
     public boolean isAdmin() {
         return isAdmin;
     }

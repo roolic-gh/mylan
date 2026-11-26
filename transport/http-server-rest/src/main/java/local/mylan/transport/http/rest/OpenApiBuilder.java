@@ -100,20 +100,20 @@ class OpenApiBuilder {
 
     private List<SecurityRequirement> defaultSecurity() {
         components
-            .addSecuritySchemes("BasicAuth",
-                new SecurityScheme()
-                    .type(SecurityScheme.Type.HTTP)
-                    .scheme("basic")
-                    .in(SecurityScheme.In.HEADER))
             .addSecuritySchemes("BearerAuth",
                 new SecurityScheme()
                     .type(SecurityScheme.Type.HTTP)
                     .scheme("bearer")
-                    .in(SecurityScheme.In.HEADER));
+                    .in(SecurityScheme.In.HEADER))
+            .addSecuritySchemes("CookieAuth",
+                new SecurityScheme()
+                    .type(SecurityScheme.Type.APIKEY)
+                    .name("SID")
+                    .in(SecurityScheme.In.COOKIE));
         return List.of(
             new SecurityRequirement()
-                .addList("BasicAuth")
-                .addList("BearerAuth"));
+                .addList("BearerAuth")
+                .addList("CookieAuth"));
     }
 
     OpenApiBuilder process(final Collection<Class<?>> classes) {

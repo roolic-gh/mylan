@@ -15,11 +15,15 @@
  */
 package local.mylan.transport.api;
 
+import local.mylan.common.api.ServiceUser;
+
 public interface UserContext {
 
     Integer userId();
 
-    String sessionId();
+    default String sessionId() {
+        return null;
+    }
 
     boolean isAdmin();
 
@@ -27,18 +31,15 @@ public interface UserContext {
         return userId() != null;
     }
 
-    static UserContext buildDefault(final Integer userId, final boolean isAdmin) {
-        return buildDefault(userId, null, isAdmin);
+    default ServiceUser user() {
+        return null;
     }
 
-    static UserContext buildDefault(final Integer userId, final String sessionId, final boolean isAdmin) {
-        return new DefaultUserContext(userId, sessionId, isAdmin);
+    default String ipAddress() {
+        return null;
     }
 
     static Integer userIdFrom(final UserContext userCtx) {
         return userCtx == null ? null : userCtx.userId();
-    }
-
-    record DefaultUserContext(Integer userId, String sessionId, boolean isAdmin) implements UserContext {
     }
 }

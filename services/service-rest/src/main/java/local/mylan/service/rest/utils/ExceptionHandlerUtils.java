@@ -20,6 +20,7 @@ import local.mylan.service.api.exceptions.DataCollisionException;
 import local.mylan.service.api.exceptions.NoDataException;
 import local.mylan.service.api.exceptions.UnauthenticatedException;
 import local.mylan.service.api.exceptions.UnauthorizedException;
+import local.mylan.transport.api.ExceptionHandler;
 
 public final class ExceptionHandlerUtils {
 
@@ -27,8 +28,8 @@ public final class ExceptionHandlerUtils {
         // utility class
     }
 
-    public static HttpResponseStatus toResponseStatus(final Throwable throwable) {
-        return switch (throwable){
+    public static ExceptionHandler defaultExceptionHandler() {
+        return throwable -> switch (throwable) {
             case UnauthenticatedException e -> HttpResponseStatus.UNAUTHORIZED;
             case UnauthorizedException e -> HttpResponseStatus.FORBIDDEN;
             case NoDataException e -> HttpResponseStatus.NOT_FOUND;
@@ -37,5 +38,4 @@ public final class ExceptionHandlerUtils {
             default -> HttpResponseStatus.INTERNAL_SERVER_ERROR;
         };
     }
-
 }

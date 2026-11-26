@@ -37,11 +37,7 @@ export class App {
     init() {
         this.ui.init(this);
         this.client.getCurrentUser((currentUser) => {
-            this.user.reset(currentUser);
-            this.ui.applyUser(this.user);
-            if (!this.user.isGuest) {
-                this.sse.setToken(this.client.token);
-            }
+            this.setUserAndToken(currentUser, this.client.token);
             this.refresh();
         });
     }
@@ -49,11 +45,9 @@ export class App {
     login() {
         if (this.ui.loginModal()) {
             const creds = this.ui.credsFromModal();
-            this.client.authenticate(creds, (response) => {
+            this.client.signIn(creds, creds.persist, (response) => {
                 this.client.setToken(response.authToken, creds.persist);
-                this.sse.setToken(response.authToken);
-                this.user.reset(response.user);
-                this.ui.applyUser(this.user);
+                this.setUserAndToken(response.user, response.authToken);
                 this.refresh();
                 if (response.mustChangePassword) {
                     this.ui.notifyPasswordChangeRequired();
@@ -63,12 +57,22 @@ export class App {
     }
 
     logout() {
-        // TODO Notify server to cancel session
-        this.client.clearToken();
-        this.sse.clearToken();
-        this.user.reset({ userId: null });
-        this.ui.applyUser(this.user);
+        this.client.signOut((response) => report("Server session terminated."));
+        this.setUserAndToken({ userId: null }, null);
         this.refresh();
+    }
+
+    setUserAndToken(user, token) {
+        this.user.reset(user);
+        this.ui.applyUser(this.user);
+        if (user.userId && token) {
+            this.sse.setToken(token);
+            document.cookie = "SID=" + token;
+        } else {
+            this.client.clearToken();
+            this.sse.clearToken();
+            document.cookie = "SID=; Max-Age=0";
+        }
     }
 
     updatePassword() {

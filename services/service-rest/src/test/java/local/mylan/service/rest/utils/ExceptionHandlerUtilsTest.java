@@ -31,7 +31,7 @@ class ExceptionHandlerUtilsTest {
     @ParameterizedTest
     @MethodSource
     void toResponseStatus(final HttpResponseStatus status, final Throwable throwable){
-        Assertions.assertEquals(status, ExceptionHandlerUtils.toResponseStatus(throwable));
+        Assertions.assertEquals(status, ExceptionHandlerUtils.defaultExceptionHandler().statusFromException(throwable));
     }
 
     private static Stream<Arguments> toResponseStatus(){

@@ -47,6 +47,7 @@ import local.mylan.service.api.model.ShareType;
 import local.mylan.service.rest.api.NavResourceRestService;
 import local.mylan.service.test.NavResourceTestUtils;
 import local.mylan.transport.api.UserContext;
+import local.mylan.transport.spi.SimpleUserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,8 +71,8 @@ class DefaultNavResourceRestServiceTest {
 
     private static final Integer USER_ID1 = 501;
     private static final Integer USER_ID2 = 502;
-    private static final UserContext USER_CTX1 = UserContext.buildDefault(USER_ID1, false);
-    private static final UserContext USER_CTX2 = UserContext.buildDefault(USER_ID2, false);
+    private static final UserContext USER_CTX1 = new SimpleUserContext(USER_ID1, false);
+    private static final UserContext USER_CTX2 = new SimpleUserContext(USER_ID2, false);
 
     private static final Integer ACCOUNT_ID1 = 601;
     private static final Integer ACCOUNT_ID2 = 602;
